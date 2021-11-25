@@ -1,0 +1,12 @@
+{
+    "id": "{988CC9CB-E532-DD3B-1806-74EAFB63AF6D}",
+    "name": "Energierechner",
+    "type": 3,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "ER",
+    "url": "https://deinsmarthone.info"
+}
