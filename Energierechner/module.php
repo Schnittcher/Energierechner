@@ -9,6 +9,8 @@ declare(strict_types=1);
             parent::Create();
             $this->RegisterPropertyString('Prices', '[]');
             $this->RegisterPropertyInteger('consumptionVariableID', 0);
+            $this->RegisterPropertyBoolean('enableArchiveForVariables', true);
+            $this->RegisterPropertyFloat('PreviousMeterReading', 0);
 
             $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro');
         }
@@ -30,6 +32,7 @@ declare(strict_types=1);
                 $this->RegisterMessage($this->ReadPropertyInteger('consumptionVariableID'), VM_UPDATE);
             }
 
+            $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
             $variableIdents = [];
 
             foreach ($prices as $key => $value) {
@@ -42,8 +45,13 @@ declare(strict_types=1);
                 $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
                 $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
 
-                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro');
-                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity');
+                $variableIDTotalCosts = $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro');
+                $variableTotalConsumption = $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity');
+
+                if ($this->ReadPropertyBoolean('enableArchiveForVariables')) {
+                    AC_SetLoggingStatus($archiveID, $variableIDTotalCosts, true);
+                    AC_SetLoggingStatus($archiveID, $variableTotalConsumption, true);
+                }
 
                 $variableIdents[] = $identTotalCosts;
                 $variableIdents[] = $identTotalConsumption;
@@ -104,7 +112,11 @@ declare(strict_types=1);
                 $startDate = $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
                 $endDate = $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
 
-                $result = $this->calculate(strtotime($startDate), strtotime($endDate), $consumptionVariableID, $price);
+                if ($key === array_key_first($prices)) {
+                    $previousMeterReading = $this->ReadPropertyFloat('PreviousMeterReading');
+                }
+
+                $result = $this->calculate(strtotime($startDate), strtotime($endDate), $consumptionVariableID, $previousMeterReading);
 
                 $this->SetValue($identTotalConsumption, $result['consumption']);
                 $this->SetValue($identTotalCosts, $result['costs']);
@@ -120,11 +132,11 @@ declare(strict_types=1);
             $this->SetValue('totalCosts', $totalCosts);
         }
 
-        public function calculate($startDate, $endDate, $variableID, $costs)
+        public function calculate($startDate, $endDate, $variableID, $costs, $previousMeterReading = 0)
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
 
-            $previousConsumption = @AC_GetLoggedValues($archiveID, $variableID, 0, $startDate, 1)[0]['Value'];
+            $previousConsumption = @AC_GetLoggedValues($archiveID, $variableID, 0, $startDate, 1)[0]['Value'] - $previousMeterReading;
             $this->SendDebug('previous Consumption', $previousConsumption, 0);
 
             $consumption = AC_GetLoggedValues($archiveID, $variableID, $startDate, $endDate, 1)[0]['Value'];

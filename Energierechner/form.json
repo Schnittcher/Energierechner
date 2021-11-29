@@ -10,6 +10,13 @@
             "requiredLogging": 1
         },
         {
+            "type": "NumberSpinner",
+            "name": "PreviousMeterReading",
+            "caption": "Previous meter reading (kWh)",
+            "digits": 2
+        },
+        { "type": "CheckBox", "name": "enableArchiveForVariables", "caption": "Enable archive for variables" },
+        {
             "type": "List",
             "name": "Prices",
             "caption": "Prices",

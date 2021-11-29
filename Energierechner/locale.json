@@ -7,9 +7,11 @@
             "Start Date": "Startdatum",
             "End Date": "Enddatum",
             "Price Variable": "Preisvariable",
-            "Total Costs": "Gesamtkosten",
+            "Total costs": "Gesamtkosten",
             "Total costs period": "Gesamtkosten Zeitraum",
-            "Total consumption period": "Gesamtverbrauch Zeitraum"
+            "Previous meter reading (kWh)": "Vorheriger Zählerstand (kWh)",
+            "Total consumption period": "Gesamtverbrauch Zeitraum",
+            "Enable archive for variables": "Archiv für Variablen aktivieren"
         }
     }
 }
