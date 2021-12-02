@@ -144,13 +144,13 @@ declare(strict_types=1);
             $this->SendDebug('calculate :: EndSate', date('d.m.Y', $endDate),0);
 
             $this->SendDebug('calculate :: PreviousMeterReading', $previousMeterReading,0);
-            $previousConsumption = @AC_GetLoggedValues($archiveID, $variableID, 0, $startDate, 1)[0]['Value'] - $previousMeterReading;
+            //$previousConsumption = @AC_GetLoggedValues($archiveID, $variableID, 0, $startDate, 1)[0]['Value'] - $previousMeterReading;
             $this->SendDebug('previous Consumption', $previousConsumption, 0);
 
             $consumption = AC_GetLoggedValues($archiveID, $variableID, $startDate, $endDate, 1)[0]['Value'];
 
             if ($startDate != 0) {
-                $consumption = $consumption - $previousConsumption;
+              //  $consumption = $consumption - $previousConsumption;
             }
 
             $costs = $consumption * $costs;
