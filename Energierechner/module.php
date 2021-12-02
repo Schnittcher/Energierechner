@@ -111,12 +111,16 @@ declare(strict_types=1);
 
                 $startDate = $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
                 $endDate = $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
+                IPS_LogMessage('test Key',$key);
+                IPS_LogMessage('test array_key_first',array_key_first($prices));
 
+                $previousMeterReading = 0;
                 if ($key === array_key_first($prices)) {
                     $previousMeterReading = $this->ReadPropertyFloat('PreviousMeterReading');
+                    $this->SendDebug('PreviousMeterReading', $previousMeterReading,0);
                 }
 
-                $result = $this->calculate(strtotime($startDate), strtotime($endDate), $consumptionVariableID, $previousMeterReading);
+                $result = $this->calculate(strtotime($startDate), strtotime($endDate), $consumptionVariableID, $price, $previousMeterReading);
 
                 $this->SetValue($identTotalConsumption, $result['consumption']);
                 $this->SetValue($identTotalCosts, $result['costs']);
@@ -136,6 +140,10 @@ declare(strict_types=1);
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
 
+            $this->SendDebug('calculate :: StartDate', date('d.m.Y', $startDate),0);
+            $this->SendDebug('calculate :: EndSate', date('d.m.Y', $endDate),0);
+
+            $this->SendDebug('calculate :: PreviousMeterReading', $previousMeterReading,0);
             $previousConsumption = @AC_GetLoggedValues($archiveID, $variableID, 0, $startDate, 1)[0]['Value'] - $previousMeterReading;
             $this->SendDebug('previous Consumption', $previousConsumption, 0);
 
