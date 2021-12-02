@@ -145,7 +145,7 @@ declare(strict_types=1);
 
             $this->SendDebug('calculate :: PreviousMeterReading', $previousMeterReading,0);
             //$previousConsumption = @AC_GetLoggedValues($archiveID, $variableID, 0, $startDate, 1)[0]['Value'] - $previousMeterReading;
-            $this->SendDebug('previous Consumption', $previousConsumption, 0);
+            //$this->SendDebug('previous Consumption', $previousConsumption, 0);
 
             $consumption = AC_GetLoggedValues($archiveID, $variableID, $startDate, $endDate, 1)[0]['Value'];
 
