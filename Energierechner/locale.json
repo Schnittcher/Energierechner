@@ -7,9 +7,8 @@
             "Start Date": "Startdatum",
             "End Date": "Enddatum",
             "Price Variable": "Preisvariable",
-            "Total costs": "Gesamtkosten",
+            "Total Costs": "Gesamtkosten",
             "Total costs period": "Gesamtkosten Zeitraum",
-            "Calculation from meter reading (will be deducted) (kWh) ": "Berechnung ab Zählerstand (wird abgezogen)",
             "Total consumption period": "Gesamtverbrauch Zeitraum",
             "Enable archive for variables": "Archiv für Variablen aktivieren"
         }
