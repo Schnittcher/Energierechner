@@ -11,6 +11,7 @@ declare(strict_types=1);
             $this->RegisterPropertyInteger('consumptionVariableID', 0);
 
             $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro');
+            $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity');
         }
 
         public function Destroy()
@@ -103,8 +104,6 @@ declare(strict_types=1);
 
                 $startDate = $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
                 $endDate = $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
-                IPS_LogMessage('test Key',$key);
-                IPS_LogMessage('test array_key_first',array_key_first($prices));
 
                 $result = $this->calculate(strtotime($startDate), strtotime($endDate), $consumptionVariableID, $price);
 
@@ -117,9 +116,9 @@ declare(strict_types=1);
                 $this->SendDebug('Calculation Result', json_encode($result), 0);
             }
 
-            $total = $this->calculate(0, strtotime('now'), $consumptionVariableID, $price);
-            $this->SendDebug('Total Calculation Result from Archive', json_encode($total), 0);
+            $this->SetValue('totalConsumption', $totalConsumption);
             $this->SetValue('totalCosts', $totalCosts);
+            
         }
 
         public function calculate($startDate, $endDate, $variableID, $costs)
