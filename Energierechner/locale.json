@@ -9,7 +9,7 @@
             "Price Variable": "Preisvariable",
             "Total costs": "Gesamtkosten",
             "Total costs period": "Gesamtkosten Zeitraum",
-            "Previous meter reading (kWh)": "Vorheriger Zählerstand (kWh)",
+            "Calculation from meter reading (will be deducted) (kWh) ": "Berechnung ab Zählerstand (wird abgezogen)",
             "Total consumption period": "Gesamtverbrauch Zeitraum",
             "Enable archive for variables": "Archiv für Variablen aktivieren"
         }
