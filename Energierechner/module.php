@@ -43,8 +43,8 @@ declare(strict_types=1);
                 $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
                 $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
 
-                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro');
-                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity');
+                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', 2);
+                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', 2);
 
                 $variableIdents[] = $identTotalCosts;
                 $variableIdents[] = $identTotalConsumption;
@@ -118,7 +118,6 @@ declare(strict_types=1);
 
             $this->SetValue('totalConsumption', $totalConsumption);
             $this->SetValue('totalCosts', $totalCosts);
-            
         }
 
         private function calculate($startDate, $endDate, $variableID, $costs)
@@ -131,7 +130,7 @@ declare(strict_types=1);
             $consumption = AC_GetLoggedValues($archiveID, $variableID, $startDate, $endDate, 1)[0]['Value'];
 
             if ($startDate != 0) {
-             $consumption = $consumption - $previousConsumption;
+                $consumption = $consumption - $previousConsumption;
             }
 
             $costs = $consumption * $costs;
