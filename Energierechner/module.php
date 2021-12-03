@@ -121,7 +121,7 @@ declare(strict_types=1);
             
         }
 
-        public function calculate($startDate, $endDate, $variableID, $costs)
+        private function calculate($startDate, $endDate, $variableID, $costs)
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
 
