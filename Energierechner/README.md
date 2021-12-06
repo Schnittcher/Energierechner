@@ -15,7 +15,7 @@
    ## 2. Funktionen
 
    ```php
-   updateCalculation($InstanceID);
+   ER_updateCalculation($InstanceID);
    ```
    Mit dieser Funktion kann die Berechnung angestoßen werden.
 
