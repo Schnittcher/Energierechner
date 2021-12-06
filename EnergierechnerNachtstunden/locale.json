@@ -1,0 +1,20 @@
+{
+    "translations": {
+        "de": {
+            "Consumption variable": "Verbrauchsvariable",
+            "Prices": "Preise",
+            "Price": "Preis",            
+            "Start Date": "Startdatum",
+            "End Date": "Enddatum",
+            "Price Variable": "Preisvariable",
+            "Price Variable (Night)": "Preisvariable (Nacht)",
+            "Night Price since": "Nachtpreis ab",
+            "Night Price until": "Nachtpreis bis",
+            "Total Consumption": "Gesamtverbrauch",
+            "Total Costs": "Gesamtkosten",
+            "Total costs period": "Gesamtkosten Zeitraum",
+            "Total consumption period": "Gesamtverbrauch Zeitraum",
+            "Enable archive for variables": "Archiv für Variablen aktivieren"
+        }
+    }
+}

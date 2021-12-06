@@ -1,0 +1,12 @@
+{
+    "id": "{E02FA048-D39D-4B25-A241-9FAD43789764}",
+    "name": "EnergierechnerNachtstunden",
+    "type": 3,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "ER",
+    "url": "https://deinsmarthone.info"
+}
