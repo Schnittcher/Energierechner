@@ -1,6 +1,10 @@
 {
     "translations": {
         "de": {
+            "Active": "Aktiv",
+            "Instance is active": "Instanz ist aktiv",
+            "Instance Error": "Instanz Error",
+            "Instance is inactive": "Instanz ist inaktiv",
             "Consumption variable": "Verbrauchsvariable",
             "Periods": "Zeiträume",
             "Price": "Preis",
@@ -29,7 +33,8 @@
             "Previous Day": "Vortag",
             "Previous Week": "Vorwoche",
             "Current Month": "Aktueller Monat",
-            "Last Month": "Letzer Monat"
+            "Last Month": "Letzer Monat",
+            "Update Interval": "Aktualisierungsintervall"
         }
     }
 }

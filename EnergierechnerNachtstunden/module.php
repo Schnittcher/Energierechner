@@ -13,11 +13,15 @@ declare(strict_types=1);
             $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro', 0);
             $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity', 1);
 
+            $this->RegisterPropertyBoolean('Active', true);
             $this->RegisterPropertyBoolean('Daily', false);
             $this->RegisterPropertyBoolean('PreviousDay', false);
             $this->RegisterPropertyBoolean('PreviousWeek', false);
             $this->RegisterPropertyBoolean('CurrentMonth', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
+
+            $this->RegisterPropertyInteger('UpdateInterval', 600);
+            $this->RegisterTimer('ER_UpdateCalculation', 0, 'ER_updateCalculation($_IPS[\'TARGET\']);');
 
             $this->SetBuffer('Periods', '{}');
         }
@@ -115,6 +119,16 @@ declare(strict_types=1);
                     IPS_DeleteVariable($this->GetIDForIdent($ident));
                     $this->LogMessage('Variable with ident (' . $ident . ') was deleted.', KL_NOTIFY);
                 }
+            }
+
+            //Register UpdateTimer
+            if ($this->ReadPropertyBoolean('Active')) {
+                $this->SetTimerInterval('ER_UpdateCalculation', $this->ReadPropertyInteger('UpdateInterval') * 1000);
+                $this->updateCalculation();
+                $this->SetStatus(102);
+            } else {
+                $this->SetTimerInterval('ER_UpdateCalculation', 0);
+                $this->SetStatus(104);
             }
         }
 

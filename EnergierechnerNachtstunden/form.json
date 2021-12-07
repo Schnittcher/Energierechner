@@ -1,6 +1,11 @@
 {
     "elements": [
         {
+            "type": "CheckBox",
+            "name": "Active",
+            "caption": "Active"
+        },
+        {
             "type": "SelectVariable",
             "name": "consumptionVariableID",
             "caption": "Consumption variable",
@@ -33,6 +38,11 @@
             "type": "CheckBox",
             "name": "LastMonth",
             "caption": "Last Month"
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "UpdateInterval",
+            "caption": "Update Interval"
         },
         {
             "type": "List",
@@ -151,5 +161,21 @@
             ]
         }
     ],
-    "status": []
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Instance is active"
+        },
+        {
+            "code": 200,
+            "icon": "error",
+            "caption": "Instance Error"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Instance is inactive"
+        }
+    ]
 }
