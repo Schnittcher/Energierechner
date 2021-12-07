@@ -124,35 +124,35 @@ declare(strict_types=1);
             $totalConsumption = 0;
 
             if ($this->ReadPropertyBoolean('Daily')) {
-                $result = $this->calculate2(strtotime('today 00:00'), time());
+                $result = $this->calculate(strtotime('today 00:00'), time());
                 $this->SetValue('TodayConsumption', $result['consumption']);
                 $this->SetValue('TodayCosts', $result['costs']);
             }
             if ($this->ReadPropertyBoolean('PreviousDay')) {
-                $result = $this->calculate2(strtotime('yesterday 00:00'), strtotime('yesterday 23:59'));
+                $result = $this->calculate(strtotime('yesterday 00:00'), strtotime('yesterday 23:59'));
                 $this->SetValue('PreviousDayConsumption', $result['consumption']);
                 $this->SetValue('PreviousDayCosts', $result['costs']);
             }
 
             if ($this->ReadPropertyBoolean('PreviousWeek')) {
-                $result = $this->calculate2(strtotime('last Monday'), strtotime('next Sunday 23:59:59'));
+                $result = $this->calculate(strtotime('last Monday'), strtotime('next Sunday 23:59:59'));
                 $this->SetValue('PreviousWeekConsumption', $result['consumption']);
                 $this->SetValue('PreviousWeekCosts', $result['costs']);
             }
 
             if ($this->ReadPropertyBoolean('CurrentMonth')) {
-                $result = $this->calculate2(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
+                $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
                 $this->SetValue('CurrentMonthConsumption', $result['consumption']);
                 $this->SetValue('CurrentMonthCosts', $result['costs']);
             }
 
             if ($this->ReadPropertyBoolean('CurrentMonth')) {
-                $result = $this->calculate2(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
+                $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
                 $this->SetValue('CurrentMonthConsumption', $result['consumption']);
                 $this->SetValue('CurrentMonthCosts', $result['costs']);
             }
             if ($this->ReadPropertyBoolean('LastMonth')) {
-                $result = $this->calculate2(strtotime('midnight first day of this month - 1 month'), strtotime('last day of this month 23:59:59 -1 month'));
+                $result = $this->calculate(strtotime('midnight first day of this month - 1 month'), strtotime('last day of this month 23:59:59 -1 month'));
                 $this->SetValue('LastMonthConsumption', $result['consumption']);
                 $this->SetValue('LastMonthCosts', $result['costs']);
             }
@@ -169,7 +169,7 @@ declare(strict_types=1);
                 $startDate = $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
                 $endDate = $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
 
-                $result = $this->calculate2(strtotime($startDate), strtotime($endDate));
+                $result = $this->calculate(strtotime($startDate), strtotime($endDate));
 
                 $this->SetValue($identTotalConsumption, $result['consumption']);
                 $this->SetValue($identTotalCosts, $result['costs']);
