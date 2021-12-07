@@ -7,11 +7,19 @@ declare(strict_types=1);
         {
             //Never delete this line!
             parent::Create();
-            $this->RegisterPropertyString('Prices', '[]');
+            $this->RegisterPropertyString('Periods', '[]');
             $this->RegisterPropertyInteger('consumptionVariableID', 0);
 
-            $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro');
-            $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity');
+            $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro', 0);
+            $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity', 1);
+
+            $this->RegisterPropertyBoolean('Daily', false);
+            $this->RegisterPropertyBoolean('PreviousDay', false);
+            $this->RegisterPropertyBoolean('PreviousWeek', false);
+            $this->RegisterPropertyBoolean('CurrentMonth', false);
+            $this->RegisterPropertyBoolean('LastMonth', false);
+
+            $this->SetBuffer('Periods', '{}');
         }
 
         public function Destroy()
@@ -25,13 +33,54 @@ declare(strict_types=1);
             //Never delete this line!
             parent::ApplyChanges();
 
-            $prices = json_decode($this->ReadPropertyString('Prices'), true);
+            $this->MaintainVariable('TodayCosts', $this->Translate('Daily Costs'), 2, '~Euro', 3, $this->ReadPropertyBoolean('Daily') == true);
+            $this->MaintainVariable('TodayConsumption', $this->Translate('Daily Consumption'), 2, '~Electricity', 4, $this->ReadPropertyBoolean('Daily') == true);
+
+            $this->MaintainVariable('PreviousDayCosts', $this->Translate('Previous Day Costs'), 2, '~Euro', 5, $this->ReadPropertyBoolean('PreviousDay') == true);
+            $this->MaintainVariable('PreviousDayConsumption', $this->Translate('Previous Day Consumption'), 2, '~Electricity', 6, $this->ReadPropertyBoolean('PreviousDay') == true);
+
+            $this->MaintainVariable('PreviousWeekCosts', $this->Translate('Previous Week Costs'), 2, '~Euro', 7, $this->ReadPropertyBoolean('PreviousWeek') == true);
+            $this->MaintainVariable('PreviousWeekConsumption', $this->Translate('Previous Week Consumption'), 2, '~Electricity', 8, $this->ReadPropertyBoolean('PreviousWeek') == true);
+
+            $this->MaintainVariable('CurrentMonthCosts', $this->Translate('Current Month Costs'), 2, '~Euro', 9, $this->ReadPropertyBoolean('CurrentMonth') == true);
+            $this->MaintainVariable('CurrentMonthConsumption', $this->Translate('Previous Month Consumption'), 2, '~Electricity', 10, $this->ReadPropertyBoolean('CurrentMonth') == true);
+
+            $this->MaintainVariable('LastMonthCosts', $this->Translate('Last Month Costs'), 2, '~Euro', 11, $this->ReadPropertyBoolean('LastMonth') == true);
+            $this->MaintainVariable('LastMonthConsumption', $this->Translate('Last Month Consumption'), 2, '~Electricity', 12, $this->ReadPropertyBoolean('LastMonth') == true);
+
+            $periodsList = json_decode($this->ReadPropertyString('Periods'), true);
 
             $variableIdents = [];
 
-            foreach ($prices as $key => $value) {
-                $startDate = json_decode($value['StartDate'], true);
-                $endDate = json_decode($value['EndDate'], true);
+            $periods = [];
+
+            $variablePosition = 50;
+            foreach ($periodsList as $key => $period) {
+                $startDate = json_decode($period['StartDate'], true);
+                $endDate = json_decode($period['EndDate'], true);
+
+                $nightTimeStart = json_decode($period['NightTimeStart'], true);
+                $nightTimeEnd = json_decode($period['NightTimeEnd'], true);
+
+                $priceVariableID = $period['PriceVariableID'];
+                $dayPrice = GetValue($priceVariableID);
+                $nightPrice = $dayPrice; //When no night price is set, use day price
+
+                $priceVariableNightID = 0;
+                if (array_key_exists('PriceVariableNightID', $period)) {
+                    $priceVariableNightID = $period['PriceVariableNightID'];
+                }
+                if ($priceVariableNightID != 0) {
+                    $nightPrice = GetValue($priceVariableNightID);
+                }
+
+                $preiod['startDate'] = $startDate;
+                $preiod['endDate'] = $endDate;
+                $preiod['dayPrice'] = $dayPrice;
+                $preiod['nightPrice'] = $nightPrice;
+                $preiod['nightStart'] = $nightTimeStart;
+                $preiod['nightEnd'] = $nightTimeEnd;
+                array_push($periods, $preiod);
 
                 $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
                 $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
@@ -39,12 +88,16 @@ declare(strict_types=1);
                 $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
                 $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
 
-                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', 2);
-                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', 2);
+                $variablePosition++;
+                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', $variablePosition);
+                $variablePosition++;
+                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', $variablePosition);
 
                 $variableIdents[] = $identTotalCosts;
                 $variableIdents[] = $identTotalConsumption;
             }
+
+            $this->SetBuffer('Periods', json_encode($periods));
 
             //Delete Variables when the entry in the list was deleted
             $childIDs = IPS_GetChildrenIDs($this->InstanceID);
@@ -67,46 +120,48 @@ declare(strict_types=1);
 
         public function updateCalculation()
         {
-            $consumptionVariableID = $this->ReadPropertyInteger('consumptionVariableID');
-
-            $prices = json_decode($this->ReadPropertyString('Prices'), true);
-
             $totalCosts = 0;
             $totalConsumption = 0;
 
-            $nightPrice = 0;
-            $nightTimeStart = 0;
-            $nightTimeEnd = 0;
+            if ($this->ReadPropertyBoolean('Daily')) {
+                $result = $this->calculate2(strtotime('today 00:00'), time());
+                $this->SetValue('TodayConsumption', $result['consumption']);
+                $this->SetValue('TodayCosts', $result['costs']);
+            }
+            if ($this->ReadPropertyBoolean('PreviousDay')) {
+                $result = $this->calculate2(strtotime('yesterday 00:00'), strtotime('yesterday 23:59'));
+                $this->SetValue('PreviousDayConsumption', $result['consumption']);
+                $this->SetValue('PreviousDayCosts', $result['costs']);
+            }
 
-            foreach ($prices as $key => $value) {
-                $startDate = json_decode($value['StartDate'], true);
-                $endDate = json_decode($value['EndDate'], true);
+            if ($this->ReadPropertyBoolean('PreviousWeek')) {
+                $result = $this->calculate2(strtotime('last Monday'), strtotime('next Sunday 23:59:59'));
+                $this->SetValue('PreviousWeekConsumption', $result['consumption']);
+                $this->SetValue('PreviousWeekCosts', $result['costs']);
+            }
 
-                if (array_key_exists('NightTimeStart', $value) && (array_key_exists('NightTimeEnd', $value))) {
-                    if (($value['NightTimeStart'] != null) && ($value['NightTimeEnd'] != null)) {
-                        $nightTimeStart = json_decode($value['NightTimeStart'], true);
-                        $nightTimeEnd = json_decode($value['NightTimeEnd'], true);
+            if ($this->ReadPropertyBoolean('CurrentMonth')) {
+                $result = $this->calculate2(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
+                $this->SetValue('CurrentMonthConsumption', $result['consumption']);
+                $this->SetValue('CurrentMonthCosts', $result['costs']);
+            }
 
-                        $nightTimeStartString = implode(':', $nightTimeStart);
-                        $nightTimeEndString = implode(':', $nightTimeEnd);
+            if ($this->ReadPropertyBoolean('CurrentMonth')) {
+                $result = $this->calculate2(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
+                $this->SetValue('CurrentMonthConsumption', $result['consumption']);
+                $this->SetValue('CurrentMonthCosts', $result['costs']);
+            }
+            if ($this->ReadPropertyBoolean('LastMonth')) {
+                $result = $this->calculate2(strtotime('midnight first day of this month - 1 month'), strtotime('last day of this month 23:59:59 -1 month'));
+                $this->SetValue('LastMonthConsumption', $result['consumption']);
+                $this->SetValue('LastMonthCosts', $result['costs']);
+            }
 
-                        $this->SendDebug(__FUNCTION__ . ':: Night Time', $nightTimeStartString . ' - ' . $nightTimeEndString, 0);
-                    }
-                }
-
-                $priceVariableID = $value['PriceVariableID'];
-                $dayPrice = GetValue($priceVariableID);
-
-                $priceVariableNightID = 0;
-                if (array_key_exists('PriceVariableNightID', $value)) {
-                    $priceVariableNightID = $value['PriceVariableNightID'];
-                }
-
-                if ($priceVariableNightID != 0) {
-                    $nightPrice = GetValue($priceVariableNightID);
-                } else {
-                    $nightPrice = $dayPrice;
-                }
+            //Calculate periods and total
+            $periods = json_decode($this->ReadPropertyString('Periods'), true);
+            foreach ($periods as $key => $period) {
+                $startDate = json_decode($period['StartDate'], true);
+                $endDate = json_decode($period['EndDate'], true);
 
                 $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
                 $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
@@ -114,44 +169,46 @@ declare(strict_types=1);
                 $startDate = $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
                 $endDate = $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
 
-                $result = $this->calculate(strtotime($startDate), strtotime($endDate), $consumptionVariableID, $dayPrice, $nightPrice, $nightTimeStart, $nightTimeEnd);
+                $result = $this->calculate2(strtotime($startDate), strtotime($endDate));
 
                 $this->SetValue($identTotalConsumption, $result['consumption']);
                 $this->SetValue($identTotalCosts, $result['costs']);
 
                 $totalCosts += $result['costs'];
                 $totalConsumption += $result['consumption'];
-
-                $this->SendDebug('Calculation Result', json_encode($result), 0);
             }
-
             $this->SetValue('totalConsumption', $totalConsumption);
             $this->SetValue('totalCosts', $totalCosts);
         }
 
-        private function calculate($startDate, $endDate, $variableID, $dayPrice, $nightPrice, $nightTimeStart, $nightTimeEnd)
+        public function calculate($startDate, $endDate)
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
-
+            $consumptionVariableID = $this->ReadPropertyInteger('consumptionVariableID');
             $consumption = 0;
             $costs = 0;
-            $hour = 0;
+            $hour = null;
 
-            $values = AC_GetAggregatedValues($archiveID, $variableID, 0, $startDate, $endDate, 0);
+            $values = AC_GetAggregatedValues($archiveID, $consumptionVariableID, 0, $startDate, $endDate, 0);
 
-            foreach ($values as $key => $value) {
-                $consumption += $value['Avg'];
-                $hour = date('H', $value['TimeStamp']) * 1;
-                //$this->SendDebug(__FUNCTION__ . ':: Hours: V/S/E', $hour . ' / ' . $nightTimeStart['hour'] . ' / ' . $nightTimeEnd['hour'], 0);
+            $periodBuffer = json_decode($this->GetBuffer('Periods'), true);
 
-                if ((($hour >= $nightTimeStart['hour'])) || (($hour <= $nightTimeEnd['hour']))) {
-                    $this->SendDebug(__FUNCTION__ . ':: Calculate with Night Price (Hour: ' . $hour . ')', $value['Avg'] . ' * ' . $nightPrice, 0);
-                    $costs += $value['Avg'] * $nightPrice;
-                } else {
-                    $costs += $value['Avg'] * $dayPrice;
+            foreach ($periodBuffer as $periodBufferKey => $period) {
+                $periodStartDateTimestamp = strtotime($period['startDate']['day'] . '.' . $period['startDate']['month'] . '.' . $period['startDate']['year']);
+                $periodEndDateTimeStamp = strtotime($period['endDate']['day'] . '.' . $period['endDate']['month'] . '.' . $period['endDate']['year']);
+
+                foreach ($values as $key => $value) {
+                    $hour = date('H', $value['TimeStamp']) * 1;
+                    if (($value['TimeStamp'] >= $periodStartDateTimestamp) && ($value['TimeStamp'] <= $periodEndDateTimeStamp)) {
+                        $consumption += $value['Avg'];
+                        if ((($hour >= $period['nightStart']['hour'])) || (($hour <= $period['nightEnd']['hour']))) {
+                            $costs += $value['Avg'] * $period['nightPrice'];
+                        } else {
+                            $costs += $value['Avg'] * $period['dayPrice'];
+                        }
+                    }
                 }
             }
-
             return ['consumption' => round($consumption, 2), 'costs' => round($costs, 2)];
         }
     }

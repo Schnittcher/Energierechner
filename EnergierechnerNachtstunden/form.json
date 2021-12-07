@@ -10,9 +10,34 @@
             "requiredLogging": 1
         },
         {
+            "type": "CheckBox",
+            "name": "Daily",
+            "caption": "Daily"
+        },
+        {
+            "type": "CheckBox",
+            "name": "PreviousDay",
+            "caption": "Previous Day"
+        },
+        {
+            "type": "CheckBox",
+            "name": "PreviousWeek",
+            "caption": "Previous Week"
+        },
+        {
+            "type": "CheckBox",
+            "name": "CurrentMonth",
+            "caption": "Current Month"
+        },
+        {
+            "type": "CheckBox",
+            "name": "LastMonth",
+            "caption": "Last Month"
+        },
+        {
             "type": "List",
-            "name": "Prices",
-            "caption": "Prices",
+            "name": "Periods",
+            "caption": "Periods",
             "rowCount": 8,
             "add": true,
             "delete": true,
