@@ -5,9 +5,9 @@
             "name": "consumptionVariableID",
             "caption": "Consumption variable",
             "validVariableTypes": [
-                2
+                1,2
             ],
-            "requiredLogging": 1
+            "requiredLogging": 4
         },
         {
             "type": "List",

@@ -10,9 +10,10 @@
             "name": "consumptionVariableID",
             "caption": "Consumption variable",
             "validVariableTypes": [
+                1,
                 2
             ],
-            "requiredLogging": 1
+            "requiredLogging": 4
         },
         {
             "type": "CheckBox",
