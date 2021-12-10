@@ -9,8 +9,8 @@
    
    Feld | Beschreibung
    ------------ | ----------------
-   Startdatum | Hier wir hinterlegt ab wann dieser Tarif gilt.
-   Enddatum | Hier wir hinterlegt bis wann dieser Tarif gilt.
+   Startdatum | Hier wird hinterlegt ab wann dieser Tarif gilt.
+   Enddatum | Hier wird hinterlegt bis wann dieser Tarif gilt.
    Tagespreis | Hier wird der Preis pro kWh am Tag hinterlegt.
    Nachtpreis | Hier wird der Preis pro kWh in der Nacht hinterlegt, wenn es keinen Nachttarif gibt, muss diese Variable nicht angepasst werden.
    Nachtpreis ab | Hier wird hinterlegt, ab wie viel Uhr der Nachtpreis gilt, wenn keine Nachtpreis hinterlegt wurde, wird die Uhrzeit ignoriert.
