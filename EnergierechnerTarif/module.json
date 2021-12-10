@@ -1,0 +1,18 @@
+{
+    "id": "{63472C81-7110-5151-BBE7-DEA310682B31}",
+    "name": "EnergierechnerTarif",
+    "type": 2,
+    "vendor": "Kai Schnittcher",
+    "aliases": [
+        "Energierechner Tarif"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [
+        "{632F4FF0-DBFC-1ECD-3A07-C5DADBC22052}"
+    ],
+    "implemented": [
+        "{ECE0FA26-0A62-7C11-A8D9-F1BFF84AEEB1}"
+    ],
+    "prefix": "ER",
+    "url": ""
+}

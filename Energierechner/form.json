@@ -1,62 +1,70 @@
 {
     "elements": [
         {
+            "type": "CheckBox",
+            "name": "Active",
+            "caption": "Active"
+        },
+        {
             "type": "SelectVariable",
             "name": "consumptionVariableID",
             "caption": "Consumption variable",
             "validVariableTypes": [
-                1,2
+                1,
+                2
             ],
             "requiredLogging": 4
         },
         {
-            "type": "List",
-            "name": "Prices",
-            "caption": "Prices",
-            "rowCount": 8,
-            "add": true,
-            "delete": true,
-            "columns": [
+            "type": "CheckBox",
+            "name": "Daily",
+            "caption": "Daily"
+        },
+        {
+            "type": "CheckBox",
+            "name": "PreviousDay",
+            "caption": "Previous Day"
+        },
+        {
+            "type": "CheckBox",
+            "name": "PreviousWeek",
+            "caption": "Previous Week"
+        },
+        {
+            "type": "CheckBox",
+            "name": "CurrentMonth",
+            "caption": "Current Month"
+        },
+        {
+            "type": "CheckBox",
+            "name": "LastMonth",
+            "caption": "Last Month"
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "UpdateInterval",
+            "caption": "Update Interval"
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Expert settings",
+            "items": [
                 {
-                    "caption": "Start Date",
-                    "name": "StartDate",
-                    "width": "100px",
-                    "add": {
-                        "year": 2021,
-                        "month": 1,
-                        "day": 1
-                    },
-                    "edit": {
-                        "type": "SelectDate"
-                    }
-                },
-                {
-                    "caption": "End Date",
-                    "name": "EndDate",
-                    "width": "100px",
-                    "add": {
-                        "year": 2021,
-                        "month": 1,
-                        "day": 1
-                    },
-                    "edit": {
-                        "type": "SelectDate"
-                    }
-                },
-                {
-                    "caption": "Price Variable",
-                    "name": "PriceVariableID",
-                    "width": "400px",
-                    "add": 0,
-                    "edit": {
-                        "type": "SelectVariable",
-                        "validVariableTypes": [
-                            2
-                        ]
-                    }
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "Impulse_kWhBool",
+                            "caption": "Impulse/kWh Calculation"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "Impulse_kWh",
+                            "caption": "Impulse/kWh"
+                        }
+                    ]
                 }
-            ],
-            "values": []
+            ]
         }
     ],
     "actions": [
@@ -88,5 +96,21 @@
             ]
         }
     ],
-    "status": []
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Instance is active"
+        },
+        {
+            "code": 200,
+            "icon": "error",
+            "caption": "Instance Error"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Instance is inactive"
+        }
+    ]
 }

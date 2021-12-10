@@ -1,12 +1,16 @@
 {
-    "id": "{988CC9CB-E532-DD3B-1806-74EAFB63AF6D}",
+    "id": "{E02FA048-D39D-4B25-A241-9FAD43789764}",
     "name": "Energierechner",
     "type": 3,
     "vendor": "",
     "aliases": [],
-    "parentRequirements": [],
+    "parentRequirements": [
+        "{ECE0FA26-0A62-7C11-A8D9-F1BFF84AEEB1}"
+    ],
     "childRequirements": [],
-    "implemented": [],
+    "implemented": [
+        "{632F4FF0-DBFC-1ECD-3A07-C5DADBC22052}"
+    ],
     "prefix": "ER",
     "url": "https://deinsmarthome.info/ip-symcon-module/energierechner"
 }

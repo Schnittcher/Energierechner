@@ -9,9 +9,20 @@
    
    Feld | Beschreibung
    ------------ | ----------------
-   Verbrauchsvariable | Hier wird die Variable angegeben, welche den gesamten Verbrauch enthält.
-   Preise | Hier wird für die jeweiligen Verbrauchszeiträume der Arbeitspreis als Variable hinterlegt.
-   
+   Aktiv | Mit dieser CheckBox kann die Instanz in- bzw. aktiv geschaltet werden. 
+   Verbrauchsvariable | Hier wird die Variable angegeben, welche den gesamten Verbrauch enthält, diese Variable muss als Zäher geloggt sein.
+   Täglich |Verbrauchs- und Kostenstatistik Täglich
+   Vortag | Verbrauchs- und Kostenstatistik Vortag
+   Vorwoche | Verbrauchs- und Kostenstatistik Vorwoche
+   Aktueller Monat | Verbrauchs- und Kostenstatistik aktueller Monat
+   Letzter Monat | Verbrauchs- und Kostenstatistik letzter Monat
+   Aktualisierungsintervall | Intervall, wie oft die Werte aktualisiert werden sollen.
+
+   **Experteneinstellungen** 
+   Feld | Beschreibung
+   ------------ | ----------------
+   Impulse/kWh Berechnung | Hier kann angegeben werden, wie viele Impulse eine kWh sind, falls die Zählervariable von einem Impulsezähler ist.
+      
    ## 2. Funktionen
 
    ```php

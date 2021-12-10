@@ -22,13 +22,15 @@
 ## 2. Enthaltene Module
 
 * [Energierechner](Energierechner/README.md)
+* [EnergierechnerTarif](EnergierechnerTarif/README.md)
 
 ## 3. Installation
 Installation über den IP-Symcon Module Store.
 
 ## 4. Konfiguration in IP-Symcon
 
-Die weitere Dokumentation bitte dem einzelnen Modulen entnehmen.
+Als erstes muss Geräteinstanz angelegt werden, dann wird die Instanz ür die Tarife automatisch angelegt.
+Die weitere Dokumentation bitte den einzelnen Modulen entnehmen.
 
 ## 5. Spenden
 

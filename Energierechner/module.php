@@ -7,11 +7,26 @@ declare(strict_types=1);
         {
             //Never delete this line!
             parent::Create();
-            $this->RegisterPropertyString('Prices', '[]');
+            $this->ConnectParent('{63472C81-7110-5151-BBE7-DEA310682B31}');
             $this->RegisterPropertyInteger('consumptionVariableID', 0);
 
-            $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro');
-            $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity');
+            $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro', 0);
+            $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity', 1);
+
+            $this->RegisterPropertyBoolean('Active', false);
+            $this->RegisterPropertyBoolean('Daily', false);
+            $this->RegisterPropertyBoolean('PreviousDay', false);
+            $this->RegisterPropertyBoolean('PreviousWeek', false);
+            $this->RegisterPropertyBoolean('CurrentMonth', false);
+            $this->RegisterPropertyBoolean('LastMonth', false);
+
+            $this->RegisterPropertyBoolean('Impulse_kWhBool', false);
+            $this->RegisterPropertyInteger('Impulse_kWh', 1000);
+
+            $this->RegisterPropertyInteger('UpdateInterval', 600);
+            $this->RegisterTimer('ER_UpdateCalculation', 0, 'ER_updateCalculation($_IPS[\'TARGET\']);');
+
+            $this->SetBuffer('Periods', '{}');
         }
 
         public function Destroy()
@@ -25,17 +40,31 @@ declare(strict_types=1);
             //Never delete this line!
             parent::ApplyChanges();
 
-            $prices = json_decode($this->ReadPropertyString('Prices'), true);
+            $this->MaintainVariable('TodayCosts', $this->Translate('Daily Costs'), 2, '~Euro', 3, $this->ReadPropertyBoolean('Daily') == true);
+            $this->MaintainVariable('TodayConsumption', $this->Translate('Daily Consumption'), 2, '~Electricity', 4, $this->ReadPropertyBoolean('Daily') == true);
 
-            if ($this->ReadPropertyInteger('consumptionVariableID') != 0) {
-                $this->RegisterMessage($this->ReadPropertyInteger('consumptionVariableID'), VM_UPDATE);
-            }
+            $this->MaintainVariable('PreviousDayCosts', $this->Translate('Previous Day Costs'), 2, '~Euro', 5, $this->ReadPropertyBoolean('PreviousDay') == true);
+            $this->MaintainVariable('PreviousDayConsumption', $this->Translate('Previous Day Consumption'), 2, '~Electricity', 6, $this->ReadPropertyBoolean('PreviousDay') == true);
+
+            $this->MaintainVariable('PreviousWeekCosts', $this->Translate('Previous Week Costs'), 2, '~Euro', 7, $this->ReadPropertyBoolean('PreviousWeek') == true);
+            $this->MaintainVariable('PreviousWeekConsumption', $this->Translate('Previous Week Consumption'), 2, '~Electricity', 8, $this->ReadPropertyBoolean('PreviousWeek') == true);
+
+            $this->MaintainVariable('CurrentMonthCosts', $this->Translate('Current Month Costs'), 2, '~Euro', 9, $this->ReadPropertyBoolean('CurrentMonth') == true);
+            $this->MaintainVariable('CurrentMonthConsumption', $this->Translate('Previous Month Consumption'), 2, '~Electricity', 10, $this->ReadPropertyBoolean('CurrentMonth') == true);
+
+            $this->MaintainVariable('LastMonthCosts', $this->Translate('Last Month Costs'), 2, '~Euro', 11, $this->ReadPropertyBoolean('LastMonth') == true);
+            $this->MaintainVariable('LastMonthConsumption', $this->Translate('Last Month Consumption'), 2, '~Electricity', 12, $this->ReadPropertyBoolean('LastMonth') == true);
 
             $variableIdents = [];
 
-            foreach ($prices as $key => $value) {
-                $startDate = json_decode($value['StartDate'], true);
-                $endDate = json_decode($value['EndDate'], true);
+            $variablePosition = 50;
+
+            $periodsList = $this->getPeriods();
+            $this->SetBuffer('Periods', json_encode($periodsList));
+
+            foreach ($periodsList as $key => $period) {
+                $startDate = $period['startDate'];
+                $endDate = $period['endDate'];
 
                 $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
                 $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
@@ -43,8 +72,10 @@ declare(strict_types=1);
                 $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
                 $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
 
-                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', 2);
-                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', 2);
+                $variablePosition++;
+                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', $variablePosition);
+                $variablePosition++;
+                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', $variablePosition);
 
                 $variableIdents[] = $identTotalCosts;
                 $variableIdents[] = $identTotalConsumption;
@@ -67,74 +98,130 @@ declare(strict_types=1);
                     $this->LogMessage('Variable with ident (' . $ident . ') was deleted.', KL_NOTIFY);
                 }
             }
-        }
 
-        public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
-        {
-            switch ($Message) {
-                case VM_UPDATE:
-                    if ($SenderID == $this->ReadPropertyInteger('consumptionVariableID')) {
-                        $this->updateCalculation();
-                    }
-                    break;
-                default:
-                    $this->LogMessage('Invalid Message ' . $Message, KL_WARNING);
-                    break;
+            //Register UpdateTimer
+            if ($this->ReadPropertyBoolean('Active')) {
+                $this->SetTimerInterval('ER_UpdateCalculation', $this->ReadPropertyInteger('UpdateInterval') * 1000);
+                $this->updateCalculation();
+                $this->SetStatus(102);
+            } else {
+                $this->SetTimerInterval('ER_UpdateCalculation', 0);
+                $this->SetStatus(104);
             }
         }
 
         public function updateCalculation()
         {
-            $consumptionVariableID = $this->ReadPropertyInteger('consumptionVariableID');
-
-            $prices = json_decode($this->ReadPropertyString('Prices'), true);
-
             $totalCosts = 0;
             $totalConsumption = 0;
 
-            foreach ($prices as $key => $value) {
-                $startDate = json_decode($value['StartDate'], true);
-                $endDate = json_decode($value['EndDate'], true);
-                $priceVariableID = $value['PriceVariableID'];
+            if ($this->ReadPropertyBoolean('Daily')) {
+                $result = $this->calculate(strtotime('today 00:00'), time());
+                $this->SetValue('TodayConsumption', $result['consumption']);
+                $this->SetValue('TodayCosts', $result['costs']);
+            }
+            if ($this->ReadPropertyBoolean('PreviousDay')) {
+                $result = $this->calculate(strtotime('yesterday 00:00'), strtotime('yesterday 23:59'));
+                $this->SetValue('PreviousDayConsumption', $result['consumption']);
+                $this->SetValue('PreviousDayCosts', $result['costs']);
+            }
+
+            if ($this->ReadPropertyBoolean('PreviousWeek')) {
+                $result = $this->calculate(strtotime('last Monday'), strtotime('next Sunday 23:59:59'));
+                $this->SetValue('PreviousWeekConsumption', $result['consumption']);
+                $this->SetValue('PreviousWeekCosts', $result['costs']);
+            }
+
+            if ($this->ReadPropertyBoolean('CurrentMonth')) {
+                $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
+                $this->SetValue('CurrentMonthConsumption', $result['consumption']);
+                $this->SetValue('CurrentMonthCosts', $result['costs']);
+            }
+
+            if ($this->ReadPropertyBoolean('CurrentMonth')) {
+                $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
+                $this->SetValue('CurrentMonthConsumption', $result['consumption']);
+                $this->SetValue('CurrentMonthCosts', $result['costs']);
+            }
+            if ($this->ReadPropertyBoolean('LastMonth')) {
+                $result = $this->calculate(strtotime('midnight first day of this month - 1 month'), strtotime('last day of this month 23:59:59 -1 month'));
+                $this->SetValue('LastMonthConsumption', $result['consumption']);
+                $this->SetValue('LastMonthCosts', $result['costs']);
+            }
+
+            //Calculate periods and total
+            //$periods = json_decode($this->ReadPropertyString('Periods'), true);
+
+            $periods = json_decode($this->GetBuffer('Periods'), true);
+
+            foreach ($periods as $key => $period) {
+                $startDate = $period['startDate'];
+                $endDate = $period['endDate'];
 
                 $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
                 $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
 
-                $price = GetValue($priceVariableID);
-
                 $startDate = $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
                 $endDate = $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
 
-                $result = $this->calculate(strtotime($startDate), strtotime($endDate), $consumptionVariableID, $price);
+                $result = $this->calculate(strtotime($startDate), strtotime($endDate));
 
                 $this->SetValue($identTotalConsumption, $result['consumption']);
                 $this->SetValue($identTotalCosts, $result['costs']);
 
                 $totalCosts += $result['costs'];
                 $totalConsumption += $result['consumption'];
-
-                $this->SendDebug('Calculation Result', json_encode($result), 0);
             }
-
             $this->SetValue('totalConsumption', $totalConsumption);
             $this->SetValue('totalCosts', $totalCosts);
         }
 
-        private function calculate($startDate, $endDate, $variableID, $costs)
+        public function calculate($startDate, $endDate)
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
+            $consumptionVariableID = $this->ReadPropertyInteger('consumptionVariableID');
+            $consumption = 0;
+            $costs = 0;
+            $hour = null;
 
-            $previousConsumption = @AC_GetLoggedValues($archiveID, $variableID, 0, $startDate, 1)[0]['Value'];
-            $this->SendDebug('previous Consumption', $previousConsumption, 0);
+            $values = AC_GetAggregatedValues($archiveID, $consumptionVariableID, 0, $startDate, $endDate, 0);
 
-            $consumption = AC_GetLoggedValues($archiveID, $variableID, $startDate, $endDate, 1)[0]['Value'];
+            $periodBuffer = json_decode($this->GetBuffer('Periods'), true);
 
-            if ($startDate != 0) {
-                $consumption = $consumption - $previousConsumption;
+            foreach ($periodBuffer as $periodBufferKey => $period) {
+                $periodStartDateTimestamp = strtotime($period['startDate']['day'] . '.' . $period['startDate']['month'] . '.' . $period['startDate']['year']);
+                $periodEndDateTimeStamp = strtotime($period['endDate']['day'] . '.' . $period['endDate']['month'] . '.' . $period['endDate']['year']);
+
+                foreach ($values as $key => $value) {
+                    $tmpValueAVG = $value['Avg'];
+
+                    if ($this->ReadPropertyBoolean('Impulse_kWhBool')) {
+                        $tmpValueAVG = $value['Avg'] / $this->ReadPropertyInteger('Impulse_kWh');
+                    }
+
+                    $hour = date('H', $value['TimeStamp']) * 1;
+                    if (($value['TimeStamp'] >= $periodStartDateTimestamp) && ($value['TimeStamp'] <= $periodEndDateTimeStamp)) {
+                        $consumption += $tmpValueAVG;
+                        if ((($hour >= $period['nightStart']['hour'])) || (($hour <= $period['nightEnd']['hour']))) {
+                            $costs += $tmpValueAVG * $period['nightPrice'];
+                        } else {
+                            $costs += $tmpValueAVG * $period['dayPrice'];
+                        }
+                    }
+                }
             }
-
-            $costs = $consumption * $costs;
-
             return ['consumption' => round($consumption, 2), 'costs' => round($costs, 2)];
+        }
+
+        private function getPeriods()
+        {
+            $Data['DataID'] = '{ECE0FA26-0A62-7C11-A8D9-F1BFF84AEEB1}';
+            $Buffer['Command'] = 'getPeriods';
+            $Data['Buffer'] = $Buffer;
+            $Data = json_encode($Data);
+
+            $result = $this->SendDataToParent($Data);
+
+            return json_decode($result, true);
         }
     }

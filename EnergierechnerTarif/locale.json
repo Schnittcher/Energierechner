@@ -1,0 +1,18 @@
+{
+    "translations": {
+        "de": {
+            "Active": "Aktiv",
+            "Instance is active": "Instanz ist aktiv",
+            "Instance Error": "Instanz Error",
+            "Instance is inactive": "Instanz ist inaktiv",
+            "Periods": "Zeiträume",
+            "Price": "Preis",
+            "Start Date": "Startdatum",
+            "End Date": "Enddatum",
+            "Day Price": "Tagespreis",
+            "Night Price": "Nachtpreis",
+            "Night Price since": "Nachtpreis ab",
+            "Night Price until": "Nachtpreis bis"
+        }
+    }
+}
