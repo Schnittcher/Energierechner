@@ -20,6 +20,9 @@ declare(strict_types=1);
             $this->RegisterPropertyBoolean('CurrentMonth', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
 
+            $this->RegisterPropertyBoolean('Impulse_kWhBool', false);
+            $this->RegisterPropertyInteger('Impulse_kWh', 1000);
+
             $this->RegisterPropertyInteger('UpdateInterval', 600);
             $this->RegisterTimer('ER_UpdateCalculation', 0, 'ER_updateCalculation($_IPS[\'TARGET\']);');
 
@@ -212,13 +215,19 @@ declare(strict_types=1);
                 $periodEndDateTimeStamp = strtotime($period['endDate']['day'] . '.' . $period['endDate']['month'] . '.' . $period['endDate']['year']);
 
                 foreach ($values as $key => $value) {
+                    $tmpValueAVG = $value['Avg'];
+
+                    if ($this->ReadPropertyBoolean('Impulse_kWhBool')) {
+                        $tmpValueAVG = $value['Avg'] / $this->ReadPropertyInteger('Impulse_kWh');
+                    }
+
                     $hour = date('H', $value['TimeStamp']) * 1;
                     if (($value['TimeStamp'] >= $periodStartDateTimestamp) && ($value['TimeStamp'] <= $periodEndDateTimeStamp)) {
-                        $consumption += $value['Avg'];
+                        $consumption += $tmpValueAVG;
                         if ((($hour >= $period['nightStart']['hour'])) || (($hour <= $period['nightEnd']['hour']))) {
-                            $costs += $value['Avg'] * $period['nightPrice'];
+                            $costs += $tmpValueAVG * $period['nightPrice'];
                         } else {
-                            $costs += $value['Avg'] * $period['dayPrice'];
+                            $costs += $tmpValueAVG * $period['dayPrice'];
                         }
                     }
                 }

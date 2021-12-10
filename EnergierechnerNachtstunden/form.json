@@ -46,6 +46,27 @@
             "caption": "Update Interval"
         },
         {
+            "type": "ExpansionPanel",
+            "caption": "Expert settings",
+            "items": [
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "Impulse_kWhBool",
+                            "caption": "Impulse/kWh Calculation"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "Impulse_kWh",
+                            "caption": "Impulse/kWh"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "type": "List",
             "name": "Periods",
             "caption": "Periods",

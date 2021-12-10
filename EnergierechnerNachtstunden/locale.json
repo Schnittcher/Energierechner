@@ -34,7 +34,10 @@
             "Previous Week": "Vorwoche",
             "Current Month": "Aktueller Monat",
             "Last Month": "Letzer Monat",
-            "Update Interval": "Aktualisierungsintervall"
+            "Update Interval": "Aktualisierungsintervall",
+            "Expert settings": "Experteneinstellungen",
+            "Impulse/kWh Calculation": "Impulse/kWh Berechnung",
+            "Impulse/kWh": "Impulse/kWh"
         }
     }
 }
