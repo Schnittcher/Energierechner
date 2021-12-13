@@ -41,7 +41,7 @@
                     "add": 0.00,
                     "edit": {
                         "type": "NumberSpinner",
-                        "digits": 2,
+                        "digits": 4,
                         "suffix": " €"
                     }
                 },
@@ -52,7 +52,7 @@
                     "add": 0.00,
                     "edit": {
                         "type": "NumberSpinner",
-                        "digits": 2,
+                        "digits": 4,
                         "suffix": " €"
                     }
                 },
