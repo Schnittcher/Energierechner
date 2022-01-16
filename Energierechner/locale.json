@@ -37,7 +37,11 @@
             "Update Interval": "Aktualisierungsintervall",
             "Expert settings": "Experteneinstellungen",
             "Impulse/kWh Calculation": "Impulse/kWh Berechnung",
-            "Impulse/kWh": "Impulse/kWh"
+            "Impulse/kWh": "Impulse/kWh",
+            "Night Rate Claculation": "Nachttarif Berechnung",
+            "Monthly Aggregation (Without Night Rate)": "Monatliche Aggregation (ohne Nachttarif)",
+            "Weekly Aggregation (Without Night Rate)": "Wöchentliche Aggregation (ohne Nachttarif)",
+            "Yearly Aggregation (Without Night Rate)": "Jährliche Aggregation (ohne Nachttarif)"
         }
     }
 }

@@ -22,19 +22,6 @@
                     }
                 },
                 {
-                    "caption": "End Date",
-                    "name": "EndDate",
-                    "width": "100px",
-                    "add": {
-                        "year": 2021,
-                        "month": 12,
-                        "day": 31
-                    },
-                    "edit": {
-                        "type": "SelectDate"
-                    }
-                },
-                {
                     "caption": "Day Price",
                     "name": "DayPrice",
                     "width": "100px",

@@ -20,8 +20,13 @@ declare(strict_types=1);
             $this->RegisterPropertyBoolean('CurrentMonth', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
 
+            $this->RegisterPropertyBoolean('NightRate', false);
             $this->RegisterPropertyBoolean('Impulse_kWhBool', false);
             $this->RegisterPropertyInteger('Impulse_kWh', 1000);
+
+            $this->RegisterPropertyBoolean('MonthlyAggregation', false);
+            $this->RegisterPropertyBoolean('WeeklyAggregation', false);
+            $this->RegisterPropertyBoolean('YearlyAggregation', false);
 
             $this->RegisterPropertyInteger('UpdateInterval', 600);
             $this->RegisterTimer('ER_UpdateCalculation', 0, 'ER_updateCalculation($_IPS[\'TARGET\']);');
@@ -57,46 +62,8 @@ declare(strict_types=1);
 
             $variableIdents = [];
 
-            $variablePosition = 50;
-
-            $periodsList = $this->getPeriods();
-            $this->SetBuffer('Periods', json_encode($periodsList));
-
-            foreach ($periodsList as $key => $period) {
-                $startDate = $period['startDate'];
-                $endDate = $period['endDate'];
-
-                $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
-                $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
-
-                $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' - ' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
-                $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
-
-                $variablePosition++;
-                $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', $variablePosition);
-                $variablePosition++;
-                $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', $variablePosition);
-
-                $variableIdents[] = $identTotalCosts;
-                $variableIdents[] = $identTotalConsumption;
-            }
-
-            //Delete Variables when the entry in the list was deleted
-            $childIDs = IPS_GetChildrenIDs($this->InstanceID);
-            $variableInstanceIdents = [];
-            foreach ($childIDs as $childID) {
-                $object = IPS_GetObject($childID);
-                if ($object['ObjectType'] == 2) {
-                    if ((strpos($object['ObjectIdent'], 'Total_costs_period') === 0) || (strpos($object['ObjectIdent'], 'Total_consumption_period') === 0)) {
-                        $variableInstanceIdents[] = $object['ObjectIdent'];
-                    }
-                }
-            }
-            foreach ($variableInstanceIdents as $key => $ident) {
-                if (!in_array($ident, $variableIdents)) {
-                    IPS_DeleteVariable($this->GetIDForIdent($ident));
-                    $this->LogMessage('Variable with ident (' . $ident . ') was deleted.', KL_NOTIFY);
-                }
+            if ($this->HasActiveParent()) {
+                $this->updateCalculation();
             }
 
             //Register UpdateTimer
@@ -112,8 +79,51 @@ declare(strict_types=1);
 
         public function updateCalculation()
         {
+            $aggregationTyp = 0;
+            $variablePosition = 50;
             $totalCosts = 0;
             $totalConsumption = 0;
+
+            if ($this->HasActiveParent()) {
+                $periodsList = $this->getPeriods();
+                $this->SetBuffer('Periods', json_encode($periodsList));
+
+                foreach ($periodsList as $key => $period) {
+                    $startDate = $period['startDate'];
+
+                    $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
+                    $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
+                    $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variablePosition++;
+                    $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', $variablePosition);
+                    $variablePosition++;
+                    $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', $variablePosition);
+
+                    $variableIdents[] = $identTotalCosts;
+                    $variableIdents[] = $identTotalConsumption;
+                }
+
+                //Delete Variables when the entry in the list was deleted
+                $childIDs = IPS_GetChildrenIDs($this->InstanceID);
+                $variableInstanceIdents = [];
+                foreach ($childIDs as $childID) {
+                    $object = IPS_GetObject($childID);
+                    if ($object['ObjectType'] == 2) {
+                        if ((strpos($object['ObjectIdent'], 'Total_costs_period') === 0) || (strpos($object['ObjectIdent'], 'Total_consumption_period') === 0)) {
+                            $variableInstanceIdents[] = $object['ObjectIdent'];
+                        }
+                    }
+                }
+                foreach ($variableInstanceIdents as $key => $ident) {
+                    if (!in_array($ident, $variableIdents)) {
+                        IPS_DeleteVariable($this->GetIDForIdent($ident));
+                        $this->LogMessage('Variable with ident (' . $ident . ') was deleted.', KL_NOTIFY);
+                    }
+                }
+            }
 
             if ($this->ReadPropertyBoolean('Daily')) {
                 $result = $this->calculate(strtotime('today 00:00'), time());
@@ -127,56 +137,65 @@ declare(strict_types=1);
             }
 
             if ($this->ReadPropertyBoolean('PreviousWeek')) {
-                $result = $this->calculate(strtotime('last Monday'), strtotime('next Sunday 23:59:59'));
+                if ($this->ReadPropertyBoolean('WeeklyAggregation')) {
+                    $aggregationTyp = 2;
+                }
+                $result = $this->calculate(strtotime('last Monday'), strtotime('next Sunday 23:59:59'), $aggregationTyp);
                 $this->SetValue('PreviousWeekConsumption', $result['consumption']);
                 $this->SetValue('PreviousWeekCosts', $result['costs']);
             }
 
             if ($this->ReadPropertyBoolean('CurrentMonth')) {
-                $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
-                $this->SetValue('CurrentMonthConsumption', $result['consumption']);
-                $this->SetValue('CurrentMonthCosts', $result['costs']);
-            }
-
-            if ($this->ReadPropertyBoolean('CurrentMonth')) {
-                $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'));
+                if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
+                    $aggregationTyp = 3;
+                }
+                $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'), $aggregationTyp);
                 $this->SetValue('CurrentMonthConsumption', $result['consumption']);
                 $this->SetValue('CurrentMonthCosts', $result['costs']);
             }
             if ($this->ReadPropertyBoolean('LastMonth')) {
-                $result = $this->calculate(strtotime('midnight first day of this month - 1 month'), strtotime('last day of this month 23:59:59 -1 month'));
+                if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
+                    $aggregationTyp = 3;
+                }
+                $result = $this->calculate(strtotime('midnight first day of this month - 1 month'), strtotime('last day of this month 23:59:59 -1 month'), $aggregationTyp);
                 $this->SetValue('LastMonthConsumption', $result['consumption']);
                 $this->SetValue('LastMonthCosts', $result['costs']);
             }
 
-            //Calculate periods and total
-            //$periods = json_decode($this->ReadPropertyString('Periods'), true);
-
             $periods = json_decode($this->GetBuffer('Periods'), true);
 
+            $countPeriods = count($periods) - 1;
+            $i = 0;
+            if (count($periods) == 0) {
+                return;
+            }
             foreach ($periods as $key => $period) {
                 $startDate = $period['startDate'];
-                $endDate = $period['endDate'];
 
-                $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
-                $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '__' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+                $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
 
-                $startDate = $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
-                $endDate = $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
+                if ($i >= $countPeriods) {
+                    $periodEndDateTimeStamp = 0; //If no Entry in the List
+                } else {
+                    $periodEndDateTimeStamp = strtotime($periods[$i + 1]['startDate']['day'] . '.' . $periods[$i + 1]['startDate']['month'] . '.' . $periods[$i + 1]['startDate']['year']);
+                }
+                $periodStartDateTimeStamp = strtotime($periods[$i]['startDate']['day'] . '.' . $periods[$i]['startDate']['month'] . '.' . $periods[$i]['startDate']['year']);
 
-                $result = $this->calculate(strtotime($startDate), strtotime($endDate));
+                $result = $this->calculate($periodStartDateTimeStamp, $periodEndDateTimeStamp);
 
                 $this->SetValue($identTotalConsumption, $result['consumption']);
                 $this->SetValue($identTotalCosts, $result['costs']);
 
                 $totalCosts += $result['costs'];
                 $totalConsumption += $result['consumption'];
+                $i++;
             }
             $this->SetValue('totalConsumption', $totalConsumption);
             $this->SetValue('totalCosts', $totalCosts);
         }
 
-        public function calculate($startDate, $endDate)
+        private function calculate($startDate, $endDate, $aggregationTyp = 0)
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
             $consumptionVariableID = $this->ReadPropertyInteger('consumptionVariableID');
@@ -184,31 +203,24 @@ declare(strict_types=1);
             $costs = 0;
             $hour = null;
 
-            $values = AC_GetAggregatedValues($archiveID, $consumptionVariableID, 0, $startDate, $endDate, 0);
+            $values = AC_GetAggregatedValues($archiveID, $consumptionVariableID, $aggregationTyp, $startDate, $endDate, 0);
 
             $periodBuffer = json_decode($this->GetBuffer('Periods'), true);
 
-            foreach ($periodBuffer as $periodBufferKey => $period) {
-                $periodStartDateTimestamp = strtotime($period['startDate']['day'] . '.' . $period['startDate']['month'] . '.' . $period['startDate']['year']);
-                $periodEndDateTimeStamp = strtotime($period['endDate']['day'] . '.' . $period['endDate']['month'] . '.' . $period['endDate']['year']);
+            $this->SendDebug(__FUNCTION__ . ' :: Date', date('d.m.Y - H:i', $startDate) . ' - ' . date('d.m.Y - H:i', $endDate), 0);
+            $this->SendDebug(__FUNCTION__ . ' :: Aggregation Typ', $aggregationTyp, 0);
+            $this->SendDebug(__FUNCTION__ . ' :: Values', json_encode($values), 0);
+            $this->SendDebug(__FUNCTION__ . ' :: Periods', json_encode($periodBuffer), 0);
 
-                foreach ($values as $key => $value) {
-                    $tmpValueAVG = $value['Avg'];
+            $tmpValueAVG = 0;
+            foreach ($values as $key => $value) {
+                $tmpValueAVG = $value['Avg'];
 
-                    if ($this->ReadPropertyBoolean('Impulse_kWhBool')) {
-                        $tmpValueAVG = $value['Avg'] / $this->ReadPropertyInteger('Impulse_kWh');
-                    }
-
-                    $hour = date('H', $value['TimeStamp']) * 1;
-                    if (($value['TimeStamp'] >= $periodStartDateTimestamp) && ($value['TimeStamp'] <= $periodEndDateTimeStamp)) {
-                        $consumption += $tmpValueAVG;
-                        if ((($hour >= $period['nightStart']['hour'])) || (($hour <= $period['nightEnd']['hour']))) {
-                            $costs += $tmpValueAVG * $period['nightPrice'];
-                        } else {
-                            $costs += $tmpValueAVG * $period['dayPrice'];
-                        }
-                    }
+                if ($this->ReadPropertyBoolean('Impulse_kWhBool')) {
+                    $tmpValueAVG = $value['Avg'] / $this->ReadPropertyInteger('Impulse_kWh');
                 }
+                $consumption += $tmpValueAVG;
+                $costs += $tmpValueAVG * $this->getPrice($value['TimeStamp']);
             }
             return ['consumption' => round($consumption, 2), 'costs' => round($costs, 2)];
         }
@@ -223,5 +235,39 @@ declare(strict_types=1);
             $result = $this->SendDataToParent($Data);
 
             return json_decode($result, true);
+        }
+
+        private function getPrice($timestamp)
+        {
+            $periods = json_decode($this->GetBuffer('Periods'), true);
+
+            $countPeriods = count($periods) - 1;
+            $i = 0;
+            foreach ($periods as $periodBufferKey => $period) {
+                $periodStartDateTimestamp = strtotime($period['startDate']['day'] . '.' . $period['startDate']['month'] . '.' . $period['startDate']['year']);
+
+                if ($i >= $countPeriods) {
+                    $periodEndDateTimeStamp = time(); //If no Entry in the List
+                } else {
+                    $periodEndDateTimeStamp = strtotime($periods[$i + 1]['startDate']['day'] . '.' . $periods[$i + 1]['startDate']['month'] . '.' . $periods[$i + 1]['startDate']['year']);
+                }
+                $i++;
+
+                if ($timestamp >= $periodStartDateTimestamp && $timestamp <= $periodEndDateTimeStamp) {
+                    if ($this->ReadPropertyBoolean('NightRate')) {
+                        $valueTime = (new DateTime(date('H:i', $timestamp)))->modify('+1 day');
+                        $NightTimeStart = new DateTime($period['nightStart']['hour'] . ':' . $period['nightStart']['minute']);
+                        $NightTimeEnd = (new DateTime($period['nightEnd']['hour'] . ':' . $period['nightEnd']['minute']))->modify('+1 day');
+
+                        if ($valueTime >= $NightTimeStart && $valueTime <= $NightTimeEnd) {
+                            return $period['nightPrice'];
+                        } else {
+                            return $period['dayPrice'];
+                        }
+                    } else {
+                        return $period['dayPrice'];
+                    }
+                }
+            }
         }
     }

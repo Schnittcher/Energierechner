@@ -39,13 +39,12 @@ declare(strict_types=1);
             return;
         }
 
-        private function getPeriods()
+        public function getPeriods()
         {
             $periodsList = json_decode($this->ReadPropertyString('Periods'), true);
             $periods = [];
             foreach ($periodsList as $key => $period) {
                 $startDate = json_decode($period['StartDate'], true);
-                $endDate = json_decode($period['EndDate'], true);
 
                 $nightTimeStart = json_decode($period['NightTimeStart'], true);
                 $nightTimeEnd = json_decode($period['NightTimeEnd'], true);
@@ -57,14 +56,22 @@ declare(strict_types=1);
                     $nightPrice = $period['NightPrice'];
                 }
 
-                $preiod['startDate'] = $startDate;
-                $preiod['endDate'] = $endDate;
-                $preiod['dayPrice'] = $dayPrice;
-                $preiod['nightPrice'] = $nightPrice;
-                $preiod['nightStart'] = $nightTimeStart;
-                $preiod['nightEnd'] = $nightTimeEnd;
-                array_push($periods, $preiod);
+                $periodStartDateTimestamp = strtotime($startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year']);
+
+                $period['startDate'] = $startDate;
+                $period['startDateTimestamp'] = $periodStartDateTimestamp;
+                $period['dayPrice'] = $dayPrice;
+                $period['nightPrice'] = $nightPrice;
+                $period['nightStart'] = $nightTimeStart;
+                $period['nightEnd'] = $nightTimeEnd;
+                array_push($periods, $period);
             }
+
+            //Sort Array ASC
+            foreach ($periods as $key => $value) {
+                $timestamps[$key]    = $value['startDateTimestamp'];
+             }
+             array_multisort($timestamps, SORT_ASC, $periods);
             return $periods;
         }
     }

@@ -50,6 +50,11 @@
             "caption": "Expert settings",
             "items": [
                 {
+                    "type": "CheckBox",
+                    "name": "NightRate",
+                    "caption": "Night Rate Claculation"
+                },
+                {
                     "type": "RowLayout",
                     "items": [
                         {
@@ -63,6 +68,21 @@
                             "caption": "Impulse/kWh"
                         }
                     ]
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "MonthlyAggregation",
+                    "caption": "Monthly Aggregation (Without Night Rate)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "WeeklyAggregation",
+                    "caption": "Weekly Aggregation (Without Night Rate)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "YearlyAggregation",
+                    "caption": "Yearly Aggregation (Without Night Rate)"
                 }
             ]
         }
