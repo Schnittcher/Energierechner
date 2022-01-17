@@ -50,6 +50,7 @@ declare(strict_types=1);
                 $nightTimeEnd = json_decode($period['NightTimeEnd'], true);
 
                 $dayPrice = $period['DayPrice'];
+                $advancePayment = $period['AdvancePayment'];
                 $basePrice = $period['BasePrice'];
                 $nightPrice = $dayPrice; //When no night price is set, use day price
 
@@ -62,6 +63,7 @@ declare(strict_types=1);
                 $period['startDate'] = $startDate;
                 $period['startDateTimestamp'] = $periodStartDateTimestamp;
                 $period['dayPrice'] = $dayPrice;
+                $period['advancePayment'] = $advancePayment;
                 $period['basePrice'] = $basePrice;
                 $period['nightPrice'] = $nightPrice;
                 $period['nightStart'] = $nightTimeStart;

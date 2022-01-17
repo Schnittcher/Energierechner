@@ -17,6 +17,11 @@
         },
         {
             "type": "CheckBox",
+            "name": "Balance",
+            "caption": "Balance"
+        },
+        {
+            "type": "CheckBox",
             "name": "Daily",
             "caption": "Daily"
         },

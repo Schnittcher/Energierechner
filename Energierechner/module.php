@@ -14,6 +14,7 @@ declare(strict_types=1);
             $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity', 1);
 
             $this->RegisterPropertyBoolean('Active', false);
+            $this->RegisterPropertyBoolean('Balance', false);
             $this->RegisterPropertyBoolean('Daily', false);
             $this->RegisterPropertyBoolean('PreviousDay', false);
             $this->RegisterPropertyBoolean('PreviousWeek', false);
@@ -187,7 +188,18 @@ declare(strict_types=1);
                 $this->SendDebug(__FUNCTION__ . ' :: Base Price', $period['basePrice'], 0);
 
                 $this->SetValue($identTotalConsumption, $result['consumption']);
-                $this->SetValue($identTotalCosts, ($result['costs'] + $period['basePrice']));
+
+                $totalPeriodCosts = ($result['costs'] + $period['basePrice']);
+                $this->SetValue($identTotalCosts, $totalPeriodCosts);
+
+                //Balance
+                $variableNameBalance = $this->Translate('Balance period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
+                $identBalancePeriod = 'Balance_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+                $this->MaintainVariable($identBalancePeriod, $variableNameBalance, 2, '~Euro', 3, $this->ReadPropertyBoolean('Balance') == true);
+                if ($this->ReadPropertyBoolean('Balance')) {
+                    $balance = ($period['advancePayment'] * 12) - $totalPeriodCosts;
+                    $this->SetValue($identBalancePeriod, $balance);
+                }
 
                 $totalCosts += $result['costs'];
                 $totalConsumption += $result['consumption'];
