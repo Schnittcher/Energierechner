@@ -90,6 +90,14 @@
                     "edit": {
                         "type": "SelectTime"
                     }
+                },
+                {
+                    "caption": "Electricity suppliers",
+                    "name": "ElectricitySuppliers",
+                    "width": "150px",
+                    "edit": {
+                        "type": "ValidationTextBox"
+                    }
                 }
             ],
             "values": []

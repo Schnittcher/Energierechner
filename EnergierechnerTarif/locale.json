@@ -14,7 +14,8 @@
             "Base Price": "Grundpreis",
             "Night Price": "Nachtpreis",
             "Night Price since": "Nachtpreis ab",
-            "Night Price until": "Nachtpreis bis"
+            "Night Price until": "Nachtpreis bis",
+            "Electricity suppliers": "Stromanbieter"
         }
     }
 }
