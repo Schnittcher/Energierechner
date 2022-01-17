@@ -184,8 +184,10 @@ declare(strict_types=1);
 
                 $result = $this->calculate($periodStartDateTimeStamp, $periodEndDateTimeStamp);
 
+                $this->SendDebug(__FUNCTION__ . ' :: Base Price', $period['basePrice'], 0);
+
                 $this->SetValue($identTotalConsumption, $result['consumption']);
-                $this->SetValue($identTotalCosts, $result['costs']);
+                $this->SetValue($identTotalCosts, ($result['costs'] + $period['basePrice']));
 
                 $totalCosts += $result['costs'];
                 $totalConsumption += $result['consumption'];

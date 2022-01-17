@@ -33,6 +33,17 @@
                     }
                 },
                 {
+                    "caption": "Base Price",
+                    "name": "BasePrice",
+                    "width": "100px",
+                    "add": 0.00,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 2,
+                        "suffix": " €"
+                    }
+                },
+                {
                     "caption": "Night Price",
                     "name": "NightPrice",
                     "width": "100px",
