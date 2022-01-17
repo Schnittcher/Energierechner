@@ -95,6 +95,7 @@
                     "caption": "Electricity suppliers",
                     "name": "ElectricitySuppliers",
                     "width": "150px",
+                    "add": "",
                     "edit": {
                         "type": "ValidationTextBox"
                     }
