@@ -80,6 +80,10 @@ declare(strict_types=1);
 
         public function updateCalculation()
         {
+            if ($this->ReadPropertyInteger('consumptionVariableID' == 0)) {
+                return false;
+            }
+
             $aggregationTyp = 0;
             $variablePosition = 50;
             $totalCosts = 0;
