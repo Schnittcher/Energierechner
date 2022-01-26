@@ -80,7 +80,7 @@ declare(strict_types=1);
 
         public function updateCalculation()
         {
-            if ($this->ReadPropertyInteger('consumptionVariableID' == 0)) {
+            if ($this->ReadPropertyInteger('consumptionVariableID') == 0) {
                 return false;
             }
 
