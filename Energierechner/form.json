@@ -6,14 +6,26 @@
             "caption": "Active"
         },
         {
-            "type": "SelectVariable",
-            "name": "consumptionVariableID",
-            "caption": "Consumption variable",
-            "validVariableTypes": [
-                1,
-                2
-            ],
-            "requiredLogging": 4
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "SelectVariable",
+                    "name": "consumptionVariableID",
+                    "caption": "Consumption variable",
+                    "validVariableTypes": [
+                        1,
+                        2
+                    ],
+                    "requiredLogging": 4
+                },
+                { "type": "Select", "name": "ProfileType", "caption": "Einheit",
+                    "options": [
+                        { "caption": "Please select a unit.", "value": "-" },
+                        { "caption": "kWh", "value": "~Electricity" },
+                        { "caption": "m³", "value": "~Gas" }
+                    ]
+                }
+            ]
         },
         {
             "type": "CheckBox",
@@ -131,6 +143,11 @@
             "code": 200,
             "icon": "error",
             "caption": "Instance Error"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "Please select a unit."
         },
         {
             "code": 104,

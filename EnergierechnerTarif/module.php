@@ -73,9 +73,9 @@ declare(strict_types=1);
 
             //Sort Array ASC
             foreach ($periods as $key => $value) {
-                $timestamps[$key]    = $value['startDateTimestamp'];
-             }
-             array_multisort($timestamps, SORT_ASC, $periods);
+                $timestamps[$key] = $value['startDateTimestamp'];
+            }
+            array_multisort($timestamps, SORT_ASC, $periods);
             return $periods;
         }
     }

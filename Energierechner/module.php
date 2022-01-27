@@ -9,9 +9,7 @@ declare(strict_types=1);
             parent::Create();
             $this->ConnectParent('{63472C81-7110-5151-BBE7-DEA310682B31}');
             $this->RegisterPropertyInteger('consumptionVariableID', 0);
-
-            $this->RegisterVariableFloat('totalCosts', $this->Translate('Total Costs'), '~Euro', 0);
-            $this->RegisterVariableFloat('totalConsumption', $this->Translate('Total Consumption'), '~Electricity', 1);
+            $this->RegisterPropertyString('ProfileType', '-');
 
             $this->RegisterPropertyBoolean('Active', false);
             $this->RegisterPropertyBoolean('Balance', false);
@@ -46,20 +44,30 @@ declare(strict_types=1);
             //Never delete this line!
             parent::ApplyChanges();
 
+            $ProfileType = $this->ReadPropertyString('ProfileType');
+
+            if ($ProfileType == '-') {
+                $this->SetStatus(201);
+                return;
+            }
+
+            $this->MaintainVariable('totalCosts', $this->Translate('Total Costs'), 2, '~Euro', 0, $this->ReadPropertyString('ProfileType') != '-');
+            $this->MaintainVariable('totalConsumption', $this->Translate('Daily Consumption'), 2, $ProfileType, 1, $this->ReadPropertyString('ProfileType') != '-');
+
             $this->MaintainVariable('TodayCosts', $this->Translate('Daily Costs'), 2, '~Euro', 3, $this->ReadPropertyBoolean('Daily') == true);
-            $this->MaintainVariable('TodayConsumption', $this->Translate('Daily Consumption'), 2, '~Electricity', 4, $this->ReadPropertyBoolean('Daily') == true);
+            $this->MaintainVariable('TodayConsumption', $this->Translate('Daily Consumption'), 2, $ProfileType, 4, $this->ReadPropertyBoolean('Daily') == true);
 
             $this->MaintainVariable('PreviousDayCosts', $this->Translate('Previous Day Costs'), 2, '~Euro', 5, $this->ReadPropertyBoolean('PreviousDay') == true);
-            $this->MaintainVariable('PreviousDayConsumption', $this->Translate('Previous Day Consumption'), 2, '~Electricity', 6, $this->ReadPropertyBoolean('PreviousDay') == true);
+            $this->MaintainVariable('PreviousDayConsumption', $this->Translate('Previous Day Consumption'), 2, $ProfileType, 6, $this->ReadPropertyBoolean('PreviousDay') == true);
 
             $this->MaintainVariable('PreviousWeekCosts', $this->Translate('Previous Week Costs'), 2, '~Euro', 7, $this->ReadPropertyBoolean('PreviousWeek') == true);
-            $this->MaintainVariable('PreviousWeekConsumption', $this->Translate('Previous Week Consumption'), 2, '~Electricity', 8, $this->ReadPropertyBoolean('PreviousWeek') == true);
+            $this->MaintainVariable('PreviousWeekConsumption', $this->Translate('Previous Week Consumption'), 2, $ProfileType, 8, $this->ReadPropertyBoolean('PreviousWeek') == true);
 
             $this->MaintainVariable('CurrentMonthCosts', $this->Translate('Current Month Costs'), 2, '~Euro', 9, $this->ReadPropertyBoolean('CurrentMonth') == true);
-            $this->MaintainVariable('CurrentMonthConsumption', $this->Translate('Previous Month Consumption'), 2, '~Electricity', 10, $this->ReadPropertyBoolean('CurrentMonth') == true);
+            $this->MaintainVariable('CurrentMonthConsumption', $this->Translate('Previous Month Consumption'), 2, $ProfileType, 10, $this->ReadPropertyBoolean('CurrentMonth') == true);
 
             $this->MaintainVariable('LastMonthCosts', $this->Translate('Last Month Costs'), 2, '~Euro', 11, $this->ReadPropertyBoolean('LastMonth') == true);
-            $this->MaintainVariable('LastMonthConsumption', $this->Translate('Last Month Consumption'), 2, '~Electricity', 12, $this->ReadPropertyBoolean('LastMonth') == true);
+            $this->MaintainVariable('LastMonthConsumption', $this->Translate('Last Month Consumption'), 2, $ProfileType, 12, $this->ReadPropertyBoolean('LastMonth') == true);
 
             $variableIdents = [];
 
@@ -80,6 +88,7 @@ declare(strict_types=1);
 
         public function updateCalculation()
         {
+            $ProfileType = $this->ReadPropertyString('ProfileType');
             if ($this->ReadPropertyInteger('consumptionVariableID') == 0) {
                 return false;
             }
@@ -103,7 +112,7 @@ declare(strict_types=1);
                     $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
 
                     $variablePosition++;
-                    $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, '~Electricity', $variablePosition);
+                    $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, $ProfileType, $variablePosition);
                     $variablePosition++;
                     $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', $variablePosition);
 
