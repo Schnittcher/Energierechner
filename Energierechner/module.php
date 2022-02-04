@@ -248,8 +248,9 @@ declare(strict_types=1);
             }
 
             //add base price to costs
-            if ($endDate == 0) { //no EndDate, set this to next year
-                $endDate = strtotime('01.01.' . date('Y', $startDate) . ' +1 year');
+            if ($endDate == 0) {                
+                $endDate = time();
+                //$endDate = strtotime('01.01.' . date('Y', $startDate) . ' +1 year');  //no EndDate, set this to next year
             }
             $tmpStartDate = new DateTime(date('Y-m-d', $startDate));
             $tmpEndDate = new DateTime(date('Y-m-d', $endDate));
