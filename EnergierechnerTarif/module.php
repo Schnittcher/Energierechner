@@ -60,14 +60,21 @@ declare(strict_types=1);
 
                 $periodStartDateTimestamp = strtotime($startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year']);
 
+                //Calculate daily Base Price
+                $tmpStartDate = new DateTime(date('Y-m-d', $periodStartDateTimestamp));
+                $tmpEndDate = new DateTime($startDate['year'] . '-12-31');
+                $periodDays = $tmpStartDate->diff($tmpEndDate)->days;
+
                 $period['startDate'] = $startDate;
                 $period['startDateTimestamp'] = $periodStartDateTimestamp;
                 $period['dayPrice'] = $dayPrice;
                 $period['advancePayment'] = $advancePayment;
                 $period['basePrice'] = $basePrice;
+                $period['dailyBasePrice'] = $basePrice / $periodDays;
                 $period['nightPrice'] = $nightPrice;
                 $period['nightStart'] = $nightTimeStart;
                 $period['nightEnd'] = $nightTimeEnd;
+                $period['periodDays'] = $periodDays;
                 array_push($periods, $period);
             }
 

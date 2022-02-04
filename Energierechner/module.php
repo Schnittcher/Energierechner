@@ -31,6 +31,7 @@ declare(strict_types=1);
             $this->RegisterTimer('ER_UpdateCalculation', 0, 'ER_updateCalculation($_IPS[\'TARGET\']);');
 
             $this->SetBuffer('Periods', '{}');
+            $this->SetBuffer('DailyBasePrice', 0);
         }
 
         public function Destroy()
@@ -198,19 +199,15 @@ declare(strict_types=1);
 
                 $result = $this->calculate($periodStartDateTimeStamp, $periodEndDateTimeStamp);
 
-                $this->SendDebug(__FUNCTION__ . ' :: Base Price', $period['basePrice'], 0);
-
                 $this->SetValue($identTotalConsumption, $result['consumption']);
-
-                $totalPeriodCosts = ($result['costs'] + $period['basePrice']);
-                $this->SetValue($identTotalCosts, $totalPeriodCosts);
+                $this->SetValue($identTotalCosts, $result['costs']);
 
                 //Balance
                 $variableNameBalance = $this->Translate('Balance period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
                 $identBalancePeriod = 'Balance_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
                 $this->MaintainVariable($identBalancePeriod, $variableNameBalance, 2, '~Euro', 3, $this->ReadPropertyBoolean('Balance') == true);
                 if ($this->ReadPropertyBoolean('Balance')) {
-                    $balance = ($period['advancePayment'] * 12) - $totalPeriodCosts;
+                    $balance = ($period['advancePayment'] * 12) - $result['costs'];
                     $this->SetValue($identBalancePeriod, $balance);
                 }
 
@@ -249,6 +246,25 @@ declare(strict_types=1);
                 $consumption += $tmpValueAVG;
                 $costs += $tmpValueAVG * $this->getPrice($value['TimeStamp']);
             }
+
+            //add base price to costs
+            if ($endDate == 0) { //no EndDate, set this to next year
+                $endDate = strtotime('01.01.' . date('Y', $startDate) . ' +1 year');
+            }
+            $tmpStartDate = new DateTime(date('Y-m-d', $startDate));
+            $tmpEndDate = new DateTime(date('Y-m-d', $endDate));
+            $periodDays = $tmpStartDate->diff($tmpEndDate)->days;
+
+            $dailyBasePrice = $this->getDailyBasePrice($startDate);
+            $this->SendDebug(__FUNCTION__ . ' :: Daily Base Price', $dailyBasePrice, 0);
+            $this->SendDebug(__FUNCTION__ . ' :: Costs without Daily Base Price', $costs, 0);
+            if ($periodDays == 0) { //Days cannot be 0
+                $periodDays++;
+            }
+            $this->SendDebug(__FUNCTION__ . ' :: periodDays', $periodDays, 0);
+            $costs += $periodDays * $dailyBasePrice;
+            $this->SendDebug(__FUNCTION__ . ' :: Costs with Daily Base Price', $costs, 0);
+
             return ['consumption' => round($consumption, 2), 'costs' => round($costs, 2)];
         }
 
@@ -296,5 +312,26 @@ declare(strict_types=1);
                     }
                 }
             }
+        }
+
+        private function getDailyBasePrice($startDate)
+        {
+            $periods = json_decode($this->GetBuffer('Periods'), true);
+
+            $countPeriods = count($periods) - 1;
+            $i = 0;
+
+            foreach ($periods as $periodBufferKey => $period) {
+                if ($i >= $countPeriods) {
+                    $endTimestamp = time(); //If no Entry in the List
+                } else {
+                    $endTimestamp = $periods[$i + 1]['startDateTimestamp'];
+                }
+                if (($startDate >= $period['startDateTimestamp']) && ($startDate < $endTimestamp)) {
+                    return $period['dailyBasePrice'];
+                }
+                $i++;
+            }
+            return 0;
         }
     }
