@@ -72,6 +72,16 @@
                     "caption": "Night Rate Claculation"
                 },
                 {
+                    "type": "CheckBox",
+                    "name": "DailyConsumption",
+                    "caption": "Daily Consumption"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "NightlyConsumption",
+                    "caption": "Nightly Consumption"
+                },
+                {
                     "type": "RowLayout",
                     "items": [
                         {
