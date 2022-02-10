@@ -441,7 +441,7 @@ declare(strict_types=1);
                         $NightTimeEnd = (new DateTime($period['nightEnd']['hour'] . ':' . $period['nightEnd']['minute']));
                         if ($period['nightStart']['hour'] > $period['nightEnd']['hour']) {
                             $NightTimeEnd->modify('+1 day');
-                            //$valueTime->modify('+1 day');
+                            $valueTime->modify('+1 day');
                         }
                         if ($valueTime >= $NightTimeStart && $valueTime <= $NightTimeEnd) {
                             $price['price'] = $period['nightPrice'];
