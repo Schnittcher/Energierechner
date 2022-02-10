@@ -144,7 +144,7 @@ declare(strict_types=1);
                         $variableNameTotalDailyCosts = $this->Translate('costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(daytime)');
                         $identTotalDailyCosts = 'costs_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
 
-                        $variableNameTotalDailyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' '. $this->Translate('(daytime)');
+                        $variableNameTotalDailyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(daytime)');
                         $identTotalDailyConsumption = 'consumption_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
 
                         $variablePosition++;
@@ -433,24 +433,24 @@ declare(strict_types=1);
                 $i++;
 
                 if ($timestamp >= $periodStartDateTimestamp && $timestamp <= $periodEndDateTimeStamp) {
+                    $price['price'] = $period['dayPrice'];
+                    $price['type'] = 'day';
                     if ($this->ReadPropertyBoolean('NightRate') || $this->ReadPropertyBoolean('NightlyConsumption')) {
-                        $valueTime = (new DateTime(date('H:i', $timestamp)))->modify('+1 day');
+                        $valueTime = (new DateTime(date('H:i', $timestamp)));
                         $NightTimeStart = new DateTime($period['nightStart']['hour'] . ':' . $period['nightStart']['minute']);
-                        $NightTimeEnd = (new DateTime($period['nightEnd']['hour'] . ':' . $period['nightEnd']['minute']))->modify('+1 day');
-
+                        $NightTimeEnd = (new DateTime($period['nightEnd']['hour'] . ':' . $period['nightEnd']['minute']));
+                        if ($period['nightStart']['hour'] > $period['nightEnd']['hour']) {
+                            $NightTimeEnd->modify('+1 day');
+                        }
                         if ($valueTime >= $NightTimeStart && $valueTime <= $NightTimeEnd) {
                             $price['price'] = $period['nightPrice'];
                             $price['type'] = 'night';
                             return $price;
                         } else {
-                            $price['price'] = $period['dayPrice'];
-                            $price['type'] = 'day';
-                            return $price;
+                            return $price; //Dayprice
                         }
                     } else {
-                        $price['price'] = $period['dayPrice'];
-                        $price['type'] = 'day';
-                        return $price;
+                        return $price; //Dayprice
                     }
                 }
                 //return $price;
