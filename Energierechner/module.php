@@ -55,7 +55,7 @@ declare(strict_types=1);
             }
 
             $this->MaintainVariable('totalCosts', $this->Translate('Total Costs'), 2, '~Euro', 0, $this->ReadPropertyString('ProfileType') != '-');
-            $this->MaintainVariable('totalConsumption', $this->Translate('Daily Consumption'), 2, $ProfileType, 1, $this->ReadPropertyString('ProfileType') != '-');
+            $this->MaintainVariable('totalConsumption', $this->Translate('Total Consumption'), 2, $ProfileType, 1, $this->ReadPropertyString('ProfileType') != '-');
 
             $this->MaintainVariable('TodayCosts', $this->Translate('Daily Costs'), 2, '~Euro', 2, $this->ReadPropertyBoolean('Daily') == true);
             $this->MaintainVariable('TodayConsumption', $this->Translate('Daily Consumption'), 2, $ProfileType, 3, $this->ReadPropertyBoolean('Daily') == true);
@@ -441,6 +441,7 @@ declare(strict_types=1);
                         $NightTimeEnd = (new DateTime($period['nightEnd']['hour'] . ':' . $period['nightEnd']['minute']));
                         if ($period['nightStart']['hour'] > $period['nightEnd']['hour']) {
                             $NightTimeEnd->modify('+1 day');
+                            $valueTime->modify('+1 day');
                         }
                         if ($valueTime >= $NightTimeStart && $valueTime <= $NightTimeEnd) {
                             $price['price'] = $period['nightPrice'];
