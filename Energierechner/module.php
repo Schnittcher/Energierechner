@@ -11,6 +11,9 @@ declare(strict_types=1);
             $this->RegisterPropertyInteger('consumptionVariableID', 0);
             $this->RegisterPropertyString('ProfileType', '-');
 
+            $this->RegisterPropertyBoolean('IndividualPeriods', false);
+            $this->RegisterPropertyString('IndividualPeriodsList', '[]');
+
             $this->RegisterPropertyBoolean('Active', false);
             $this->RegisterPropertyBoolean('Balance', false);
             $this->RegisterPropertyBoolean('Daily', false);
@@ -19,6 +22,7 @@ declare(strict_types=1);
             $this->RegisterPropertyBoolean('CurrentMonth', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
 
+            $this->RegisterPropertyBoolean('PeriodsCalculation', false);
             $this->RegisterPropertyBoolean('NightRate', false);
             $this->RegisterPropertyBoolean('DailyConsumption', false);
             $this->RegisterPropertyBoolean('NightlyConsumption', false);
@@ -54,8 +58,13 @@ declare(strict_types=1);
                 return;
             }
 
-            $this->MaintainVariable('totalCosts', $this->Translate('Total Costs'), 2, '~Euro', 0, $this->ReadPropertyString('ProfileType') != '-');
-            $this->MaintainVariable('totalConsumption', $this->Translate('Total Consumption'), 2, $ProfileType, 1, $this->ReadPropertyString('ProfileType') != '-');
+            $this->getPeriods();
+
+            $this->MaintainVariable('totalCosts', $this->Translate('Total Costs'), 2, '~Euro', 0, $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+            $this->MaintainVariable('totalConsumption', $this->Translate('Total Consumption'), 2, $ProfileType, 1, $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+
+            $this->RegisterPeriodsVariables();
+            $this->registerIndividualPeriodsVariables();
 
             $this->MaintainVariable('TodayCosts', $this->Translate('Daily Costs'), 2, '~Euro', 2, $this->ReadPropertyBoolean('Daily') == true);
             $this->MaintainVariable('TodayConsumption', $this->Translate('Daily Consumption'), 2, $ProfileType, 3, $this->ReadPropertyBoolean('Daily') == true);
@@ -111,84 +120,13 @@ declare(strict_types=1);
 
         public function updateCalculation()
         {
-            $ProfileType = $this->ReadPropertyString('ProfileType');
             if ($this->ReadPropertyInteger('consumptionVariableID') == 0) {
                 return false;
             }
 
             $aggregationTyp = 0;
-            $variablePosition = 50;
             $totalCosts = 0;
             $totalConsumption = 0;
-
-            if ($this->HasActiveParent()) {
-                $periodsList = $this->getPeriods();
-                $this->SetBuffer('Periods', json_encode($periodsList));
-
-                foreach ($periodsList as $key => $period) {
-                    $startDate = $period['startDate'];
-
-                    $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
-                    $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-
-                    $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
-                    $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-
-                    $variablePosition++;
-                    $this->RegisterVariableFloat($identTotalConsumption, $variableNameTotalConsumption, $ProfileType, $variablePosition);
-                    $variablePosition++;
-                    $this->RegisterVariableFloat($identTotalCosts, $variableNameTotalCosts, '~Euro', $variablePosition);
-
-                    //Variable for Daily Costs and Consumption for every Period
-                    if ($this->ReadPropertyBoolean('DailyConsumption')) {
-                        $variableNameTotalDailyCosts = $this->Translate('costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(daytime)');
-                        $identTotalDailyCosts = 'costs_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-
-                        $variableNameTotalDailyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(daytime)');
-                        $identTotalDailyConsumption = 'consumption_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-
-                        $variablePosition++;
-                        $this->MaintainVariable($identTotalDailyCosts, $variableNameTotalDailyCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('DailyConsumption') == true);
-                        $variablePosition++;
-                        $this->MaintainVariable($identTotalDailyConsumption, $variableNameTotalDailyConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('DailyConsumption') == true);
-                    }
-
-                    //Variable for Nightly Costs and Consumption for every Period
-                    if ($this->ReadPropertyBoolean('NightlyConsumption')) {
-                        $variableNameTotalNightlyCosts = $this->Translate('costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(nighttime)');
-                        $identTotalNightlyCosts = 'costs_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-
-                        $variableNameTotalNightlyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . $this->Translate('(nighttime)');
-                        $identTotalNightlyConsumption = 'consumption_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-
-                        $variablePosition++;
-                        $this->MaintainVariable($identTotalNightlyCosts, $variableNameTotalNightlyCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('NightlyConsumption') == true);
-                        $variablePosition++;
-                        $this->MaintainVariable($identTotalNightlyConsumption, $variableNameTotalNightlyConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('NightlyConsumption') == true);
-                    }
-
-                    $variableIdents[] = $identTotalCosts;
-                    $variableIdents[] = $identTotalConsumption;
-                }
-
-                //Delete Variables when the entry in the list was deleted
-                $childIDs = IPS_GetChildrenIDs($this->InstanceID);
-                $variableInstanceIdents = [];
-                foreach ($childIDs as $childID) {
-                    $object = IPS_GetObject($childID);
-                    if ($object['ObjectType'] == 2) {
-                        if ((strpos($object['ObjectIdent'], 'Total_costs_period') === 0) || (strpos($object['ObjectIdent'], 'Total_consumption_period') === 0)) {
-                            $variableInstanceIdents[] = $object['ObjectIdent'];
-                        }
-                    }
-                }
-                foreach ($variableInstanceIdents as $key => $ident) {
-                    if (!in_array($ident, $variableIdents)) {
-                        IPS_DeleteVariable($this->GetIDForIdent($ident));
-                        $this->LogMessage('Variable with ident (' . $ident . ') was deleted.', KL_NOTIFY);
-                    }
-                }
-            }
 
             if ($this->ReadPropertyBoolean('Daily')) {
                 $result = $this->calculate(strtotime('today 00:00'), time());
@@ -272,64 +210,100 @@ declare(strict_types=1);
                 }
             }
 
-            $periods = json_decode($this->GetBuffer('Periods'), true);
+            if ($this->ReadPropertyBoolean('IndividualPeriods')) {
+                $individualPeriods = json_decode($this->ReadPropertyString('IndividualPeriodsList'), true);
+                foreach ($individualPeriods as $key => $individualPeriod) {
+                    $startDate = json_decode($individualPeriod['startDate'], true);
+                    $endDate = json_decode($individualPeriod['endDate'], true);
 
-            $countPeriods = count($periods) - 1;
-            $i = 0;
-            if (count($periods) == 0) {
-                return;
+                    $identTotalConsumption = 'Total_consumption_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                    $identTotalCosts = 'Total_costs_period_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+
+                    $StartTimeStamp = strtotime($startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year']);
+                    $EndTimeStamp = strtotime($endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year']);
+
+                    $result = $this->calculate($StartTimeStamp, $EndTimeStamp);
+
+                    $this->SetValue($identTotalConsumption, $result['consumption']);
+                    $this->SetValue($identTotalCosts, $result['costs']);
+
+                    if ($this->ReadPropertyBoolean('DailyConsumption')) {
+                        $identTotalDailyConsumption = 'consumption_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                        $identTotalDailyCosts = 'costs_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                        $this->SetValue($identTotalDailyConsumption, $result['dailyConsumption']);
+                        $this->SetValue($identTotalDailyCosts, $result['dailyCosts']);
+                    }
+
+                    //Set Nightly Consumption and Costs for Period
+                    if ($this->ReadPropertyBoolean('NightlyConsumption')) {
+                        $identTotalNightlyConsumption = 'consumption_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                        $identTotalNightlyCosts = 'costs_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                        $this->SetValue($identTotalNightlyConsumption, $result['nightlyConsumption']);
+                        $this->SetValue($identTotalNightlyCosts, $result['nightlyCosts']);
+                    }
+                }
             }
-            foreach ($periods as $key => $period) {
-                $startDate = $period['startDate'];
 
-                $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-                $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+            if ($this->ReadPropertyBoolean('PeriodsCalculation')) {
+                $periods = json_decode($this->GetBuffer('Periods'), true);
 
-                if ($i >= $countPeriods) {
-                    $periodEndDateTimeStamp = 0; //If no Entry in the List
-                } else {
-                    $periodEndDateTimeStamp = strtotime($periods[$i + 1]['startDate']['day'] . '.' . $periods[$i + 1]['startDate']['month'] . '.' . $periods[$i + 1]['startDate']['year']);
+                $countPeriods = count($periods) - 1;
+                $i = 0;
+                if (count($periods) == 0) {
+                    return;
                 }
-                $periodStartDateTimeStamp = strtotime($periods[$i]['startDate']['day'] . '.' . $periods[$i]['startDate']['month'] . '.' . $periods[$i]['startDate']['year']);
+                foreach ($periods as $key => $period) {
+                    $startDate = $period['startDate'];
 
-                $result = $this->calculate($periodStartDateTimeStamp, $periodEndDateTimeStamp);
+                    $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+                    $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
 
-                $this->SetValue($identTotalConsumption, $result['consumption']);
-                $this->SetValue($identTotalCosts, $result['costs']);
+                    if ($i >= $countPeriods) {
+                        $periodEndDateTimeStamp = 0; //If no Entry in the List
+                    } else {
+                        $periodEndDateTimeStamp = strtotime($periods[$i + 1]['startDate']['day'] . '.' . $periods[$i + 1]['startDate']['month'] . '.' . $periods[$i + 1]['startDate']['year']);
+                    }
+                    $periodStartDateTimeStamp = strtotime($periods[$i]['startDate']['day'] . '.' . $periods[$i]['startDate']['month'] . '.' . $periods[$i]['startDate']['year']);
 
-                //Set Daily Consumption and Costs for Period
-                if ($this->ReadPropertyBoolean('DailyConsumption')) {
-                    $identTotalDailyConsumption = 'consumption_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-                    $identTotalDailyCosts = 'costs_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+                    $result = $this->calculate($periodStartDateTimeStamp, $periodEndDateTimeStamp);
 
-                    $this->SetValue($identTotalDailyConsumption, $result['dailyConsumption']);
-                    $this->SetValue($identTotalDailyCosts, $result['dailyCosts']);
+                    $this->SetValue($identTotalConsumption, $result['consumption']);
+                    $this->SetValue($identTotalCosts, $result['costs']);
+
+                    //Set Daily Consumption and Costs for Period
+                    if ($this->ReadPropertyBoolean('DailyConsumption')) {
+                        $identTotalDailyConsumption = 'consumption_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+                        $identTotalDailyCosts = 'costs_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                        $this->SetValue($identTotalDailyConsumption, $result['dailyConsumption']);
+                        $this->SetValue($identTotalDailyCosts, $result['dailyCosts']);
+                    }
+
+                    //Set Nightly Consumption and Costs for Period
+                    if ($this->ReadPropertyBoolean('NightlyConsumption')) {
+                        $identTotalNightlyConsumption = 'consumption_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+                        $identTotalNightlyCosts = 'costs_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                        $this->SetValue($identTotalNightlyConsumption, $result['nightlyConsumption']);
+                        $this->SetValue($identTotalNightlyCosts, $result['nightlyCosts']);
+                    }
+
+                    //Balance
+                    $variableNameBalance = $this->Translate('Balance period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
+                    $identBalancePeriod = 'Balance_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+                    $this->MaintainVariable($identBalancePeriod, $variableNameBalance, 2, '~Euro', 3, $this->ReadPropertyBoolean('Balance') == true);
+                    if ($this->ReadPropertyBoolean('Balance')) {
+                        $balance = ($period['advancePayment'] * 12) - $result['costs'];
+                        $this->SetValue($identBalancePeriod, $balance);
+                    }
+
+                    $totalCosts += $result['costs'];
+                    $totalConsumption += $result['consumption'];
+                    $i++;
                 }
-
-                //Set Nightly Consumption and Costs for Period
-                if ($this->ReadPropertyBoolean('NightlyConsumption')) {
-                    $identTotalNightlyConsumption = 'consumption_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-                    $identTotalNightlyCosts = 'costs_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-
-                    $this->SetValue($identTotalNightlyConsumption, $result['nightlyConsumption']);
-                    $this->SetValue($identTotalNightlyCosts, $result['nightlyCosts']);
-                }
-
-                //Balance
-                $variableNameBalance = $this->Translate('Balance period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
-                $identBalancePeriod = 'Balance_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
-                $this->MaintainVariable($identBalancePeriod, $variableNameBalance, 2, '~Euro', 3, $this->ReadPropertyBoolean('Balance') == true);
-                if ($this->ReadPropertyBoolean('Balance')) {
-                    $balance = ($period['advancePayment'] * 12) - $result['costs'];
-                    $this->SetValue($identBalancePeriod, $balance);
-                }
-
-                $totalCosts += $result['costs'];
-                $totalConsumption += $result['consumption'];
-                $i++;
+                $this->SetValue('totalConsumption', $totalConsumption);
+                $this->SetValue('totalCosts', $totalCosts);
             }
-            $this->SetValue('totalConsumption', $totalConsumption);
-            $this->SetValue('totalCosts', $totalCosts);
         }
 
         private function calculate($startDate, $endDate, $aggregationTyp = 0)
@@ -402,14 +376,18 @@ declare(strict_types=1);
 
         private function getPeriods()
         {
+            if (!$this->HasActiveParent()) {
+                return;
+            }
             $Data['DataID'] = '{ECE0FA26-0A62-7C11-A8D9-F1BFF84AEEB1}';
             $Buffer['Command'] = 'getPeriods';
             $Data['Buffer'] = $Buffer;
             $Data = json_encode($Data);
 
             $result = $this->SendDataToParent($Data);
+            $this->SetBuffer('Periods', $result);
 
-            return json_decode($result, true);
+            //return json_decode($result, true);
         }
 
         private function getPrice($timestamp)
@@ -479,5 +457,123 @@ declare(strict_types=1);
                 $i++;
             }
             return 0;
+        }
+
+        private function registerPeriodsVariables()
+        {
+            $ProfileType = $this->ReadPropertyString('ProfileType');
+            $variablePosition = 50;
+            if ($this->HasActiveParent()) {
+                $periodsList = json_decode($this->GetBuffer('Periods'), true);
+                foreach ($periodsList as $key => $period) {
+                    $startDate = $period['startDate'];
+
+                    $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
+                    $identTotalCosts = 'Total_costs_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'];
+                    $identTotalConsumption = 'Total_consumption_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variablePosition++;
+                    $this->MaintainVariable($identTotalConsumption, $variableNameTotalConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+                    $variablePosition++;
+                    $this->MaintainVariable($identTotalCosts, $variableNameTotalCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+
+                    //Variable for Daytime Costs and Consumption for every Period
+                    $variableNameTotalDailyCosts = $this->Translate('costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(daytime)');
+                    $identTotalDailyCosts = 'costs_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variableNameTotalDailyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(daytime)');
+                    $identTotalDailyConsumption = 'consumption_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variablePosition++;
+                    $this->MaintainVariable($identTotalDailyCosts, $variableNameTotalDailyCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('DailyConsumption') == true && $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+                    $variablePosition++;
+                    $this->MaintainVariable($identTotalDailyConsumption, $variableNameTotalDailyConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('DailyConsumption') == true && $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+
+                    //Variable for Nighttime Costs and Consumption for every Period
+                    $variableNameTotalNightlyCosts = $this->Translate('costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . ' ' . $this->Translate('(nighttime)');
+                    $identTotalNightlyCosts = 'costs_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variableNameTotalNightlyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . $this->Translate('(nighttime)');
+                    $identTotalNightlyConsumption = 'consumption_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
+
+                    $variablePosition++;
+                    $this->MaintainVariable($identTotalNightlyCosts, $variableNameTotalNightlyCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('NightlyConsumption') == true && $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+                    $variablePosition++;
+                    $this->MaintainVariable($identTotalNightlyConsumption, $variableNameTotalNightlyConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('NightlyConsumption') == true && $this->ReadPropertyBoolean('PeriodsCalculation') == true);
+
+                    $variableIdents[] = $identTotalCosts;
+                    $variableIdents[] = $identTotalConsumption;
+                }
+
+                //Delete Variables when the entry in the list was deleted
+                $childIDs = IPS_GetChildrenIDs($this->InstanceID);
+                $variableInstanceIdents = [];
+                foreach ($childIDs as $childID) {
+                    $object = IPS_GetObject($childID);
+                    if ($object['ObjectType'] == 2) {
+                        if ((strpos($object['ObjectIdent'], 'Total_costs_period') === 0) || (strpos($object['ObjectIdent'], 'Total_consumption_period') === 0)) {
+                            $variableInstanceIdents[] = $object['ObjectIdent'];
+                        }
+                    }
+                }
+                foreach ($variableInstanceIdents as $key => $ident) {
+                    if (!in_array($ident, $variableIdents)) {
+                        IPS_DeleteVariable($this->GetIDForIdent($ident));
+                        $this->LogMessage('Variable with ident (' . $ident . ') was deleted.', KL_NOTIFY);
+                    }
+                }
+            }
+        }
+
+        private function registerIndividualPeriodsVariables()
+        {
+            $ProfileType = $this->ReadPropertyString('ProfileType');
+            $variablePosition = 100;
+
+            $individualPeriods = json_decode($this->ReadPropertyString('IndividualPeriodsList'), true);
+            foreach ($individualPeriods as $key => $individualPeriod) {
+                $startDate = json_decode($individualPeriod['startDate'], true);
+                $endDate = json_decode($individualPeriod['endDate'], true);
+
+                $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
+                $identTotalCosts = 'Total_costs_period_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+
+                $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
+                $identTotalConsumption = 'Total_consumption_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+
+                $variablePosition++;
+                $this->MaintainVariable($identTotalConsumption, $variableNameTotalConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('IndividualPeriods') == true);
+                $variablePosition++;
+                $this->MaintainVariable($identTotalCosts, $variableNameTotalCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('IndividualPeriods') == true);
+
+                //Variable for Daytime Costs and Consumption for every Period
+                $variableNameTotalDailyCosts = $this->Translate('costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'] . ' ' . $this->Translate('(daytime)');
+                $identTotalDailyCosts = 'costs_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+
+                $variableNameTotalDailyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'] . ' ' . $this->Translate('(daytime)');
+                $identTotalDailyConsumption = 'consumption_period_daytime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+
+                $variablePosition++;
+                $this->MaintainVariable($identTotalDailyCosts, $variableNameTotalDailyCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('DailyConsumption') == true && $this->ReadPropertyBoolean('IndividualPeriods') == true);
+                $variablePosition++;
+                $this->MaintainVariable($identTotalDailyConsumption, $variableNameTotalDailyConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('DailyConsumption') == true && $this->ReadPropertyBoolean('IndividualPeriods') == true);
+
+                //Variable for Nighttime Costs and Consumption for every Period
+                $variableNameTotalNightlyCosts = $this->Translate('costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'] . ' ' . $this->Translate('(nighttime)');
+                $identTotalNightlyCosts = 'costs_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+
+                $variableNameTotalNightlyConsumption = $this->Translate('consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'] . ' ' . $this->Translate('(nighttime)');
+                $identTotalNightlyConsumption = 'consumption_period_nighttime' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+
+                $variablePosition++;
+                $this->MaintainVariable($identTotalNightlyCosts, $variableNameTotalNightlyCosts, 2, '~Euro', $variablePosition, $this->ReadPropertyBoolean('NightlyConsumption') == true && $this->ReadPropertyBoolean('IndividualPeriods') == true);
+                $variablePosition++;
+                $this->MaintainVariable($identTotalNightlyConsumption, $variableNameTotalNightlyConsumption, 2, $ProfileType, $variablePosition, $this->ReadPropertyBoolean('NightlyConsumption') == true && $this->ReadPropertyBoolean('IndividualPeriods') == true);
+
+                $variableIdents[] = $identTotalCosts;
+                $variableIdents[] = $identTotalConsumption;
+            }
         }
     }

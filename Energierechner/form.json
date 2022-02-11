@@ -18,53 +18,134 @@
                     ],
                     "requiredLogging": 4
                 },
-                { "type": "Select", "name": "ProfileType", "caption": "Einheit",
+                {
+                    "type": "Select",
+                    "name": "ProfileType",
+                    "caption": "Einheit",
                     "options": [
-                        { "caption": "Please select a unit.", "value": "-" },
-                        { "caption": "kWh", "value": "~Electricity" },
-                        { "caption": "m³", "value": "~Gas" }
+                        {
+                            "caption": "Please select a unit.",
+                            "value": "-"
+                        },
+                        {
+                            "caption": "kWh",
+                            "value": "~Electricity"
+                        },
+                        {
+                            "caption": "m³",
+                            "value": "~Gas"
+                        }
                     ]
                 }
             ]
         },
         {
-            "type": "CheckBox",
-            "name": "Balance",
-            "caption": "Balance"
-        },
-        {
-            "type": "CheckBox",
-            "name": "Daily",
-            "caption": "Daily"
-        },
-        {
-            "type": "CheckBox",
-            "name": "PreviousDay",
-            "caption": "Previous Day"
-        },
-        {
-            "type": "CheckBox",
-            "name": "PreviousWeek",
-            "caption": "Previous Week"
-        },
-        {
-            "type": "CheckBox",
-            "name": "CurrentMonth",
-            "caption": "Current Month"
-        },
-        {
-            "type": "CheckBox",
-            "name": "LastMonth",
-            "caption": "Last Month"
-        },
-        {
-            "type": "NumberSpinner",
-            "name": "UpdateInterval",
-            "caption": "Update Interval"
+            "type": "ExpansionPanel",
+            "caption": "Calculation Periods",
+            "items": [
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "PeriodsCalculation",
+                            "caption": "Periods Claculation"
+                        },
+                        {
+                            "type": "Label",
+                            "caption": "(incl. Total Costs and Total Consumption)",
+                            "italic": true,
+                            "color": "ff0000"
+                        },
+                        {
+                            "type": "CheckBox",
+                            "name": "Balance",
+                            "caption": "Balance"
+                        },
+                        {
+                            "type": "Label",
+                            "caption": "Can only be used if the period (01/01 to 31/12) is used",
+                            "italic": true,
+                            "color": "ff0000"
+                        }
+                    ]
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "Daily",
+                    "caption": "Daily"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "PreviousDay",
+                    "caption": "Previous Day"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "PreviousWeek",
+                    "caption": "Previous Week"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "CurrentMonth",
+                    "caption": "Current Month"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "LastMonth",
+                    "caption": "Last Month"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "IndividualPeriods",
+                    "caption": "Individual Periods"
+                },
+                {
+                    "type": "List",
+                    "name": "IndividualPeriodsList",
+                    "caption": "Individual Periods",
+                    "rowCount": 5,
+                    "add": true,
+                    "delete": true,
+                    "sort": {
+                        "column": "startDate",
+                        "direction": "ascending"
+                    },
+                    "columns": [
+                        {
+                            "caption": "Start Date",
+                            "name": "startDate",
+                            "width": "200px",
+                            "add": {
+                                "year": 2021,
+                                "month": 1,
+                                "day": 1
+                            },
+                            "edit": {
+                                "type": "SelectDate"
+                            }
+                        },
+                        {
+                            "caption": "End Date",
+                            "name": "endDate",
+                            "width": "200px",
+                            "add": {
+                                "year": 2021,
+                                "month": 1,
+                                "day": 1
+                            },
+                            "edit": {
+                                "type": "SelectDate"
+                            }
+                        }
+                    ],
+                    "values": []
+                }
+            ]
         },
         {
             "type": "ExpansionPanel",
-            "caption": "Expert settings",
+            "caption": "Calculation Options",
             "items": [
                 {
                     "type": "CheckBox",
@@ -80,7 +161,13 @@
                     "type": "CheckBox",
                     "name": "NightlyConsumption",
                     "caption": "Nightly Consumption"
-                },
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Expert settings",
+            "items": [
                 {
                     "type": "RowLayout",
                     "items": [
@@ -110,6 +197,11 @@
                     "type": "CheckBox",
                     "name": "YearlyAggregation",
                     "caption": "Yearly Aggregation (Without Night Rate)"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "UpdateInterval",
+                    "caption": "Update Interval"
                 }
             ]
         }
