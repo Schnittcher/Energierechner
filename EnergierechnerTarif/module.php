@@ -82,7 +82,9 @@ declare(strict_types=1);
             foreach ($periods as $key => $value) {
                 $timestamps[$key] = $value['startDateTimestamp'];
             }
-            array_multisort($timestamps, SORT_ASC, $periods);
+            if (!empty($timestamps)) {
+                array_multisort($timestamps, SORT_ASC, $periods);
+            }
             return $periods;
         }
     }
