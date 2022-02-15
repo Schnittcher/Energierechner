@@ -434,7 +434,8 @@ declare(strict_types=1);
                         return $price; //Dayprice
                     }
                 }
-                //return $price;
+                $this->SendDebug(__FUNCTION__ . ':: Outside period (Timestamps)', 'Value: ' . $timestamp . ' Period Start: ' . $periodStartDateTimestamp . ' Period End: ' . $periodEndDateTimeStamp, 0);
+                return $price;
             }
         }
 
