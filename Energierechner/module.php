@@ -38,6 +38,8 @@ declare(strict_types=1);
 
             $this->SetBuffer('Periods', '{}');
             $this->SetBuffer('DailyBasePrice', 0);
+
+            $this->RegisterMessage($this->InstanceID, FM_CONNECT);
         }
 
         public function Destroy()
@@ -115,6 +117,19 @@ declare(strict_types=1);
             } else {
                 $this->SetTimerInterval('ER_UpdateCalculation', 0);
                 $this->SetStatus(104);
+            }
+        }
+
+        public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+        {
+            switch ($Message) {
+                case FM_CONNECT:
+                    $this->getPeriods();
+                    $this->updateCalculation();
+                    break;
+                default:
+                    $this->SendDebug(__FUNCTION__ . ':: Messages from Sender ' . $SenderID, $Message, 0);
+                    break;
             }
         }
 
