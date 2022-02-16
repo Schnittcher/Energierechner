@@ -437,6 +437,7 @@ declare(strict_types=1);
                 $this->SendDebug(__FUNCTION__ . ':: Outside period (Timestamps)', 'Value: ' . $timestamp . ' Period Start: ' . $periodStartDateTimestamp . ' Period End: ' . $periodEndDateTimeStamp, 0);
                 return $price;
             }
+            $this->SendDebug(__FUNCTION__ . ' after Fore each (Periods)', 'Value: ' . $timestamp, 0);
         }
 
         private function getDailyBasePrice($startDate)
