@@ -41,6 +41,7 @@ declare(strict_types=1);
             $this->SetBuffer('DailyBasePrice', 0);
 
             $this->RegisterMessage($this->InstanceID, FM_CONNECT);
+            $this->RegisterMessage($this->InstanceID, KR_READY);
         }
 
         public function Destroy()
@@ -132,6 +133,7 @@ declare(strict_types=1);
         {
             switch ($Message) {
                 case FM_CONNECT:
+                case KR_READY:
                     $this->getPeriods();
                     $this->updateCalculation();
                     break;
@@ -143,6 +145,10 @@ declare(strict_types=1);
 
         public function updateCalculation()
         {
+            if ($this->GetBuffer('Periods') == '{}') {
+                $this->getPeriods();
+            }
+
             if ($this->ReadPropertyInteger('consumptionVariableID') == 0) {
                 return false;
             }
