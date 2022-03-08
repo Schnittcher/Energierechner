@@ -225,7 +225,7 @@ declare(strict_types=1);
                 if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
                     $aggregationTyp = 3;
                 }
-                $result = $this->calculate(strtotime('midnight first day of january this year'), strtotime('last day of this month 23:59:59 -1 month'), $aggregationTyp);
+                $result = $this->calculate(strtotime('midnight first day of this month - 1 month'), strtotime('last day of this month 23:59:59 -1 month'), $aggregationTyp);
                 $this->SetValue('LastMonthConsumption', $result['consumption']);
                 $this->SetValue('LastMonthCosts', $result['costs']);
 
@@ -243,7 +243,7 @@ declare(strict_types=1);
                 if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
                     $aggregationTyp = 3;
                 }
-                $result = $this->calculate(strtotime('midnight first day of this month - 1 month'), strtotime('last day of december this year 23:59:59'), $aggregationTyp);
+                $result = $this->calculate(strtotime('midnight first day of january this year'), strtotime('last day of december this year 23:59:59'), $aggregationTyp);
                 $this->SetValue('CurrentYearConsumption', $result['consumption']);
                 $this->SetValue('CurrentYearCosts', $result['costs']);
 
