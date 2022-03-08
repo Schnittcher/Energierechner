@@ -83,7 +83,8 @@
             "Weekly Aggregation (Without Night Rate)": "Wöchentliche Aggregation (ohne Nachttarif)",
             "Yearly Aggregation (Without Night Rate)": "Jährliche Aggregation (ohne Nachttarif)",
             "(daytime)": "(tagsüber)",
-            "(nighttime)": "(nachtsüber)"
+            "(nighttime)": "(nachtsüber)",
+            "Add Base Price": "Addiere Grundpreis"
         }
     }
 }

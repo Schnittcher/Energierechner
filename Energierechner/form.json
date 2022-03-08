@@ -166,6 +166,11 @@
                     "type": "CheckBox",
                     "name": "NightlyConsumption",
                     "caption": "Nightly Consumption"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "AddBasePrice",
+                    "caption": "Add Base Price"
                 }
             ]
         },

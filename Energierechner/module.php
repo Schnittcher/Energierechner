@@ -29,6 +29,7 @@ declare(strict_types=1);
             $this->RegisterPropertyBoolean('NightlyConsumption', false);
             $this->RegisterPropertyBoolean('Impulse_kWhBool', false);
             $this->RegisterPropertyInteger('Impulse_kWh', 1000);
+            $this->RegisterPropertyBoolean('AddBasePrice', false);
 
             $this->RegisterPropertyBoolean('MonthlyAggregation', false);
             $this->RegisterPropertyBoolean('WeeklyAggregation', false);
@@ -400,23 +401,25 @@ declare(strict_types=1);
             }
 
             //add base price to costs
-            if ($endDate == 0) {
-                $endDate = time();
-                //$endDate = strtotime('01.01.' . date('Y', $startDate) . ' +1 year');  //no EndDate, set this to next year
-            }
-            $tmpStartDate = new DateTime(date('Y-m-d', $startDate));
-            $tmpEndDate = new DateTime(date('Y-m-d', $endDate));
-            $periodDays = $tmpStartDate->diff($tmpEndDate)->days;
+            if ($this->ReadPropertyBoolean('AddBasePrice')) {
+                if ($endDate == 0) {
+                    $endDate = time();
+                    //$endDate = strtotime('01.01.' . date('Y', $startDate) . ' +1 year');  //no EndDate, set this to next year
+                }
+                $tmpStartDate = new DateTime(date('Y-m-d', $startDate));
+                $tmpEndDate = new DateTime(date('Y-m-d', $endDate));
+                $periodDays = $tmpStartDate->diff($tmpEndDate)->days;
 
-            $dailyBasePrice = $this->getDailyBasePrice($startDate);
-            $this->SendDebug(__FUNCTION__ . ' :: Daily Base Price', $dailyBasePrice, 0);
-            $this->SendDebug(__FUNCTION__ . ' :: Costs without Daily Base Price', $costs, 0);
-            if ($periodDays == 0) { //Days cannot be 0
-                $periodDays++;
+                $dailyBasePrice = $this->getDailyBasePrice($startDate);
+                $this->SendDebug(__FUNCTION__ . ' :: Daily Base Price', $dailyBasePrice, 0);
+                $this->SendDebug(__FUNCTION__ . ' :: Costs without Daily Base Price', $costs, 0);
+                if ($periodDays == 0) { //Days cannot be 0
+                    $periodDays++;
+                }
+                $this->SendDebug(__FUNCTION__ . ' :: periodDays', $periodDays, 0);
+                $costs += $periodDays * $dailyBasePrice;
+                $this->SendDebug(__FUNCTION__ . ' :: Costs with Daily Base Price', $costs, 0);
             }
-            $this->SendDebug(__FUNCTION__ . ' :: periodDays', $periodDays, 0);
-            $costs += $periodDays * $dailyBasePrice;
-            $this->SendDebug(__FUNCTION__ . ' :: Costs with Daily Base Price', $costs, 0);
 
             return ['consumption' => round($consumption, 2), 'costs' => round($costs, 2), 'dailyConsumption' => round($dailyConsumption, 2), 'dailyCosts' => round($dailyCosts, 2), 'nightlyConsumption' => round($nightlyConsumption, 2), 'nightlyCosts' => round($nightlyCosts, 2)];
         }
