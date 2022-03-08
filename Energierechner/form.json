@@ -97,6 +97,11 @@
                 },
                 {
                     "type": "CheckBox",
+                    "name": "CurrentYear",
+                    "caption": "Current Year"
+                },
+                {
+                    "type": "CheckBox",
                     "name": "IndividualPeriods",
                     "caption": "Individual Periods"
                 },
