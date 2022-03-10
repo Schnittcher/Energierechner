@@ -25,7 +25,7 @@
                     "caption": "Day Price",
                     "name": "DayPrice",
                     "width": "100px",
-                    "add": 0.00,
+                    "add": 0.0,
                     "edit": {
                         "type": "NumberSpinner",
                         "digits": 4,
@@ -36,7 +36,7 @@
                     "caption": "Advance Payment",
                     "name": "AdvancePayment",
                     "width": "100px",
-                    "add": 0.00,
+                    "add": 0.0,
                     "edit": {
                         "type": "NumberSpinner",
                         "digits": 2,
@@ -47,7 +47,7 @@
                     "caption": "Base Price",
                     "name": "BasePrice",
                     "width": "100px",
-                    "add": 0.00,
+                    "add": 0.0,
                     "edit": {
                         "type": "NumberSpinner",
                         "digits": 2,
@@ -58,7 +58,7 @@
                     "caption": "Night Price",
                     "name": "NightPrice",
                     "width": "100px",
-                    "add": 0.00,
+                    "add": 0.0,
                     "edit": {
                         "type": "NumberSpinner",
                         "digits": 4,
