@@ -124,6 +124,13 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->MaintainVariable('CurrentYearCostsNighttime', $this->Translate('Current Year Costs (nighttime)'), 2, '~Euro', 36, $this->ReadPropertyBoolean('CurrentYear') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
             $this->MaintainVariable('CurrentYearConsumptionNighttime', $this->Translate('Current Year Consumption (nighttime)'), 2, $ProfileType, 37, $this->ReadPropertyBoolean('CurrentYear') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
 
+            $this->MaintainVariable('LastYearCosts', $this->Translate('Last Year Costs'), 2, '~Euro', 32, $this->ReadPropertyBoolean('LastYear') == true);
+            $this->MaintainVariable('LastYearConsumption', $this->Translate('Last Year Consumption'), 2, $ProfileType, 33, $this->ReadPropertyBoolean('LastYear') == true);
+            $this->MaintainVariable('LastYearCostsDaytime', $this->Translate('Last Year Costs (daytime)'), 2, '~Euro', 34, $this->ReadPropertyBoolean('LastYear') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
+            $this->MaintainVariable('LastYearConsumptionDaytime', $this->Translate('Last Year Consumption (daytime)'), 2, $ProfileType, 35, $this->ReadPropertyBoolean('LastYear') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
+            $this->MaintainVariable('LastYearCostsNighttime', $this->Translate('Last Year Costs (nighttime)'), 2, '~Euro', 36, $this->ReadPropertyBoolean('LastYear') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
+            $this->MaintainVariable('LastYearConsumptionNighttime', $this->Translate('Last Year Consumption (nighttime)'), 2, $ProfileType, 37, $this->ReadPropertyBoolean('LastYear') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
+
             $variableIdents = [];
 
             if ($this->HasActiveParent()) {
@@ -266,6 +273,24 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 if ($this->ReadPropertyBoolean('NightlyConsumption')) {
                     $this->SetValue('CurrentYearConsumptionNighttime', $result['nightlyConsumption']);
                     $this->SetValue('CurrentYearCostsNighttime', $result['nightlyCosts']);
+                }
+            }
+
+            if ($this->ReadPropertyBoolean('LastYear')) {
+                if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
+                    $aggregationTyp = 3;
+                }
+                $result = $this->calculate(strtotime('midnight first day of january last year'), strtotime('last day of december last year 23:59:59'), $aggregationTyp);
+                $this->SetValue('LastYearConsumption', $result['consumption']);
+                $this->SetValue('LastYearCosts', $result['costs']);
+
+                if ($this->ReadPropertyBoolean('DailyConsumption')) {
+                    $this->SetValue('LastYearConsumptionDaytime', $result['dailyConsumption']);
+                    $this->SetValue('LastYearCostsDaytime', $result['dailyCosts']);
+                }
+                if ($this->ReadPropertyBoolean('NightlyConsumption')) {
+                    $this->SetValue('LastYearConsumptionNighttime', $result['nightlyConsumption']);
+                    $this->SetValue('LastYearCostsNighttime', $result['nightlyCosts']);
                 }
             }
 
