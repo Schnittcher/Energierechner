@@ -41,6 +41,10 @@ declare(strict_types=1);
             $this->SetBuffer('Periods', '{}');
             $this->SetBuffer('DailyBasePrice', 0);
 
+            if (!IPS_VariableProfileExists('ER.Liter')) {
+                $this->RegisterProfileFloat('ER.Liter', 'Drops', '', ' Liter', 0, 0, 0.1, 2);
+            }
+
             $this->RegisterMessage($this->InstanceID, FM_CONNECT);
             $this->RegisterMessage($this->InstanceID, KR_READY);
         }
