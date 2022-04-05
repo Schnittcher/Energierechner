@@ -29,6 +29,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyBoolean('CurrentMonth', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
             $this->RegisterPropertyBoolean('CurrentYear', false);
+            $this->RegisterPropertyBoolean('LastYear', false);
 
             $this->RegisterPropertyBoolean('PeriodsCalculation', false);
             $this->RegisterPropertyBoolean('NightRate', false);
