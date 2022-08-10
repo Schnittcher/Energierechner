@@ -32,6 +32,10 @@
                             "value": "~Electricity"
                         },
                         {
+                            "caption": "Wh",
+                            "value": "~Electricity.Wh"
+                        },
+                        {
                             "caption": "m³",
                             "value": "~Gas"
                         },
