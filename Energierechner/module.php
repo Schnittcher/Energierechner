@@ -111,13 +111,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->MaintainVariable('CurrentMonthCostsNighttime', $this->Translate('Current Month Costs (nighttime)'), 2, '~Euro', 24, $this->ReadPropertyBoolean('CurrentMonth') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
             $this->MaintainVariable('CurrentMonthConsumptionNighttime', $this->Translate('Current Month Consumption (nighttime)'), 2, $ProfileType, 25, $this->ReadPropertyBoolean('CurrentMonth') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
 
-            $this->MaintainVariable('LastWeekCosts', $this->Translate('Last Week Costs'), 2, '~Euro', 26, $this->ReadPropertyBoolean('LastWeek') == true);
-            $this->MaintainVariable('LastWeekConsumption', $this->Translate('Last Week Consumption'), 2, $ProfileType, 27, $this->ReadPropertyBoolean('LastWeek') == true);
-            $this->MaintainVariable('LastWeekCostsDaytime', $this->Translate('Last Week Costs (daytime)'), 2, '~Euro', 28, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
-            $this->MaintainVariable('LastWeekConsumptionDaytime', $this->Translate('Last Week Consumption (daytime)'), 2, $ProfileType, 29, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
-            $this->MaintainVariable('LastWeekCostsNighttime', $this->Translate('Last Week Costs (nighttime)'), 2, '~Euro', 30, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
-            $this->MaintainVariable('LastWeekConsumptionNighttime', $this->Translate('Last Week Consumption (nighttime)'), 2, $ProfileType, 31, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
-
             $this->MaintainVariable('LastMonthCosts', $this->Translate('Last Month Costs'), 2, '~Euro', 26, $this->ReadPropertyBoolean('LastMonth') == true);
             $this->MaintainVariable('LastMonthConsumption', $this->Translate('Last Month Consumption'), 2, $ProfileType, 27, $this->ReadPropertyBoolean('LastMonth') == true);
             $this->MaintainVariable('LastMonthCostsDaytime', $this->Translate('Last Month Costs (daytime)'), 2, '~Euro', 28, $this->ReadPropertyBoolean('LastMonth') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
