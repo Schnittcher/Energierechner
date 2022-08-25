@@ -27,6 +27,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyBoolean('PreviousDay', false);
             $this->RegisterPropertyBoolean('PreviousWeek', false);
             $this->RegisterPropertyBoolean('CurrentMonth', false);
+            $this->RegisterPropertyBoolean('LastWeek', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
             $this->RegisterPropertyBoolean('CurrentYear', false);
             $this->RegisterPropertyBoolean('LastYear', false);
@@ -110,6 +111,13 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->MaintainVariable('CurrentMonthConsumptionDaytime', $this->Translate('Current Month Consumption (daytime)'), 2, $ProfileType, 23, $this->ReadPropertyBoolean('CurrentMonth') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
             $this->MaintainVariable('CurrentMonthCostsNighttime', $this->Translate('Current Month Costs (nighttime)'), 2, '~Euro', 24, $this->ReadPropertyBoolean('CurrentMonth') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
             $this->MaintainVariable('CurrentMonthConsumptionNighttime', $this->Translate('Current Month Consumption (nighttime)'), 2, $ProfileType, 25, $this->ReadPropertyBoolean('CurrentMonth') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
+
+            $this->MaintainVariable('LastWeekCosts', $this->Translate('Last Week Costs'), 2, '~Euro', 26, $this->ReadPropertyBoolean('LastWeek') == true);
+            $this->MaintainVariable('LastWeekConsumption', $this->Translate('Last Week Consumption'), 2, $ProfileType, 27, $this->ReadPropertyBoolean('LastWeek') == true);
+            $this->MaintainVariable('LastWeekCostsDaytime', $this->Translate('Last Week Costs (daytime)'), 2, '~Euro', 28, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
+            $this->MaintainVariable('LastWeekConsumptionDaytime', $this->Translate('Last Week Consumption (daytime)'), 2, $ProfileType, 29, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
+            $this->MaintainVariable('LastWeekCostsNighttime', $this->Translate('Last Week Costs (nighttime)'), 2, '~Euro', 30, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
+            $this->MaintainVariable('LastWeekConsumptionNighttime', $this->Translate('Last Week Consumption (nighttime)'), 2, $ProfileType, 31, $this->ReadPropertyBoolean('LastWeek') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
 
             $this->MaintainVariable('LastMonthCosts', $this->Translate('Last Month Costs'), 2, '~Euro', 26, $this->ReadPropertyBoolean('LastMonth') == true);
             $this->MaintainVariable('LastMonthConsumption', $this->Translate('Last Month Consumption'), 2, $ProfileType, 27, $this->ReadPropertyBoolean('LastMonth') == true);
@@ -241,6 +249,34 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $this->SetValue('CurrentMonthCostsNighttime', $result['nightlyCosts']);
                 }
             }
+
+            if ($this->ReadPropertyBoolean('LastWeek')) {
+                if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
+                    $aggregationTyp = 2;
+                }
+
+                //Letzte Woche ermitteln
+                $strCurDate = 'monday this week';
+                $prevWeek = date_create($strCurDate)->modify('-1 week');
+                $mondayLastWeek = $prevWeek->getTimestamp();
+
+                $prevWeek->modify('+7 days - 1 second');
+                $sundayLastWeek = $prevWeek->getTimestamp();
+
+                $result = $this->calculate($mondayLastWeek, $sundayLastWeek, $aggregationTyp);
+                $this->SetValue('LastWeekConsumption', $result['consumption']);
+                $this->SetValue('LastWeekCosts', $result['costs']);
+
+                if ($this->ReadPropertyBoolean('DailyConsumption')) {
+                    $this->SetValue('LastWeekConsumptionDaytime', $result['dailyConsumption']);
+                    $this->SetValue('LastWeekCostsDaytime', $result['dailyCosts']);
+                }
+                if ($this->ReadPropertyBoolean('NightlyConsumption')) {
+                    $this->SetValue('LastWeekConsumptionNighttime', $result['nightlyConsumption']);
+                    $this->SetValue('LastWeekCostsNighttime', $result['nightlyCosts']);
+                }
+            }
+
             if ($this->ReadPropertyBoolean('LastMonth')) {
                 if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
                     $aggregationTyp = 3;
