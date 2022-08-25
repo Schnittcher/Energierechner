@@ -100,11 +100,6 @@
                 },
                 {
                     "type": "CheckBox",
-                    "name": "LastWeek",
-                    "caption": "Last Week"
-                },
-                {
-                    "type": "CheckBox",
                     "name": "LastMonth",
                     "caption": "Last Month"
                 },

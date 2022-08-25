@@ -27,7 +27,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyBoolean('PreviousDay', false);
             $this->RegisterPropertyBoolean('PreviousWeek', false);
             $this->RegisterPropertyBoolean('CurrentMonth', false);
-            $this->RegisterPropertyBoolean('LastWeek', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
             $this->RegisterPropertyBoolean('CurrentYear', false);
             $this->RegisterPropertyBoolean('LastYear', false);
@@ -218,7 +217,16 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 if ($this->ReadPropertyBoolean('WeeklyAggregation')) {
                     $aggregationTyp = 2;
                 }
-                $result = $this->calculate(strtotime('last Monday'), strtotime('next Sunday 23:59:59'), $aggregationTyp);
+
+                //Letzte Woche ermitteln
+                $strCurDate = 'monday this week';
+                $prevWeek = date_create($strCurDate)->modify('-1 week');
+                $mondayLastWeek = $prevWeek->getTimestamp();
+
+                $prevWeek->modify('+7 days - 1 second');
+                $sundayLastWeek = $prevWeek->getTimestamp();
+
+                $result = $this->calculate($mondayLastWeek, $sundayLastWeek, $aggregationTyp);
                 $this->SetValue('PreviousWeekConsumption', $result['consumption']);
                 $this->SetValue('PreviousWeekCosts', $result['costs']);
 
@@ -247,33 +255,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 if ($this->ReadPropertyBoolean('NightlyConsumption')) {
                     $this->SetValue('CurrentMonthConsumptionNighttime', $result['nightlyConsumption']);
                     $this->SetValue('CurrentMonthCostsNighttime', $result['nightlyCosts']);
-                }
-            }
-
-            if ($this->ReadPropertyBoolean('LastWeek')) {
-                if ($this->ReadPropertyBoolean('MonthlyAggregation')) {
-                    $aggregationTyp = 2;
-                }
-
-                //Letzte Woche ermitteln
-                $strCurDate = 'monday this week';
-                $prevWeek = date_create($strCurDate)->modify('-1 week');
-                $mondayLastWeek = $prevWeek->getTimestamp();
-
-                $prevWeek->modify('+7 days - 1 second');
-                $sundayLastWeek = $prevWeek->getTimestamp();
-
-                $result = $this->calculate($mondayLastWeek, $sundayLastWeek, $aggregationTyp);
-                $this->SetValue('LastWeekConsumption', $result['consumption']);
-                $this->SetValue('LastWeekCosts', $result['costs']);
-
-                if ($this->ReadPropertyBoolean('DailyConsumption')) {
-                    $this->SetValue('LastWeekConsumptionDaytime', $result['dailyConsumption']);
-                    $this->SetValue('LastWeekCostsDaytime', $result['dailyCosts']);
-                }
-                if ($this->ReadPropertyBoolean('NightlyConsumption')) {
-                    $this->SetValue('LastWeekConsumptionNighttime', $result['nightlyConsumption']);
-                    $this->SetValue('LastWeekCostsNighttime', $result['nightlyCosts']);
                 }
             }
 
