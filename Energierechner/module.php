@@ -312,7 +312,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $endDate = json_decode($individualPeriod['endDate'], true);
 
                     $identTotalConsumption = 'Total_consumption_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
-                    $identTotalCosts = 'Total_costs_period_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                    $identTotalCosts = 'Total_costs_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
 
                     $StartTimeStamp = strtotime($startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year']);
                     $EndTimeStamp = strtotime($endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year']);
@@ -637,7 +637,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 $endDate = json_decode($individualPeriod['endDate'], true);
 
                 $variableNameTotalCosts = $this->Translate('Total costs period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
-                $identTotalCosts = 'Total_costs_period_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
+                $identTotalCosts = 'Total_costs_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
 
                 $variableNameTotalConsumption = $this->Translate('Total consumption period') . ' ' . $startDate['day'] . '.' . $startDate['month'] . '.' . $startDate['year'] . '-' . $endDate['day'] . '.' . $endDate['month'] . '.' . $endDate['year'];
                 $identTotalConsumption = 'Total_consumption_IndividualPeriod' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'] . '_' . $endDate['day'] . '_' . $endDate['month'] . '_' . $endDate['year'];
