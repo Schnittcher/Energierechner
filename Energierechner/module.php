@@ -39,6 +39,11 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyInteger('Impulse_kWh', 1000);
             $this->RegisterPropertyBoolean('AddBasePrice', false);
 
+            $this->RegisterPropertyBoolean('GasPriceCalculationActive', false);
+            $this->RegisterPropertyFloat('GasConversionFactor', 0);
+            $this->RegisterPropertyFloat('GasZNumber', 0);
+            $this->RegisterPropertyFloat('GasCalorificValue', 0);
+
             $this->RegisterPropertyBoolean('MonthlyAggregation', false);
             $this->RegisterPropertyBoolean('WeeklyAggregation', false);
             $this->RegisterPropertyBoolean('YearlyAggregation', false);
@@ -429,6 +434,10 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 if ($this->ReadPropertyBoolean('Impulse_kWhBool')) {
                     $tmpValueAVG = $value['Avg'] / $this->ReadPropertyInteger('Impulse_kWh');
                 }
+                if ($this->ReadPropertyBoolean('GasPriceCalculationActive')) {
+                    $tmpValueAVG = $value['Avg'] * $this->ReadPropertyFloat('GasConversionFactor') * $this->ReadPropertyFloat('GasZNumber') * $this->ReadPropertyFloat('GasCalorificValue');
+                }
+
                 $consumption += $tmpValueAVG;
                 $price = $this->getPrice($value['TimeStamp']);
                 $costs += $tmpValueAVG * $price['price'];
