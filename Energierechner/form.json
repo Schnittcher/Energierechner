@@ -200,16 +200,19 @@
                                 {
                                     "type": "NumberSpinner",
                                     "name": "GasConversionFactor",
+                                    "digits": 4,
                                     "caption": "Conversion factor"
                                 },
                                 {
                                     "type": "NumberSpinner",
                                     "name": "GasZNumber",
+                                    "digits": 4,
                                     "caption": "Z-number"
                                 },
                                 {
                                     "type": "NumberSpinner",
                                     "name": "GasCalorificValue",
+                                    "digits": 4,
                                     "caption": "Calorific value"
                                 }
                             ]
