@@ -92,10 +92,7 @@
             "(daytime)": "(tagsüber)",
             "(nighttime)": "(nachtsüber)",
             "Add Base Price": "Addiere Grundpreis",
-            "Gas price calculation (m³ to kWh)": "Gaspreis Berechnung (m³ to kWh)",
-            "Conversion factor": "Wandlerfaktor",
-            "Z-number": "Z-Zahl",
-            "Calorific value": "Brennwert"
+            "Gas price calculation (m³ to kWh)": "Gaspreis Berechnung (m³ to kWh)"
         }
     }
 }

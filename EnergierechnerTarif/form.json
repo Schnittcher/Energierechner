@@ -99,6 +99,48 @@
                     "edit": {
                         "type": "ValidationTextBox"
                     }
+                },
+                {
+                    "caption": "Gas price calculation (m³ to kWh)",
+                    "name": "GasPriceCalculationActive",
+                    "width": "150px",
+                    "add": "",
+                    "edit": {
+                        "type": "CheckBox"
+                    }
+                },
+                {
+                    "caption": "Gas Conversion factor",
+                    "name": "GasConversionFactor",
+                    "width": "150px",
+                    "add": "",
+                    "visible": true,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 4
+                    }
+                },
+                {
+                    "caption": "Gas Z-number",
+                    "name": "GasZNumber",
+                    "width": "150px",
+                    "add": "",
+                    "visible": true,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 4
+                    }
+                },
+                {
+                    "caption": "Gas Calorific value",
+                    "name": "GasCalorificValue",
+                    "width": "150px",
+                    "add": "",
+                    "visible": true,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 4
+                    }
                 }
             ],
             "values": []

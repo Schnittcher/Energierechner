@@ -40,9 +40,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyBoolean('AddBasePrice', false);
 
             $this->RegisterPropertyBoolean('GasPriceCalculationActive', false);
-            $this->RegisterPropertyFloat('GasConversionFactor', 0);
-            $this->RegisterPropertyFloat('GasZNumber', 0);
-            $this->RegisterPropertyFloat('GasCalorificValue', 0);
 
             $this->RegisterPropertyBoolean('MonthlyAggregation', false);
             $this->RegisterPropertyBoolean('WeeklyAggregation', false);
@@ -435,7 +432,9 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $tmpValueAVG = $value['Avg'] / $this->ReadPropertyInteger('Impulse_kWh');
                 }
                 if ($this->ReadPropertyBoolean('GasPriceCalculationActive')) {
-                    $tmpValueAVG = $value['Avg'] * $this->ReadPropertyFloat('GasConversionFactor') * $this->ReadPropertyFloat('GasZNumber') * $this->ReadPropertyFloat('GasCalorificValue');
+                    $gasCalculationValues = $this->getGasCalculationValues($value['TimeStamp']);
+                    //$tmpValueAVG = $value['Avg'] * $this->ReadPropertyFloat('GasConversionFactor') * $this->ReadPropertyFloat('GasZNumber') * $this->ReadPropertyFloat('GasCalorificValue');
+                    $tmpValueAVG = $value['Avg'] * $gasCalculationValues['GasConversionFactor'] * $gasCalculationValues['GasZNumber'] * $gasCalculationValues['GasCalorificValue'];
                 }
 
                 $consumption += $tmpValueAVG;
@@ -492,8 +491,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
 
             $result = $this->SendDataToParent($Data);
             $this->SetBuffer('Periods', $result);
-
-            //return json_decode($result, true);
         }
 
         private function getPrice($timestamp)
@@ -540,7 +537,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                         return $price; //Dayprice
                     }
                 }
-                //$this->SendDebug(__FUNCTION__ . ':: Outside period (Timestamps)', 'Value: ' . $timestamp . ' Period Start: ' . $periodStartDateTimestamp . ' Period End: ' . $periodEndDateTimeStamp, 0);
             }
             $this->SendDebug(__FUNCTION__ . ' after Fore each (Periods)', 'Value: ' . $timestamp, 0);
             return $price;
@@ -565,6 +561,31 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 $i++;
             }
             return 0;
+        }
+
+        private function getGasCalculationValues($startDate)
+        {
+            $periods = json_decode($this->GetBuffer('Periods'), true);
+
+            $countPeriods = count($periods) - 1;
+            $i = 0;
+
+            foreach ($periods as $periodBufferKey => $period) {
+                if ($i >= $countPeriods) {
+                    $endTimestamp = time(); //If no Entry in the List
+                } else {
+                    $endTimestamp = $periods[$i + 1]['startDateTimestamp'];
+                }
+                if (($startDate >= $period['startDateTimestamp']) && ($startDate < $endTimestamp)) {
+                    $values = [];
+                    $values['GasConversionFactor'] = $period['GasConversionFactor'];
+                    $values['GasZNumber'] = $period['GasZNumber'];
+                    $values['GasCalorificValue'] = $period['GasCalorificValue'];
+                    return $values;
+                }
+                $i++;
+            }
+            return [];
         }
 
         private function registerPeriodsVariables()

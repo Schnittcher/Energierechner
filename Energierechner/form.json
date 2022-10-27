@@ -186,38 +186,9 @@
                     "caption": "Add Base Price"
                 },
                 {
-                    "type": "ExpansionPanel",
-                    "caption": "Gas price calculation (m³ to kWh)",
-                    "items": [
-                        {
-                            "type": "RowLayout",
-                            "items": [
-                                {
-                                    "type": "CheckBox",
-                                    "name": "GasPriceCalculationActive",
-                                    "caption": "Active"
-                                },
-                                {
-                                    "type": "NumberSpinner",
-                                    "name": "GasConversionFactor",
-                                    "digits": 4,
-                                    "caption": "Conversion factor"
-                                },
-                                {
-                                    "type": "NumberSpinner",
-                                    "name": "GasZNumber",
-                                    "digits": 4,
-                                    "caption": "Z-number"
-                                },
-                                {
-                                    "type": "NumberSpinner",
-                                    "name": "GasCalorificValue",
-                                    "digits": 4,
-                                    "caption": "Calorific value"
-                                }
-                            ]
-                        }
-                    ]
+                    "type": "CheckBox",
+                    "name": "GasPriceCalculationActive",
+                    "caption": "Gas price calculation (m³ to kWh)"
                 }
             ]
         },

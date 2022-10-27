@@ -15,7 +15,11 @@
             "Night Price": "Nachtpreis",
             "Night Price since": "Nachtpreis ab",
             "Night Price until": "Nachtpreis bis",
-            "Electricity suppliers": "Stromanbieter"
+            "Electricity suppliers": "Stromanbieter",
+            "Gas price calculation (m³ to kWh)": "Gaspreis Berechnung (m³ to kWh)",
+            "Gas Conversion factor": "Gas Wandlerfaktor",
+            "Gas Z-number": "Gas Z-Zahl",
+            "Gas Calorific value": "Gas Brennwert"
         }
     }
 }
