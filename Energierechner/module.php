@@ -33,8 +33,8 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
 
             $this->RegisterPropertyBoolean('PeriodsCalculation', false);
             $this->RegisterPropertyBoolean('NightRate', false);
-            $this->RegisterPropertyBoolean('DailyConsumption', false);
-            $this->RegisterPropertyBoolean('NightlyConsumption', false);
+            $this->RegisterPropertyBoolean('DailyConsumption', false); //Consumption daytime
+            $this->RegisterPropertyBoolean('NightlyConsumption', false); //Consumption nighttime
             $this->RegisterPropertyBoolean('Impulse_kWhBool', false);
             $this->RegisterPropertyInteger('Impulse_kWh', 1000);
             $this->RegisterPropertyBoolean('AddBasePrice', false);

@@ -173,12 +173,12 @@
                 {
                     "type": "CheckBox",
                     "name": "DailyConsumption",
-                    "caption": "Daily Consumption"
+                    "caption": "Consumption daytime"
                 },
                 {
                     "type": "CheckBox",
                     "name": "NightlyConsumption",
-                    "caption": "Nightly Consumption"
+                    "caption": "Consumption nighttime"
                 },
                 {
                     "type": "CheckBox",
