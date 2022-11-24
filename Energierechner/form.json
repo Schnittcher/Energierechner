@@ -90,6 +90,11 @@
                 },
                 {
                     "type": "CheckBox",
+                    "name": "CurrentWeek",
+                    "caption": "Current Week"
+                },
+                {
+                    "type": "CheckBox",
                     "name": "PreviousWeek",
                     "caption": "Previous Week"
                 },

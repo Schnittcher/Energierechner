@@ -25,6 +25,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyBoolean('Balance', false);
             $this->RegisterPropertyBoolean('Daily', false);
             $this->RegisterPropertyBoolean('PreviousDay', false);
+            $this->RegisterPropertyBoolean('CurrentWeek', false);
             $this->RegisterPropertyBoolean('PreviousWeek', false);
             $this->RegisterPropertyBoolean('CurrentMonth', false);
             $this->RegisterPropertyBoolean('LastMonth', false);
@@ -98,6 +99,13 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->MaintainVariable('PreviousDayConsumptionDaytime', $this->Translate('Previous Day Consumption (daytime)'), 2, $ProfileType, 11, $this->ReadPropertyBoolean('PreviousDay') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
             $this->MaintainVariable('PreviousDayCostsNighttime', $this->Translate('Previous Day Costs (nighttime)'), 2, '~Euro', 12, $this->ReadPropertyBoolean('PreviousDay') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
             $this->MaintainVariable('PreviousDayConsumptionNighttime', $this->Translate('Previous Day Consumption (nighttime)'), 2, $ProfileType, 13, $this->ReadPropertyBoolean('PreviousDay') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
+
+            $this->MaintainVariable('CurrentWeekCosts', $this->Translate('Current Week Costs'), 2, '~Euro', 14, $this->ReadPropertyBoolean('CurrentWeek') == true);
+            $this->MaintainVariable('CurrentWeekConsumption', $this->Translate('Current Week Consumption'), 2, $ProfileType, 15, $this->ReadPropertyBoolean('CurrentWeek') == true);
+            $this->MaintainVariable('CurrentWeekCostsDaytime', $this->Translate('Current Week Costs (daytime)'), 2, '~Euro', 16, $this->ReadPropertyBoolean('CurrentWeek') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
+            $this->MaintainVariable('CurrentWeekConsumptionDaytime', $this->Translate('Current Week Consumption (daytime)'), 2, $ProfileType, 17, $this->ReadPropertyBoolean('CurrentWeek') == true && $this->ReadPropertyBoolean('DailyConsumption') == true);
+            $this->MaintainVariable('CurrentWeekCostsNighttime', $this->Translate('Current Week Costs (nighttime)'), 2, '~Euro', 18, $this->ReadPropertyBoolean('CurrentWeek') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
+            $this->MaintainVariable('CurrentWeekConsumptionNighttime', $this->Translate('Current Week Consumption (nighttime)'), 2, $ProfileType, 19, $this->ReadPropertyBoolean('CurrentWeek') == true && $this->ReadPropertyBoolean('NightlyConsumption') == true);
 
             $this->MaintainVariable('PreviousWeekCosts', $this->Translate('Previous Week Costs'), 2, '~Euro', 14, $this->ReadPropertyBoolean('PreviousWeek') == true);
             $this->MaintainVariable('PreviousWeekConsumption', $this->Translate('Previous Week Consumption'), 2, $ProfileType, 15, $this->ReadPropertyBoolean('PreviousWeek') == true);
@@ -205,6 +213,26 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 if ($this->ReadPropertyBoolean('NightlyConsumption')) {
                     $this->SetValue('PreviousDayConsumptionNighttime', $result['nightlyConsumption']);
                     $this->SetValue('PreviousDayCostsNighttime', $result['nightlyCosts']);
+                }
+            }
+
+            if ($this->ReadPropertyBoolean('CurrentWeek')) {
+                if ($this->ReadPropertyBoolean('WeeklyAggregation')) {
+                    $aggregationTyp = 2;
+                }
+
+                $result = $this->calculate(strtotime('Midnight Monday this week'), strtotime('Midnight Sunday this week'), $aggregationTyp);
+
+                $this->SetValue('CurrentWeekConsumption', $result['consumption']);
+                $this->SetValue('CurrentWeekCosts', $result['costs']);
+
+                if ($this->ReadPropertyBoolean('DailyConsumption')) {
+                    $this->SetValue('CurrentWeekConsumptionDaytime', $result['dailyConsumption']);
+                    $this->SetValue('CurrentWeekCostsDaytime', $result['dailyCosts']);
+                }
+                if ($this->ReadPropertyBoolean('NightlyConsumption')) {
+                    $this->SetValue('CurrentWeekConsumptionNighttime', $result['nightlyConsumption']);
+                    $this->SetValue('CurrentWeekCostsNighttime', $result['nightlyCosts']);
                 }
             }
 
@@ -403,6 +431,55 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             }
         }
 
+        public function getPrice($timestamp)
+        {
+            $price = [];
+            $price['price'] = 0;
+            $price['type'] = '';
+
+            $periods = json_decode($this->GetBuffer('Periods'), true);
+
+            $countPeriods = count($periods) - 1;
+            $i = 0;
+            foreach ($periods as $periodBufferKey => $period) {
+                $periodStartDateTimestamp = strtotime($period['startDate']['day'] . '.' . $period['startDate']['month'] . '.' . $period['startDate']['year']);
+
+                if ($i >= $countPeriods) {
+                    $periodEndDateTimeStamp = time(); //If no Entry in the List
+                } else {
+                    $periodEndDateTimeStamp = strtotime($periods[$i + 1]['startDate']['day'] . '.' . $periods[$i + 1]['startDate']['month'] . '.' . $periods[$i + 1]['startDate']['year']);
+                }
+                $i++;
+
+                if ($timestamp >= $periodStartDateTimestamp && $timestamp <= $periodEndDateTimeStamp) {
+                    $price['price'] = $period['dayPrice'];
+                    $price['type'] = 'day';
+                    if ($this->ReadPropertyBoolean('NightRate') || $this->ReadPropertyBoolean('NightlyConsumption')) {
+                        $valueTime = (new DateTime(date('H:i', $timestamp)));
+                        $NightTimeStart = new DateTime($period['nightStart']['hour'] . ':' . $period['nightStart']['minute']);
+                        $NightTimeEnd = (new DateTime($period['nightEnd']['hour'] . ':' . $period['nightEnd']['minute']));
+                        if ($period['nightStart']['hour'] > $period['nightEnd']['hour']) {
+                            $NightTimeEnd->modify('+1 day');
+                            if (date('H', $timestamp) <= $period['nightStart']['hour']) {
+                                $valueTime->modify('+1 day');
+                            }
+                        }
+                        if ($valueTime >= $NightTimeStart && $valueTime <= $NightTimeEnd) {
+                            $price['price'] = $period['nightPrice'];
+                            $price['type'] = 'night';
+                            return $price;
+                        } else {
+                            return $price; //Dayprice
+                        }
+                    } else {
+                        return $price; //Dayprice
+                    }
+                }
+            }
+            $this->SendDebug(__FUNCTION__ . ' after Fore each (Periods)', 'Value: ' . $timestamp, 0);
+            return $price;
+        }
+
         private function calculate($startDate, $endDate, $aggregationTyp = 0)
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
@@ -491,55 +568,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
 
             $result = $this->SendDataToParent($Data);
             $this->SetBuffer('Periods', $result);
-        }
-
-        public function getPrice($timestamp)
-        {
-            $price = [];
-            $price['price'] = 0;
-            $price['type'] = '';
-
-            $periods = json_decode($this->GetBuffer('Periods'), true);
-
-            $countPeriods = count($periods) - 1;
-            $i = 0;
-            foreach ($periods as $periodBufferKey => $period) {
-                $periodStartDateTimestamp = strtotime($period['startDate']['day'] . '.' . $period['startDate']['month'] . '.' . $period['startDate']['year']);
-
-                if ($i >= $countPeriods) {
-                    $periodEndDateTimeStamp = time(); //If no Entry in the List
-                } else {
-                    $periodEndDateTimeStamp = strtotime($periods[$i + 1]['startDate']['day'] . '.' . $periods[$i + 1]['startDate']['month'] . '.' . $periods[$i + 1]['startDate']['year']);
-                }
-                $i++;
-
-                if ($timestamp >= $periodStartDateTimestamp && $timestamp <= $periodEndDateTimeStamp) {
-                    $price['price'] = $period['dayPrice'];
-                    $price['type'] = 'day';
-                    if ($this->ReadPropertyBoolean('NightRate') || $this->ReadPropertyBoolean('NightlyConsumption')) {
-                        $valueTime = (new DateTime(date('H:i', $timestamp)));
-                        $NightTimeStart = new DateTime($period['nightStart']['hour'] . ':' . $period['nightStart']['minute']);
-                        $NightTimeEnd = (new DateTime($period['nightEnd']['hour'] . ':' . $period['nightEnd']['minute']));
-                        if ($period['nightStart']['hour'] > $period['nightEnd']['hour']) {
-                            $NightTimeEnd->modify('+1 day');
-                            if (date('H', $timestamp) <= $period['nightStart']['hour']) {
-                                $valueTime->modify('+1 day');
-                            }
-                        }
-                        if ($valueTime >= $NightTimeStart && $valueTime <= $NightTimeEnd) {
-                            $price['price'] = $period['nightPrice'];
-                            $price['type'] = 'night';
-                            return $price;
-                        } else {
-                            return $price; //Dayprice
-                        }
-                    } else {
-                        return $price; //Dayprice
-                    }
-                }
-            }
-            $this->SendDebug(__FUNCTION__ . ' after Fore each (Periods)', 'Value: ' . $timestamp, 0);
-            return $price;
         }
 
         private function getDailyBasePrice($startDate)
