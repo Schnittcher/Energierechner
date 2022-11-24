@@ -493,7 +493,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->SetBuffer('Periods', $result);
         }
 
-        private function getPrice($timestamp)
+        public function getPrice($timestamp)
         {
             $price = [];
             $price['price'] = 0;
