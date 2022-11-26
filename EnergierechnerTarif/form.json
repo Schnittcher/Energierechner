@@ -4,9 +4,13 @@
             "type": "List",
             "name": "Periods",
             "caption": "Periods",
-            "rowCount": 8,
+            "rowCount": 30,
             "add": true,
             "delete": true,
+            "sort": {
+                "column": "StartDate",
+                "direction": "descending"
+            },
             "columns": [
                 {
                     "caption": "Start Date",
