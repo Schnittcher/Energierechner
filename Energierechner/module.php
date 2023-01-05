@@ -480,7 +480,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             return $price;
         }
 
-        private function calculate($startDate, $endDate, $aggregationTyp = 0)
+        public function calculate($startDate, $endDate, $aggregationTyp = 0)
         {
             $archiveID = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
             $consumptionVariableID = $this->ReadPropertyInteger('consumptionVariableID');
