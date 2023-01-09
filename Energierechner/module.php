@@ -71,6 +71,9 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             //Never delete this line!
             parent::ApplyChanges();
 
+            $ParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
+            $this->RegisterMessage($ParentID, IM_CHANGESETTINGS);
+
             $ProfileType = $this->ReadPropertyString('ProfileType');
 
             if ($ProfileType == '-') {
@@ -164,6 +167,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             switch ($Message) {
                 case FM_CONNECT:
                 case KR_READY:
+                case IM_CHANGESETTINGS:
                     $this->getPeriods();
                     $this->updateCalculation();
                     break;
