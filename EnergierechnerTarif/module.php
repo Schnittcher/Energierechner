@@ -8,6 +8,12 @@ declare(strict_types=1);
             //Never delete this line!
             parent::Create();
             $this->RegisterPropertyString('Periods', '[]');
+            $this->RegisterPropertyBoolean('aWATTar', false);
+            $this->RegisterAttributeString('aWATTarPrices', '{}');
+            $this->RegisterPropertyString('aWATTarStartDate', '{"year": 2021,"month": 1,"day": 1}');
+
+            $this->RegisterPropertyInteger('aWATTarUpdateInterval', 600);
+            $this->RegisterTimer('ER_getaWATTarPrice', 0, 'ER_getaWATTarPrice($_IPS[\'TARGET\']);');
         }
 
         public function Destroy()
@@ -20,6 +26,15 @@ declare(strict_types=1);
         {
             //Never delete this line!
             parent::ApplyChanges();
+
+            if ($this->ReadPropertyBoolean('aWATTar')) {
+                $this->getaWATTarPrice();
+                //Register UpdateTimer
+                $this->SetTimerInterval('ER_getaWATTarPrice', $this->ReadPropertyInteger('aWATTarUpdateInterval') * 1000);
+                $this->SetStatus(102);
+            } else {
+                $this->SetTimerInterval('ER_getaWATTarPrice', 0);
+            }
         }
 
         public function ForwardData($JSONString)
@@ -29,6 +44,14 @@ declare(strict_types=1);
 
             switch ($data['Buffer']['Command']) {
                 case 'getPeriods':
+
+                    //Nur wenn Preise über aWATTar geholt werden
+                    if ($this->ReadPropertyBoolean('aWATTar')) {
+                        $aWATTarJSON = $this->ReadAttributeString('aWATTarPrices');
+                        $this->SendDebug('Send aWATTar Periods', $aWATTarJSON, 0);
+                        return $aWATTarJSON;
+                    }
+
                     $result = json_encode($this->getPeriods());
                     $this->SendDebug('Send Periods', $result, 0);
                     return $result;
@@ -37,6 +60,38 @@ declare(strict_types=1);
                     break;
             }
             return;
+        }
+
+        public function getaWATTarPrice()
+        {
+            $aWATTarStartDate = json_decode($this->ReadPropertyString('aWATTarStartDate'), true);
+            $aWATTarStartDateTimeStamp = strtotime($aWATTarStartDate['day'] . '.' . $aWATTarStartDate['month'] . '.' . $aWATTarStartDate['year']) * 1000;
+            $aWATTarEndDateTimeStamp = time() * 1000;
+            $periods = [];
+            $aWATTar = json_decode(file_get_contents('https://api.awattar.de/v1/marketdata?start=' . $aWATTarStartDateTimeStamp . '&end=' . $aWATTarEndDateTimeStamp), true);
+            if (array_key_exists('data', $aWATTar)) {
+                foreach ($aWATTar['data'] as $key => $value) {
+                    $period['startDate'] = ['day' => 'awattar', 'month' => $value['start_timestamp'] ,'year' => $value['end_timestamp']];
+                    $period['startDateTimestamp'] = $value['start_timestamp'];
+                    $period['dayPrice'] = $value['marketprice'] * 0.001; //Umrechnung Eur/MWh zu EUR/kWh
+                    $period['advancePayment'] = 0; //geht nicht bei aWATTar
+                    $period['basePrice'] = 0; //geht nicht bei aWATTar
+                    $period['dailyBasePrice'] = 0; //geht nicht bei aWATTar
+                    $period['nightPrice'] = 0; //geht nicht bei aWATTar
+                    $period['nightStart'] = 0; //geht nicht bei aWATTar
+                    $period['nightEnd'] = 0; //geht nicht bei aWATTar
+                    $period['periodDays'] = 0; //geht nicht bei aWATTar,
+                    array_push($periods, $period);
+                }
+            }
+            //Sort Array ASC
+            foreach ($periods as $key => $value) {
+                $timestamps[$key] = $value['startDateTimestamp'];
+            }
+            if (!empty($timestamps)) {
+                array_multisort($timestamps, SORT_ASC, $periods);
+            }
+            $this->WriteAttributeString('aWATTarPrices', json_encode($periods));
         }
 
         public function getPeriods()

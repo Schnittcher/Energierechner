@@ -1,5 +1,21 @@
 {
     "elements": [
+        { "type": "CheckBox", "name": "aWATTar", "caption": "Use aWATTar" },
+        {
+            "type": "SelectDate",
+            "caption": "Start Date",
+            "name": "aWATTarStartDate",
+            "add": {
+                "year": 2021,
+                "month": 1,
+                "day": 1
+            }
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "aWATTarUpdateInterval",
+            "caption": "aWATTar Update Interval"
+        },
         {
             "type": "List",
             "name": "Periods",
