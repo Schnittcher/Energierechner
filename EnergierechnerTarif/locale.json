@@ -19,8 +19,7 @@
             "Gas price calculation (m³ to kWh)": "Gaspreis Berechnung (m³ to kWh)",
             "Gas Conversion factor": "Gas Wandlerfaktor",
             "Gas Z-number": "Gas Z-Zahl",
-            "Gas Calorific value": "Gas Brennwert",
-            "Use aWATTar": "Benutze aWATTar"
+            "Gas Calorific value": "Gas Brennwert"
         }
     }
 }
