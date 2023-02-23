@@ -32,7 +32,7 @@
                     "add": 0.0,
                     "edit": {
                         "type": "NumberSpinner",
-                        "digits": 4,
+                        "digits": 7,
                         "suffix": " €"
                     }
                 },
@@ -54,7 +54,7 @@
                     "add": 0.0,
                     "edit": {
                         "type": "NumberSpinner",
-                        "digits": 2,
+                        "digits": 4,
                         "suffix": " €"
                     }
                 },
@@ -65,7 +65,7 @@
                     "add": 0.0,
                     "edit": {
                         "type": "NumberSpinner",
-                        "digits": 4,
+                        "digits": 7,
                         "suffix": " €"
                     }
                 },
