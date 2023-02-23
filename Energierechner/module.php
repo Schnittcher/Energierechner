@@ -422,7 +422,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $identBalancePeriod = 'Balance_period' . $startDate['day'] . '_' . $startDate['month'] . '_' . $startDate['year'];
                     $this->MaintainVariable($identBalancePeriod, $variableNameBalance, 2, '~Euro', 3, $this->ReadPropertyBoolean('Balance') == true);
                     if ($this->ReadPropertyBoolean('Balance')) {
-                        $balance = ($period['advancePayment'] * 12) - $result['costs'];
+                        $balance = ($period['advancePayment'] * $period['deductionsPerYear']) - $result['costs'];
                         $this->SetValue($identBalancePeriod, $balance);
                     }
 

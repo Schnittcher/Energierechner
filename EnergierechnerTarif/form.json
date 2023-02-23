@@ -48,6 +48,15 @@
                     }
                 },
                 {
+                    "caption": "Deductions per Year",
+                    "name": "DeductionsPerYear",
+                    "width": "50px",
+                    "add": 11,
+                    "edit": {
+                        "type": "NumberSpinner"
+                    }
+                },
+                {
                     "caption": "Base Price",
                     "name": "BasePrice",
                     "width": "100px",

@@ -51,6 +51,7 @@ declare(strict_types=1);
 
                 $dayPrice = $period['DayPrice'];
                 $advancePayment = $period['AdvancePayment'];
+                $deductionsPerYear = $period['DeductionsPerYear'];
                 $basePrice = $period['BasePrice'];
                 $nightPrice = $dayPrice; //When no night price is set, use day price
 
@@ -69,6 +70,7 @@ declare(strict_types=1);
                 $period['startDateTimestamp'] = $periodStartDateTimestamp;
                 $period['dayPrice'] = $dayPrice;
                 $period['advancePayment'] = $advancePayment;
+                $period['deductionsPerYear'] = $deductionsPerYear;
                 $period['basePrice'] = $basePrice;
                 $period['dailyBasePrice'] = $basePrice / 365;
                 $period['nightPrice'] = $nightPrice;
