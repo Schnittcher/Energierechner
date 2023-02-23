@@ -44,6 +44,12 @@
                             "value": "ER.Liter"
                         }
                     ]
+                },
+                {
+                    "type": "Label",
+                    "caption": "No conversion, just the profile for the variable!",
+                    "italic": true,
+                    "color": "ff0000"
                 }
             ]
         },
