@@ -597,6 +597,10 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
 
         private function getGasCalculationValues($startDate)
         {
+            if ($this->GetBuffer('Periods') == '{}') {
+                $this->getPeriods();
+            }
+            
             $periods = json_decode($this->GetBuffer('Periods'), true);
 
             $countPeriods = count($periods) - 1;
