@@ -619,9 +619,9 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $values['GasCalorificValue'] = $period['GasCalorificValue'];
                     return $values;
                 }
-                $this->SendDebug('Test Debug :: period startDateTimestamp ', $period['startDateTimestamp'], 0);
-                $this->SendDebug('Test Debug :: StartDate', $startDate, 0);
-                $this->SendDebug('Test Debug :: EndDate', $endTimestamp, 0);
+                $this->SendDebug('Test Debug :: period startDateTimestamp ', date('d.m.Y H:i', $period['startDateTimestamp']), 0);
+                $this->SendDebug('Test Debug :: StartDate', date('d.m.Y H:i', $startDate), 0);
+                $this->SendDebug('Test Debug :: EndDate', date('d.m.Y H:i', $endTimestamp), 0);
                 $i++;
             }
             return [];
