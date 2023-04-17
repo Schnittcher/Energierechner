@@ -600,7 +600,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             if ($this->GetBuffer('Periods') == '{}') {
                 $this->getPeriods();
             }
-            
+
             $periods = json_decode($this->GetBuffer('Periods'), true);
 
             $countPeriods = count($periods) - 1;
@@ -619,6 +619,9 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $values['GasCalorificValue'] = $period['GasCalorificValue'];
                     return $values;
                 }
+                $this->SendDebug('Test Debug :: period startDateTimestamp ', $period['startDateTimestamp'], 0);
+                $this->SendDebug('Test Debug :: StartDate', $startDate, 0);
+                $this->SendDebug('Test Debug :: EndDate', $endTimestamp, 0);
                 $i++;
             }
             return [];
