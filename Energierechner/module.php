@@ -624,6 +624,8 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 $this->SendDebug('Test Debug :: EndDate', date('d.m.Y H:i', $endTimestamp), 0);
                 $i++;
             }
+            $this->SendDebug('Test Debug :: StartDate außerhalb Schleife', date('d.m.Y H:i', $startDate), 0);
+            $this->SendDebug('Test Debug :: außerhalb EndDate', date('d.m.Y H:i', $endTimestamp), 0);
             return [];
         }
 
