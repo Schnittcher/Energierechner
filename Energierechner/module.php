@@ -601,6 +601,11 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 $this->getPeriods();
             }
 
+            $values = [];
+            $values['GasConversionFactor'] = 0;
+            $values['GasZNumber'] = 0;
+            $values['GasCalorificValue'] = 0;
+
             $periods = json_decode($this->GetBuffer('Periods'), true);
 
             $countPeriods = count($periods) - 1;
@@ -613,7 +618,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $endTimestamp = $periods[$i + 1]['startDateTimestamp'];
                 }
                 if (($startDate >= $period['startDateTimestamp']) && ($startDate < $endTimestamp)) {
-                    $values = [];
                     $values['GasConversionFactor'] = $period['GasConversionFactor'];
                     $values['GasZNumber'] = $period['GasZNumber'];
                     $values['GasCalorificValue'] = $period['GasCalorificValue'];
@@ -624,9 +628,9 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 $this->SendDebug('Test Debug :: EndDate', date('d.m.Y H:i', $endTimestamp), 0);
                 $i++;
             }
-            $this->SendDebug('Test Debug :: StartDate außerhalb Schleife', date('d.m.Y H:i', $startDate), 0);
-            $this->SendDebug('Test Debug :: außerhalb EndDate', date('d.m.Y H:i', $endTimestamp), 0);
-            return [];
+            $this->LogMessage('Test Debug :: StartDate außerhalb Schleife', date('d.m.Y H:i', $startDate), KL_DEBUG);
+            $this->LogMessage('Test Debug :: außerhalb EndDate', date('d.m.Y H:i', $endTimestamp), KL_DEBUG);
+            return $values;
         }
 
         private function registerPeriodsVariables()
