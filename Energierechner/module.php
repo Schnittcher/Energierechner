@@ -629,7 +629,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 $i++;
             }
             $this->LogMessage('Test Debug :: StartDate außerhalb Schleife ' . date('d.m.Y H:i', $startDate), KL_DEBUG);
-            $this->LogMessage('Test Debug :: außerhalb EndDate ' . date('d.m.Y H:i', $endTimestamp), KL_DEBUG);
             return $values;
         }
 
