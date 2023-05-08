@@ -206,7 +206,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 }
             }
             if ($this->ReadPropertyBoolean('PreviousDay')) {
-                $result = $this->calculate(strtotime('yesterday 00:00'), strtotime('yesterday 23:59'));
+                $result = $this->calculate(strtotime('yesterday 00:00'), strtotime('yesterday 23:59:59'));
                 $this->SetValue('PreviousDayConsumption', $result['consumption']);
                 $this->SetValue('PreviousDayCosts', $result['costs']);
 
@@ -225,7 +225,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     $aggregationTyp = 2;
                 }
 
-                $result = $this->calculate(strtotime('Midnight Monday this week'), strtotime('Midnight Sunday this week'), $aggregationTyp);
+                $result = $this->calculate(strtotime('Midnight Monday this week'), strtotime('Midnight Sunday this week 23:59:59'), $aggregationTyp);
 
                 $this->SetValue('CurrentWeekConsumption', $result['consumption']);
                 $this->SetValue('CurrentWeekCosts', $result['costs']);
