@@ -68,9 +68,8 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
         {
             //Never delete this line!
             parent::ApplyChanges();
-
+            $ParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
             if ($this->ReadPropertyBoolean('UpdateByChangingParameters')) {
-                $ParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
                 $this->RegisterMessage($ParentID, IM_CHANGESETTINGS);
                 $this->RegisterMessage($this->InstanceID, FM_CONNECT);
                 $this->RegisterMessage($this->InstanceID, KR_READY);
