@@ -45,6 +45,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyBoolean('MonthlyAggregation', false);
             $this->RegisterPropertyBoolean('WeeklyAggregation', false);
             $this->RegisterPropertyBoolean('YearlyAggregation', false);
+            $this->RegisterPropertBoolean('UpdateByChangingParameters', true);
 
             $this->RegisterPropertyInteger('UpdateInterval', 600);
             $this->RegisterTimer('ER_UpdateCalculation', 0, 'ER_updateCalculation($_IPS[\'TARGET\']);');
@@ -55,9 +56,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             if (!IPS_VariableProfileExists('ER.Liter')) {
                 $this->RegisterProfileFloat('ER.Liter', 'Drops', '', ' Liter', 0, 0, 0.1, 2);
             }
-
-            $this->RegisterMessage($this->InstanceID, FM_CONNECT);
-            $this->RegisterMessage($this->InstanceID, KR_READY);
         }
 
         public function Destroy()
@@ -71,9 +69,16 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             //Never delete this line!
             parent::ApplyChanges();
 
-            $ParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
-            $this->RegisterMessage($ParentID, IM_CHANGESETTINGS);
-
+            if ($this->ReadPropertyBoolean('UpdateByChangingParameters')) {
+                $ParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
+                $this->RegisterMessage($ParentID, IM_CHANGESETTINGS);
+                $this->RegisterMessage($this->InstanceID, FM_CONNECT);
+                $this->RegisterMessage($this->InstanceID, KR_READY);
+            } else {
+                $this->UnregisterMessage($ParentID, IM_CHANGESETTINGS);
+                $this->UnregisterMessage($this->InstanceID, FM_CONNECT);
+                $this->UnregisterMessage($this->InstanceID, KR_READY);
+            }
             $ProfileType = $this->ReadPropertyString('ProfileType');
 
             if ($ProfileType == '-') {

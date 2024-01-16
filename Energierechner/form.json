@@ -241,7 +241,9 @@
                     "type": "NumberSpinner",
                     "name": "UpdateInterval",
                     "caption": "Update Interval"
-                }
+                },
+                { "type": "CheckBox", "name": "status", "caption": "Status emulieren" }
+
             ]
         }
     ],

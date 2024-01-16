@@ -101,7 +101,8 @@
             "(nighttime)": "(nachtsüber)",
             "Add Base Price": "Addiere Grundpreis",
             "Gas price calculation (m³ to kWh)": "Gaspreis Berechnung (m³ to kWh)",
-            "No conversion, just the profile for the variable!": "Keine Umrechnung, nur das Profil für die Variable"
+            "No conversion, just the profile for the variable!": "Keine Umrechnung, nur das Profil für die Variable",
+            "Update by changing parameters":"Durch Parameteränderung aktualisieren"
         }
     }
 }

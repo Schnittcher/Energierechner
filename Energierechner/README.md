@@ -2,8 +2,10 @@
    Dieses IP-Symcon Modul ermöglicht eine Berechnung der gesamten Verbrauchskosten über mehrere Zeiträume mit unterschiedlichen Arbeitspreisen.
      
    ## Inhaltverzeichnis
-   1. [Konfiguration](#1-konfiguration)
-   2. [Funktionen](#2-funktionen)
+- [Energierechner](#energierechner)
+  - [Inhaltverzeichnis](#inhaltverzeichnis)
+  - [1. Konfiguration](#1-konfiguration)
+  - [2. Funktionen](#2-funktionen)
    
    ## 1. Konfiguration
    
@@ -22,6 +24,7 @@
    Feld | Beschreibung
    ------------ | ----------------
    Impulse/kWh Berechnung | Hier kann angegeben werden, wie viele Impulse eine kWh sind, falls die Zählervariable von einem Impulsezähler ist.
+   Durch Parameteränderung aktualisieren | Durch diesen Parameter kann eingestellt werden, ob durch Änderungen an den Instanzen (Energierechner oder EnergierechnerTarif) die Berechnung ausgeführt werden soll. (Standardwert: Aktiv)
       
    ## 2. Funktionen
 
