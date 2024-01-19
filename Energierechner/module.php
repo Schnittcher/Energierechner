@@ -45,7 +45,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             $this->RegisterPropertyBoolean('MonthlyAggregation', false);
             $this->RegisterPropertyBoolean('WeeklyAggregation', false);
             $this->RegisterPropertyBoolean('YearlyAggregation', false);
-            $this->RegisterPropertBoolean('UpdateByChangingParameters', true);
+            $this->RegisterPropertyBoolean('UpdateByChangingParameters', true);
 
             $this->RegisterPropertyInteger('UpdateInterval', 600);
             $this->RegisterTimer('ER_UpdateCalculation', 0, 'ER_updateCalculation($_IPS[\'TARGET\']);');
