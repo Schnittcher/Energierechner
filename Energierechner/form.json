@@ -242,8 +242,11 @@
                     "name": "UpdateInterval",
                     "caption": "Update Interval"
                 },
-                { "type": "CheckBox", "name": "status", "caption": "Status emulieren" }
-
+                {
+                    "type": "CheckBox",
+                    "name": "UpdateByChangingParameters",
+                    "caption": "Update by changing parameters"
+                }
             ]
         }
     ],
