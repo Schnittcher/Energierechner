@@ -153,7 +153,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
 
             if ($this->HasActiveParent()) {
                 if (IPS_GetKernelRunlevel() == KR_READY) {
-                   //$this->updateCalculation();
+                    //$this->updateCalculation();
                 }
             }
 
@@ -488,7 +488,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                     }
                 }
             }
-            $this->SendDebug(__FUNCTION__ . ' after Fore each (Periods)', 'Value: ' . $timestamp, 0);
             return $price;
         }
 
