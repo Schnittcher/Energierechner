@@ -282,7 +282,6 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
                 }
                 $result = $this->calculate(strtotime('midnight first day of this month'), strtotime('last day of this month 23:59:59'), $aggregationTyp);
 
-                IPS_LogMessage('Debug Neustart Bug', print_r($result, true));
                 $this->SetValue('CurrentMonthConsumption', $result['consumption']);
                 $this->SetValue('CurrentMonthCosts', $result['costs']);
 
