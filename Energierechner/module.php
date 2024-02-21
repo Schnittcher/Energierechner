@@ -188,6 +188,9 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             if ($this->GetBuffer('Periods') == '{}') {
                 $this->getPeriods();
             }
+            if ($this->GetBuffer('Periods') == '{}') {
+                return false;
+            }
 
             if ($this->ReadPropertyInteger('consumptionVariableID') == 0) {
                 return false;
