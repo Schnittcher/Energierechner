@@ -604,7 +604,7 @@ eval('declare(strict_types=1);namespace Energierechner {?>' . file_get_contents(
             return 0;
         }
 
-        private function getGasCalculationValues($startDate)
+        public function getGasCalculationValues($startDate)
         {
             if ($this->GetBuffer('Periods') == '{}') {
                 $this->getPeriods();
