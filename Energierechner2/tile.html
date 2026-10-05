@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-action:pan-y;overscroll-behavior-x:none}
+/* Das Dokument ist fest verankert und kann nicht selbst scrollen. Sonst faengt der Rahmen in der iOS-App senkrechte Wischgesten ab,
+   und die Seite der App laesst sich ueber der Kachel nicht mehr scrollen. */
+html,body{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;overflow:hidden;background:transparent;touch-action:pan-y;overscroll-behavior-x:none}
 :root{
   --tx:var(--content-color,#fff);
   --ac:var(--accent-color,#3b82c4);
@@ -203,7 +205,6 @@ function fit(){
     var horizontal=Math.abs(t.clientX-sx)>Math.abs(t.clientY-sy);
     if(horizontal&&!inChips&&e.cancelable)e.preventDefault();
   },{passive:false});
-  window.addEventListener('scroll',function(){if(window.scrollX!==0||window.scrollY!==0)window.scrollTo(0,0)});
 })();
 
 function handleMessage(data){
