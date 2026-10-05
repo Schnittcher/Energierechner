@@ -216,7 +216,8 @@ Dabei ändern sich einige Dinge in den **Beträgen**, weil das alte Modul sie fa
 
 - Der Grundpreis zählt jetzt alle Tage des Zeitraums (früher fehlte ein Tag), und ein Tarifwechsel innerhalb eines Zeitraums wird berücksichtigt.
 - Die Grenzen der Niedertarif-Zeiten sind jetzt halboffen. Früher wurde die Stunde ab 22:00 als Tag (Hochtarif) und die ab 06:00 noch als Nacht gewertet.
-- Das Enddatum eigener Zeiträume ist jetzt inklusive.
+- Bei **laufenden** Zeiträumen (aktueller Monat, aktuelles Jahr) rechnete das alte Modul den Grundpreis für den **ganzen** Zeitraum, auch für Tage, die noch nicht vorbei sind. Das neue Modul zählt ihn nur bis heute (der volle Grundpreis steckt in der Prognose). Ein Jahreswert mitten im Jahr ist deshalb im neuen Modul niedriger, und die Summe der Tarifzeiträume passt zum aktuellen Jahr.
+- Das Enddatum eigener Zeiträume ist jetzt inklusive. Ein eigener Zeitraum „01.03. bis 31.03." umfasst damit 31 Tage, im alten Modul waren es 30.
 - Der Saldo rechnet mit dem bis heute aufgelaufenen Abschlag. Früher wurde der volle Jahresabschlag gegen die Kosten gerechnet.
 - Bei der Einheit **Wh** werden die Werte jetzt in kWh umgerechnet, die Preise im Tarif müssen deshalb **je kWh** stehen. Das alte Modul hat Wh-Werte ohne Umrechnung mit dem eingetragenen Preis multipliziert. Wer dort einen Preis **je Wh** eingetragen hatte, muss ihn beim Umstieg mit 1000 multiplizieren, sonst sind die Kosten 1000-fach zu niedrig. Die Übernahme kopiert die Preise unverändert und weist darauf hin.
 
