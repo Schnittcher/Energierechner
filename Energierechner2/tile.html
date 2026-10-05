@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-action:none;overscroll-behavior:none}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-action:pan-y;overscroll-behavior-x:none}
 :root{
   --tx:var(--content-color,#fff);
   --ac:var(--accent-color,#3b82c4);
@@ -16,7 +16,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
 }
 #wrap{width:100%;height:100%;font-size:12px;color:var(--tx);padding:var(--pt,28px) var(--pr,36px) var(--pb,48px) 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden;container-type:inline-size}
 .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}
+.chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
 .chips::-webkit-scrollbar{display:none}
 .chip,.sel{font-size:12px;line-height:1.2;color:var(--tx);padding:3px 10px;border-radius:999px;border:1px solid var(--bd);background:transparent;cursor:pointer;flex:none}
 .chip.on,.sel.on{background:var(--ac);border-color:var(--ac);color:#fff}
@@ -176,15 +176,14 @@ function fit(){
   [250,1000,3000].forEach(function(ms){setTimeout(measure,ms)});
 }
 
-/* Die Kachel soll sich nicht verschieben lassen, weder seitlich (abgeschnittener Rand der App) noch nach oben und unten.
-   Wischgesten werden abgefangen, ausser waagerecht auf der Chip-Leiste, die bei Bedarf selbst scrollt. */
+/* Die Kachel soll sich nicht seitlich verschieben lassen (abgeschnittener Rand der App). Senkrechte Wischgesten gehen an die App,
+   damit sich ihre Seite auch ueber der Kachel scrollen laesst. Waagerecht wischen geht nur auf der Chip-Leiste. */
 (function(){
   var sx=0,sy=0,inChips=false;
   document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;inChips=!!(e.target.closest&&e.target.closest('.chips'))},{passive:true});
   document.addEventListener('touchmove',function(e){
     var t=e.touches[0];
-    var horizontal=Math.abs(t.clientX-sx)>Math.abs(t.clientY-sy);
-    if(!(inChips&&horizontal)&&e.cancelable)e.preventDefault();
+    if(!inChips&&Math.abs(t.clientX-sx)>Math.abs(t.clientY-sy)&&e.cancelable)e.preventDefault();
   },{passive:false});
   window.addEventListener('scroll',function(){if(window.scrollX!==0||window.scrollY!==0)window.scrollTo(0,0)});
 })();
