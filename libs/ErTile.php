@@ -32,7 +32,7 @@ final class ErTile
      * @param array<int, array{key:string,label:string,start:int,end:int,forecast?:bool,balance?:bool}> $defs aktivierte Zeiträume.
      *        Prognose und Saldo übernimmt die Kachel nur für Zeiträume, bei denen das Modul sie auch als Variable führt.
      * @param array<string, array<string, mixed>> $results Rechenergebnisse je Zeitraum-Schlüssel
-     * @param array{title:string,unit:string,warnings:string[],flags:array<string,bool>,labels:array<string,string>,lastYear?:array<string,float>} $options
+     * @param array{title:string,unit:string,warnings:string[],flags:array<string,bool>,labels:array<string,string>,lastYear?:array<string,float>,peak?:array<string,array{day:int,costs:float}>} $options
      *        lastYear: Verbrauch des Vorjahreszeitraums je Zeitraum-Schlüssel (für den Vorjahresvergleich)
      * @return array<string, mixed>
      */
@@ -57,6 +57,10 @@ final class ErTile
                 if ($value !== null) {
                     $values[$name] = round((float) $value, 4);
                 }
+            }
+            if (isset($options['peak'][$key])) {
+                $values['peakDay'] = $options['peak'][$key]['day'];
+                $values['peakCosts'] = round((float) $options['peak'][$key]['costs'], 4);
             }
             if (isset($options['lastYear'][$key])) {
                 $values['lastYearConsumption'] = round((float) $options['lastYear'][$key], 4);
@@ -84,6 +88,33 @@ final class ErTile
             'periods'  => $periods,
             'tariff'   => $options['tariff'] ?? null
         ];
+    }
+
+    /**
+     * Der Tag mit den höchsten Kosten im Zeitraum [$start, $end), oder null ohne Kosten.
+     *
+     * @param array<int, array{start:int,end:int,value:float}> $intervals Archivintervalle des Zeitraums
+     * @param array<int, mixed> $prices dynamische Preise wie für ErCalculator::calculate
+     * @return array{day:int,costs:float}|null
+     */
+    public static function peakDay(array $intervals, ErTariff $tariff, float $unitFactor, bool $gas, int $start, int $end, array $prices, bool $includeBase): ?array
+    {
+        $byDay = [];
+        foreach ($intervals as $interval) {
+            $byDay[ErTariff::startOfDay($interval['start'])][] = $interval;
+        }
+        $best = null;
+        for ($day = ErTariff::startOfDay($start); $day < $end; $day = ErTariff::nextDay($day)) {
+            if (!isset($byDay[$day])) {
+                continue;
+            }
+            $next = ErTariff::nextDay($day);
+            $costs = ErCalculator::calculate($byDay[$day], $tariff, $unitFactor, $gas, $day, $next, $next, $includeBase, $prices)['costs'];
+            if ($best === null || $costs > $best['costs']) {
+                $best = ['day' => $day, 'costs' => $costs];
+            }
+        }
+        return $best !== null && $best['costs'] > 0.0 ? $best : null;
     }
 
     /**

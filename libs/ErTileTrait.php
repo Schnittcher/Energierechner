@@ -44,6 +44,7 @@ trait ErTileTrait
         $this->RegisterPropertyBoolean('TileEnabled', true);
         $this->RegisterAttributeString('TileData', '{}');
         $this->RegisterAttributeString('TileLastYear', '{}');
+        $this->RegisterAttributeString('TilePeaks', '{}');
         $this->SetVisualizationType(1);
     }
 
@@ -77,7 +78,8 @@ trait ErTileTrait
             ],
             'labels'   => $this->tileLabels(),
             'tariff'   => ErTile::tariffInfo($tariff, $now),
-            'lastYear' => $this->tileLastYear($defs, $now)
+            'lastYear' => $this->tileLastYear($defs, $now),
+            'peak'     => $this->tilePeaks($defs, $tariff, $now)
         ], $now);
         $json = json_encode($data);
         $this->WriteAttributeString('TileData', $json);
@@ -124,6 +126,56 @@ trait ErTileTrait
         return $map;
     }
 
+    /**
+     * Teuerster abgeschlossener Tag je Woche, Monat und Jahr. Das Archiv wird nur einmal am Tag gelesen,
+     * heutige Werte zählen nicht mit.
+     *
+     * @param array<int, array{key:string,label:string,start:int,end:int}> $defs
+     * @return array<string, array{day:int,costs:float}>
+     */
+    private function tilePeaks(array $defs, ErTariff $tariff, int $now): array
+    {
+        $unit = $this->unitInfo();
+        $archiveID = $this->archiveID();
+        $variableID = $this->ReadPropertyInteger('ConsumptionVariableID');
+        $includeBase = $this->ReadPropertyBoolean('IncludeBaseCosts');
+        $gas = $this->gasConversion();
+        $today = ErTariff::startOfDay($now);
+        $wanted = array_values(array_filter(
+            $defs,
+            static fn (array $d): bool => preg_match('/^(Week|Month|Year)_(Current|Previous)$/', $d['key']) === 1 && $d['start'] < $today
+        ));
+
+        $signature = md5(json_encode([$tariff->toArray(), $unit['factor'] ?? 1, $gas, $variableID, $includeBase, date('Y-m-d', $now), array_column($wanted, 'start', 'key')]));
+        $cache = json_decode($this->ReadAttributeString('TilePeaks'), true);
+        if (is_array($cache) && ($cache['sig'] ?? '') === $signature && isset($cache['map'])) {
+            return $cache['map'];
+        }
+
+        $map = [];
+        if ($wanted !== [] && $unit !== null && $archiveID !== 0 && IPS_VariableExists($variableID)) {
+            $from = min(array_column($wanted, 'start'));
+            $to = min(max(array_column($wanted, 'end')), $today) - 1;
+            $fetch = static fn (int $a, int $f, int $t): array => (array) AC_GetAggregatedValues($archiveID, $variableID, $a, $f, $t, 0);
+            $intervals = ErArchiveReader::read($fetch, ErArchiveReader::aggregationFor($tariff), $from, $to);
+            $problems = [];
+            $prices = $this->loadPrices($tariff, $archiveID, $from, $to, $problems);
+            foreach ($wanted as $def) {
+                $end = min($def['end'], $today);
+                $slice = array_values(array_filter(
+                    $intervals,
+                    static fn (array $iv): bool => $iv['start'] >= $def['start'] && $iv['start'] < $end
+                ));
+                $peak = ErTile::peakDay($slice, $tariff, $unit['factor'], $gas, $def['start'], $end, $prices, $includeBase);
+                if ($peak !== null) {
+                    $map[$def['key']] = $peak;
+                }
+            }
+        }
+        $this->WriteAttributeString('TilePeaks', json_encode(['sig' => $signature, 'map' => $map]));
+        return $map;
+    }
+
     /** Aktionen aus der Kachel. Gibt true zurück, wenn die Aktion zur Kachel gehört. */
     private function tileAction(string $Ident): bool
     {
@@ -164,6 +216,9 @@ trait ErTileTrait
             'tariff'              => $this->Translate('Tariff'),
             'validUntil'          => $this->Translate('valid until'),
             'dynamicPrice'        => $this->Translate('dynamic price'),
+            'peakDay'             => $this->Translate('Most expensive day'),
+            'credit'              => $this->Translate('Credit'),
+            'additionalPayment'   => $this->Translate('Additional payment'),
             'vsLastYear'          => $this->Translate('vs. last year'),
             'noPeriods'           => $this->Translate('No periods enabled.')
         ];

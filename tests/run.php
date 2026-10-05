@@ -507,6 +507,13 @@ check('Kachel: Tarifinfo letzter Gültigkeitstag', date('Y-m-d', $info['until'])
 check('Kachel: Tarifinfo offenes Ende', ErTile::tariffInfo(new ErTariff([segment()]), ts(2025, 6, 1))['until'], null);
 check('Kachel: Tarifinfo ohne Niedertarif', ErTile::tariffInfo(new ErTariff([segment(['priceNt' => 0.3])]), ts(2025, 6, 1))['nt'], null);
 check('Kachel: Tarifinfo vor dem ersten Tarif', ErTile::tariffInfo(new ErTariff([segment()]), ts(2024, 6, 1)), null);
+$peakIntervals = daily(ts(2025, 3, 1), ts(2025, 3, 6), 2.0);
+$peakIntervals[2]['value'] = 5.0;
+$peak = ErTile::peakDay($peakIntervals, new ErTariff([segment()]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 6), [], false);
+check('Kachel: teuerster Tag', date('Y-m-d', $peak['day']), '2025-03-03');
+check('Kachel: teuerster Tag, Kosten', $peak['costs'], 1.5);
+check('Kachel: teuerster Tag ohne Verbrauch', ErTile::peakDay([], new ErTariff([segment()]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 6), [], false), null);
+check('Kachel: teuerster Tag mit Grundpreis zählt den Grundpreis mit', ErTile::peakDay(daily(ts(2025, 3, 1), ts(2025, 3, 3), 1.0), new ErTariff([segment(['baseYear' => 365.0])]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 3), [], true)['costs'], 1.3);
 check('Kachel: ohne Ergebnisse keine Zeiträume', ErTile::build($tileDefs, [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], $tileNow)['periods'], []);
 
 // Zusammenbau der Kachel-HTML aus Vorlage und Daten (mit einem Ersatz für IPSModuleStrict)
