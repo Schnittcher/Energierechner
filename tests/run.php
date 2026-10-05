@@ -514,6 +514,15 @@ check('Kachel: teuerster Tag', date('Y-m-d', $peak['day']), '2025-03-03');
 check('Kachel: teuerster Tag, Kosten', $peak['costs'], 1.5);
 check('Kachel: teuerster Tag ohne Verbrauch', ErTile::peakDay([], new ErTariff([segment()]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 6), [], false), null);
 check('Kachel: teuerster Tag mit Grundpreis zählt den Grundpreis mit', ErTile::peakDay(daily(ts(2025, 3, 1), ts(2025, 3, 3), 1.0), new ErTariff([segment(['baseYear' => 365.0])]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 3), [], true)['costs'], 1.3);
+$fixedSource = ['title' => 'Haus', 'periods' => [['key' => 'Month_Current', 'v' => ['costs' => 1.0]], ['key' => 'Year_Current', 'v' => ['costs' => 9.0]]]];
+$fixed = ErTile::fixed($fixedSource, 'Year_Current', 'compact', '');
+check('Anzeige-Instanz: nur der gewählte Zeitraum', array_column($fixed['periods'], 'key'), ['Year_Current']);
+check('Anzeige-Instanz: Zeitraum und Darstellung', [$fixed['fixed'], $fixed['mode']], ['Year_Current', 'compact']);
+check('Anzeige-Instanz: Titel der Quelle bleibt', $fixed['title'], 'Haus');
+check('Anzeige-Instanz: eigener Titel', ErTile::fixed($fixedSource, 'Month_Current', 'auto', 'Strom Monat')['title'], 'Strom Monat');
+check('Anzeige-Instanz: unbekannte Darstellung wird auto', ErTile::fixed($fixedSource, 'Month_Current', 'xyz', '')['mode'], 'auto');
+check('Anzeige-Instanz: nicht aktivierter Zeitraum ergibt keine Zeiträume', ErTile::fixed($fixedSource, 'Day_Current', 'auto', '')['periods'], []);
+check('Anzeige-Instanz: leere Quelle', ErTile::fixed([], 'Month_Current', 'auto', '')['periods'], []);
 check('Kachel: ohne Ergebnisse keine Zeiträume', ErTile::build($tileDefs, [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], $tileNow)['periods'], []);
 
 // Zusammenbau der Kachel-HTML aus Vorlage und Daten (mit einem Ersatz für IPSModuleStrict)

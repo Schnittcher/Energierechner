@@ -91,6 +91,28 @@ final class ErTile
     }
 
     /**
+     * Kacheldaten für die Anzeige-Instanz: nur der gewählte Zeitraum, eigene Darstellung und optional ein eigener Titel.
+     *
+     * @param array<string, mixed> $data Kacheldaten der Energierechner-Instanz
+     * @param string $display auto, compact oder standard
+     * @return array<string, mixed>
+     */
+    public static function fixed(array $data, string $key, string $display, string $title): array
+    {
+        $periods = array_values(array_filter(
+            (array) ($data['periods'] ?? []),
+            static fn (array $p): bool => ($p['key'] ?? '') === $key
+        ));
+        $data['periods'] = $periods;
+        $data['fixed'] = $key;
+        $data['mode'] = in_array($display, ['compact', 'standard'], true) ? $display : 'auto';
+        if ($title !== '') {
+            $data['title'] = $title;
+        }
+        return $data;
+    }
+
+    /**
      * Der Tag mit den höchsten Kosten im Zeitraum [$start, $end), oder null ohne Kosten.
      *
      * @param array<int, array{start:int,end:int,value:float}> $intervals Archivintervalle des Zeitraums

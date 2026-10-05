@@ -22,6 +22,7 @@
 ## 2. Enthaltene Module
 
 * [Energierechner 2](Energierechner2/README.md) und [Energierechner Tarif 2](EnergierechnerTarif2/README.md): das neue Modul mit Tarifwechseln, Nachttarif, Grundpreis, Prognose und Abschlags-Saldo. Zum Umstieg gibt es eine Übernahme der Einstellungen aus dem alten Modul.
+* [Energierechner Kachel](EnergierechnerKachel/README.md): reine Anzeige-Instanz (experimentell) für die Kachel-Visualisierung mit festem Zeitraum eines Energierechner 2.
 * [Energierechner](Energierechner/README.md) und [EnergierechnerTarif](EnergierechnerTarif/README.md): die bisherigen Module. Sie bleiben unverändert erhalten, damit bestehende Installationen weiterlaufen.
 
 Für neue Installationen wird *Energierechner 2* empfohlen.

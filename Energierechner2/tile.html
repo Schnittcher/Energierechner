@@ -53,6 +53,7 @@ html,body{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;ov
 .compact .extra,.compact .chips,.compact .arrow,.compact .pd{display:none}
 .compact .hero .n{font-size:clamp(24px,13cqw,34px)}
 .compact .nav{font-size:12px;justify-content:flex-start;color:var(--sub)}
+.compact .bal{font-size:13px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -73,6 +74,8 @@ function groups(){return ['day','week','month','year'].filter(function(g){return
 function others(){return (DATA.periods||[]).filter(function(p){return ['tariff','custom','total'].indexOf(p.group)>=0})}
 function current(){
   var ps=DATA.periods||[];if(!ps.length)return null;
+  /* Anzeige-Instanz: fester Zeitraum, kein Wechsel */
+  if(DATA.fixed){sel={key:DATA.fixed};return ps.filter(function(p){return p.key===DATA.fixed})[0]||null}
   if(sel&&sel.key){var f=ps.filter(function(p){return p.key===sel.key})[0];if(f)return f}
   var gs=groups();
   if(!sel||!sel.group||gs.indexOf(sel.group)<0){sel={group:gs.indexOf('month')>=0?'month':(gs[0]||null),role:'cur'}}
@@ -99,7 +102,7 @@ function tariffText(){
 /* Kompakt, wenn die Kachel schmal oder niedrig ist */
 var compact=false;
 function setCompact(){
-  var c=window.innerWidth<=300||window.innerHeight<=220,w=document.getElementById('wrap');
+  var c=DATA.mode==='compact'||(DATA.mode!=='standard'&&(window.innerWidth<=300||window.innerHeight<=220)),w=document.getElementById('wrap');
   if(w)w.classList.toggle('compact',c);
   var changed=c!==compact;compact=c;return changed}
 function infoLine(v){
@@ -122,10 +125,10 @@ function render(){
   var chips=groups().map(function(g){return '<button class="chip'+(sel.group===g?' on':'')+'" data-g="'+g+'">'+esc(L(g))+'</button>'}).join('');
   var oth=others();
   if(oth.length){chips+='<select class="sel'+(sel.key?' on':'')+'" id="more"><option value="">'+esc(L('more'))+'</option>'+oth.map(function(o){return '<option value="'+esc(o.key)+'"'+(sel.key===o.key?' selected':'')+'>'+esc(o.label)+'</option>'}).join('')+'</select>'}
-  if(!compact)h+='<div class="row"><div class="chips">'+chips+'</div></div>';
+  if(!compact&&!DATA.fixed)h+='<div class="row"><div class="chips">'+chips+'</div></div>';
 
   var o=sel.group?byGroup(sel.group):{},canNav=!!(o.cur&&o.prev);
-  if(compact)h+='<div class="row nav"><span>'+esc(p.label)+((DATA.warnings||[]).length?' ⚠':'')+'</span></div>';
+  if(compact||DATA.fixed)h+='<div class="row nav"><span>'+esc(p.label)+((DATA.warnings||[]).length?' ⚠':'')+'</span></div>';
   else h+='<div class="row nav"><button class="arrow" id="prev" '+(canNav&&p.role==='cur'?'':'disabled')+' aria-label="‹">‹</button><span>'+esc(p.label)+'</span><button class="arrow" id="next" '+(canNav&&p.role==='prev'?'':'disabled')+' aria-label="›">›</button></div>';
 
   if(detail){
@@ -165,7 +168,7 @@ function bind(p){
   if(pv)pv.onclick=function(){if(sel.group){sel.role='prev';render()}};
   if(nx)nx.onclick=function(){if(sel.group){sel.role='cur';render()}};
   var hero=q('#hero');if(hero)hero.onclick=function(){
-    if(compact){var gs=groups();if(gs.length>1){var i=gs.indexOf(sel.group);sel={group:gs[(i+1)%gs.length],role:'cur'}}render()}
+    if(compact){var gs=DATA.fixed?[]:groups();if(gs.length>1){var i=gs.indexOf(sel.group);sel={group:gs[(i+1)%gs.length],role:'cur'}}render()}
     else{detail=true;render()}};
   var back=q('#back');if(back)back.onclick=function(){detail=false;render()};
   var rc=q('#recalc');if(rc)rc.onclick=function(){rc.textContent='…';if(typeof requestAction==='function'){requestAction('TileRecalculate',true)}};

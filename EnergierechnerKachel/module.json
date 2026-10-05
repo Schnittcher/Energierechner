@@ -1,0 +1,12 @@
+{
+    "id": "{DBF0E216-E4CC-4617-BEC5-77211E986044}",
+    "name": "Energierechner Kachel",
+    "type": 3,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "ERK",
+    "url": "https://deinsmarthome.info/ip-symcon-module/energierechner"
+}

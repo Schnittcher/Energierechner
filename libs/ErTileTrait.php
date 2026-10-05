@@ -54,16 +54,14 @@ trait ErTileTrait
     }
 
     /**
-     * Schickt die aktuellen Werte an die Kachel und merkt sie für das nächste Öffnen.
+     * Baut die Kacheldaten und merkt sie für das nächste Öffnen und für die Anzeige-Instanz Energierechner Kachel.
+     * An die eigene Kachel gehen die Werte nur, wenn sie eingeschaltet ist.
      *
      * @param array<string, array<string, mixed>> $results
      * @param array<int, array{key:string,label:string,start:int,end:int}> $defs
      */
     private function tileUpdate(array $results, array $defs, string $unitSuffix, int $now, ErTariff $tariff): void
     {
-        if (!$this->ReadPropertyBoolean('TileEnabled')) {
-            return;
-        }
         $warnings = json_decode($this->ReadAttributeString('Warnings'), true);
         $data = ErTile::build($defs, $results, [
             'title'    => IPS_GetName($this->InstanceID),
@@ -83,7 +81,9 @@ trait ErTileTrait
         ], $now);
         $json = json_encode($data);
         $this->WriteAttributeString('TileData', $json);
-        $this->UpdateVisualizationValue($json);
+        if ($this->ReadPropertyBoolean('TileEnabled')) {
+            $this->UpdateVisualizationValue($json);
+        }
     }
 
     /**

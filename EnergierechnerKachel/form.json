@@ -1,0 +1,103 @@
+{
+    "elements": [
+        {
+            "type": "SelectInstance",
+            "name": "SourceID",
+            "caption": "Energierechner 2",
+            "validModules": [
+                "{4E7A6F79-8C7E-4D15-900E-1B97DD916FC4}"
+            ]
+        },
+        {
+            "type": "Select",
+            "name": "Period",
+            "caption": "Period",
+            "options": [
+                {
+                    "caption": "Today",
+                    "value": "Day_Current"
+                },
+                {
+                    "caption": "Yesterday",
+                    "value": "Day_Previous"
+                },
+                {
+                    "caption": "This week",
+                    "value": "Week_Current"
+                },
+                {
+                    "caption": "Last week",
+                    "value": "Week_Previous"
+                },
+                {
+                    "caption": "This month",
+                    "value": "Month_Current"
+                },
+                {
+                    "caption": "Last month",
+                    "value": "Month_Previous"
+                },
+                {
+                    "caption": "This year",
+                    "value": "Year_Current"
+                },
+                {
+                    "caption": "Last year",
+                    "value": "Year_Previous"
+                }
+            ]
+        },
+        {
+            "type": "Select",
+            "name": "Display",
+            "caption": "Display",
+            "options": [
+                {
+                    "caption": "Automatic (by tile size)",
+                    "value": "auto"
+                },
+                {
+                    "caption": "Always compact",
+                    "value": "compact"
+                },
+                {
+                    "caption": "Always standard",
+                    "value": "standard"
+                }
+            ]
+        },
+        {
+            "type": "ValidationTextBox",
+            "name": "Title",
+            "caption": "Title (empty = name of the Energierechner 2)"
+        },
+        {
+            "type": "Label",
+            "caption": "The period must be enabled in the Energierechner 2. The tile only shows its values and calculates nothing itself."
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Refresh",
+            "onClick": "ERK_Refresh($id);"
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Instance is active"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "Please select an Energierechner 2"
+        },
+        {
+            "code": 202,
+            "icon": "error",
+            "caption": "The selected instance is not an Energierechner 2"
+        }
+    ]
+}

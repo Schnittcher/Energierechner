@@ -190,12 +190,21 @@ Alle Variablen eines Zeitraums werden gemeinsam geschrieben. Abgeschlossene Zeit
 Jede Instanz stellt eine Kachel für die Kachel-Visualisierung bereit (Einstellung „Kachel für die Kachel-Visualisierung bereitstellen", standardmäßig an). Die Kachel zeigt nur, was der Rechner berechnet hat, und rechnet nichts selbst.
 
 - **Zeiträume:** Chips für Tag, Woche, Monat und Jahr, soweit aktiviert, dazu das Menü „Mehr" für Tarifzeiträume, die Summe und eigene Zeiträume. Mit den Pfeilen wechselst du zwischen dem laufenden und dem letzten abgeschlossenen Zeitraum.
-- **Übersicht:** Kosten und Verbrauch groß, dazu je nach Größe die Prognose (bisherige Kosten im Verhältnis zur Prognose), das Verhältnis von Hoch- und Niedertarif und ein Warnband mit der Schaltfläche „Neu berechnen".
-- **Alle Werte:** Ein Tippen auf die Hauptzahl zeigt die Details (Arbeits- und Grundkosten, Effektivpreis, HT/NT, Energie bei Gas, Prognose, Saldo). Welche Werte erscheinen, hängt von den aktivierten Optionen ab.
-- Die Kachel übernimmt Farben und Schrift des Clients und passt sich der Größe an.
+- **Übersicht:** Kosten und Verbrauch groß, dazu je nach Größe und Einstellungen:
+  - **Guthaben oder Nachzahlung** gegenüber den bisher aufgelaufenen Abschlägen (bei Zeiträumen mit Saldo),
+  - **Vorjahresvergleich** des Verbrauchs für Monat und Jahr (laufend bis zum gleichen Stichtag, abgeschlossen komplett), nur wenn das Archiv Vorjahreswerte hat; Kosten werden nicht verglichen, weil der Vorjahrestarif ein anderer gewesen sein kann,
+  - **Durchschnittskosten je Tag** (nicht für einzelne Tage),
+  - die Prognose (bisherige Kosten im Verhältnis zur Prognose) und das Verhältnis von Hoch- und Niedertarif,
+  - in der Fußzeile der **aktuelle Tarif** mit Anbieter, Preis und letztem Gültigkeitstag (bei dynamischen Preisen „dynamischer Preis") und der Stand,
+  - ein Warnband mit der Schaltfläche „Neu berechnen".
+- **Alle Werte:** Ein Tippen auf die Hauptzahl zeigt die Details (Arbeits- und Grundkosten, Effektivpreis, HT/NT, Energie bei Gas, Prognose, Saldo, Durchschnitt je Tag, Tarif, bei Woche, Monat und Jahr der **teuerste abgeschlossene Tag** mit seinen Kosten). Welche Werte erscheinen, hängt von den aktivierten Optionen ab. Der teuerste Tag wird einmal am Tag aus dem Archiv berechnet; der heutige Tag zählt nicht mit.
+- **Kompakt:** Ist die Kachel schmal (bis 300 Pixel) oder niedrig (bis 220 Pixel), zeigt sie nur Zeitraum, Hauptwert, Guthaben/Nachzahlung und Vorjahresabweichung. Ein Tippen auf den Wert wechselt dann zwischen Tag, Woche, Monat und Jahr.
+- Die Kachel übernimmt Farben und Schrift des Clients und passt sich der Größe an. Seitliches Wischen auf der Kachel ist gesperrt, damit sie nicht aus dem Rahmen rutscht; senkrechtes Wischen geht an die Seite der App.
 - `ER2_GetTileData($InstanzID)` liefert die Kacheldaten als JSON, z. B. für eigene Skripte.
 
-Die Kachel ist neu und wurde noch nicht in einer echten Kachel-Visualisierung geprüft. Sie lässt sich abschalten (Einstellung ausschalten) oder samt Code entfernen: Die Dateien `libs/ErTile.php`, `libs/ErTileTrait.php` und `Energierechner2/tile.html` löschen, die mit `KACHEL` markierten Zeilen in `Energierechner2/module.php` entfernen und die Einstellung `TileEnabled` im Formular streichen.
+Mit [Energierechner Kachel](../EnergierechnerKachel/README.md) lassen sich aus einem Energierechner mehrere Kacheln mit festem Zeitraum anlegen.
+
+Die Kachel ist neu und noch experimentell. Sie lässt sich abschalten (Einstellung ausschalten; die Kacheldaten werden trotzdem berechnet, damit *Energierechner Kachel* sie nutzen kann) oder samt Code entfernen: Die Dateien `libs/ErTile.php`, `libs/ErTileTrait.php`, `Energierechner2/tile.html` und den Ordner `EnergierechnerKachel` löschen, die mit `KACHEL` markierten Zeilen in `Energierechner2/module.php` entfernen und die Einstellung `TileEnabled` im Formular streichen.
 
 ### Debug-Ausgabe
 
