@@ -44,7 +44,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
 .det .r b{font-weight:500}
 .foot{margin-top:2px;font-size:11px;color:var(--hint);display:flex;justify-content:space-between;gap:10px}.foot span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.foot span:last-child{flex:none}
 .empty{color:var(--sub);font-size:14px;margin:auto;text-align:center}
-@container (max-width:300px){#wrap{padding:var(--pt,26px) var(--pr,32px) var(--pb,40px) 10px;gap:6px}.extra{display:none}.hero .n{font-size:clamp(24px,13cqw,34px)}.nav{font-size:12px}.chips .chip:not(.on){display:none}}
+/* Kompakte Darstellung fuer kleine Kacheln: Zeitraum, Hauptwert und Vorjahrespfeil; Tippen auf den Wert wechselt den Zeitraum */
+#wrap.compact{padding:var(--pt,26px) var(--pr,32px) var(--pb,40px) 10px;gap:6px}
+.compact .extra,.compact .chips,.compact .arrow,.compact .pd{display:none}
+.compact .hero .n{font-size:clamp(24px,13cqw,34px)}
+.compact .nav{font-size:12px;justify-content:flex-start;color:var(--sub)}
 </style>
 </head>
 <body>
@@ -76,7 +80,7 @@ function showHtNt(){var F=DATA.flags||{};return !!F.htnt&&F.hasNt!==false}
 function delta(v){
   if(!(v.lastYearConsumption>0)||v.consumption==null)return '';
   var d=Math.round((v.consumption/v.lastYearConsumption-1)*100),up=d>0;
-  return '<b style="color:'+(up?'#e0734a':'var(--ac)')+'">'+(up?'▲ +':(d<0?'▼ ':'● '))+d+' %</b> '+esc(L('consumption'))+' '+esc(L('vsLastYear'))}
+  return '<b style="color:'+(up?'#e0734a':'var(--ac)')+'">'+(up?'▲ +':(d<0?'▼ ':'● '))+d+' %</b> <span class="pd">'+esc(L('consumption'))+' </span>'+esc(L('vsLastYear'))}
 /* Durchschnittskosten je Tag (nicht fuer einzelne Tage) */
 function perDay(v){return v.days>1&&v.costs>0?v.costs/v.days:0}
 /* Der aktuelle Tarifabschnitt als Text */
@@ -88,23 +92,32 @@ function tariffText(){
   s.push(t.dynamic?esc(L('dynamicPrice')):(t.nt!=null&&t.nt!==t.ht?ct(t.ht)+' / '+ct(t.nt)+' ct/'+u:ct(t.ht)+' ct/'+u));
   if(t.until)s.push(esc(L('validUntil'))+' '+new Date(t.until*1000).toLocaleDateString([], {day:'2-digit',month:'2-digit',year:'numeric'}));
   return s.join(' · ')}
+/* Kompakt, wenn die Kachel schmal oder niedrig ist */
+var compact=false;
+function setCompact(){
+  var c=window.innerWidth<=300||window.innerHeight<=220,w=document.getElementById('wrap');
+  if(w)w.classList.toggle('compact',c);
+  var changed=c!==compact;compact=c;return changed}
 function infoLine(v){
-  var a=[],d=delta(v);if(d)a.push(d);if(perDay(v)>0)a.push('Ø '+eur(perDay(v))+' / '+esc(L('day')));
-  return a.length?'<div class="delta hint">'+a.join(' · ')+'</div>':''}
+  var d=delta(v),p=perDay(v)>0?'<span class="pd">'+(d?' · ':'')+'Ø '+eur(perDay(v))+' / '+esc(L('day'))+'</span>':'';
+  return d||p?'<div class="delta hint">'+d+p+'</div>':''}
 function row(l,v){return '<div class="r"><span>'+esc(l)+'</span><b>'+v+'</b></div>'}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
 
 function render(){
   var w=document.getElementById('wrap'),p=current();
   if(!p){w.innerHTML='<div class="empty">'+esc(L('noPeriods'))+'</div>';return}
+  setCompact();
+  if(compact)detail=false;
   var v=p.v||{},F=DATA.flags||{},h='';
   var chips=groups().map(function(g){return '<button class="chip'+(sel.group===g?' on':'')+'" data-g="'+g+'">'+esc(L(g))+'</button>'}).join('');
   var oth=others();
   if(oth.length){chips+='<select class="sel'+(sel.key?' on':'')+'" id="more"><option value="">'+esc(L('more'))+'</option>'+oth.map(function(o){return '<option value="'+esc(o.key)+'"'+(sel.key===o.key?' selected':'')+'>'+esc(o.label)+'</option>'}).join('')+'</select>'}
-  h+='<div class="row"><div class="chips">'+chips+'</div></div>';
+  if(!compact)h+='<div class="row"><div class="chips">'+chips+'</div></div>';
 
   var o=sel.group?byGroup(sel.group):{},canNav=!!(o.cur&&o.prev);
-  h+='<div class="row nav"><button class="arrow" id="prev" '+(canNav&&p.role==='cur'?'':'disabled')+' aria-label="‹">‹</button><span>'+esc(p.label)+'</span><button class="arrow" id="next" '+(canNav&&p.role==='prev'?'':'disabled')+' aria-label="›">›</button></div>';
+  if(compact)h+='<div class="row nav"><span>'+esc(p.label)+((DATA.warnings||[]).length?' ⚠':'')+'</span></div>';
+  else h+='<div class="row nav"><button class="arrow" id="prev" '+(canNav&&p.role==='cur'?'':'disabled')+' aria-label="‹">‹</button><span>'+esc(p.label)+'</span><button class="arrow" id="next" '+(canNav&&p.role==='prev'?'':'disabled')+' aria-label="›">›</button></div>';
 
   if(detail){
     h+='<div class="hint" style="cursor:pointer" id="back">'+esc(L('back'))+'</div><div class="det"><div class="g">'+esc(L('costs'))+'</div>'+row(L('costs'),eur(v.costs||0));
@@ -141,7 +154,9 @@ function bind(p){
   var pv=q('#prev'),nx=q('#next');
   if(pv)pv.onclick=function(){if(sel.group){sel.role='prev';render()}};
   if(nx)nx.onclick=function(){if(sel.group){sel.role='cur';render()}};
-  var hero=q('#hero');if(hero)hero.onclick=function(){detail=true;render()};
+  var hero=q('#hero');if(hero)hero.onclick=function(){
+    if(compact){var gs=groups();if(gs.length>1){var i=gs.indexOf(sel.group);sel={group:gs[(i+1)%gs.length],role:'cur'}}render()}
+    else{detail=true;render()}};
   var back=q('#back');if(back)back.onclick=function(){detail=false;render()};
   var rc=q('#recalc');if(rc)rc.onclick=function(){rc.textContent='…';if(typeof requestAction==='function'){requestAction('TileRecalculate',true)}};
 }
@@ -194,7 +209,7 @@ function handleMessage(data){
 }
 render();
 fit();
-window.addEventListener('resize',function(){document.getElementById('wrap').style.width='';fit()});
+window.addEventListener('resize',function(){document.getElementById('wrap').style.width='';if(setCompact())render();fit()});
 </script>
 </body>
 </html>
