@@ -1,0 +1,24 @@
+{
+    "translations": {
+        "de": {
+            "Prices refer to one unit of the meter (kWh, m³ or liter). The tariff applies from the given date until the next entry.": "Die Preise beziehen sich auf eine Einheit des Zählers (kWh, m³ oder Liter). Ein Tarif gilt ab dem Datum bis zum nächsten Eintrag.",
+            "Tariff periods": "Tarifzeiträume",
+            "Name": "Name",
+            "Supplier": "Anbieter",
+            "Valid from": "Gültig ab",
+            "Price (day)": "Preis (Tag)",
+            "Price (night)": "Preis (Nacht)",
+            "Night from": "Nacht von",
+            "Night until": "Nacht bis",
+            "Base price per year": "Grundpreis pro Jahr",
+            "Advance payment": "Abschlag",
+            "Payments per year": "Zahlungen pro Jahr",
+            "Gas conversion factor": "Gas-Umrechnungsfaktor",
+            "Gas Z-number": "Gas-Zustandszahl",
+            "Gas calorific value": "Gas-Brennwert",
+            "Night window: leave 'Night from' and 'Night until' identical (e.g. both 00:00) if there is no night tariff. A night price of 0 uses the day price.": "Nachtfenster: 'Nacht von' und 'Nacht bis' gleich lassen (z. B. beide 00:00), wenn es keinen Nachttarif gibt. Ein Nachtpreis von 0 verwendet den Tagespreis.",
+            "Instance is active": "Instanz ist aktiv",
+            "No tariff periods defined": "Keine Tarifzeiträume angelegt"
+        }
+    }
+}

@@ -16,21 +16,26 @@
    
 ## 1. Voraussetzungen
 
-* mindestens IPS Version 5.5
-* geloggte Zähler Variable für den Gesamtverbrauch
+* mindestens IPS Version 8.1 (ab Library-Version 3.0)
+* geloggte Zähler Variable für den Gesamtverbrauch (Aggregationstyp Zähler)
 
 ## 2. Enthaltene Module
 
-* [Energierechner](Energierechner/README.md)
-* [EnergierechnerTarif](EnergierechnerTarif/README.md)
+* [Energierechner 2](Energierechner2/README.md) und [Energierechner Tarif 2](EnergierechnerTarif2/README.md): das neue Modul mit Tarifwechseln, Nachttarif, Grundpreis, Prognose und Abschlags-Saldo. Zum Umstieg gibt es eine Übernahme der Einstellungen aus dem alten Modul.
+* [Energierechner](Energierechner/README.md) und [EnergierechnerTarif](EnergierechnerTarif/README.md): die bisherigen Module. Sie bleiben unverändert erhalten, damit bestehende Installationen weiterlaufen.
+
+Für neue Installationen wird *Energierechner 2* empfohlen.
 
 ## 3. Installation
 Installation über den IP-Symcon Module Store.
 
 ## 4. Konfiguration in IP-Symcon
 
-Als erstes muss Geräteinstanz angelegt werden, dann wird die Instanz ür die Tarife automatisch angelegt.
-Die weitere Dokumentation bitte den einzelnen Modulen entnehmen.
+Als erstes wird die Geräteinstanz angelegt, dann die Instanz für die Tarife. Die weitere Dokumentation bitte den einzelnen Modulen entnehmen.
+
+## Tests
+
+Die Rechenlogik liegt in `libs/` und wird mit `php tests/run.php` geprüft. Auf einem Symcon-System laufen zusätzlich Integrationstests gegen das Archiv (siehe Kopf von `tests/run.php`).
 
 ## 5. Spenden
 

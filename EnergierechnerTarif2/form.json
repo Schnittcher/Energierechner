@@ -1,0 +1,191 @@
+{
+    "elements": [
+        {
+            "type": "Label",
+            "caption": "Prices refer to one unit of the meter (kWh, m³ or liter). The tariff applies from the given date until the next entry."
+        },
+        {
+            "type": "List",
+            "name": "Periods",
+            "caption": "Tariff periods",
+            "rowCount": 8,
+            "add": true,
+            "delete": true,
+            "sort": {
+                "column": "ValidFrom",
+                "direction": "descending"
+            },
+            "columns": [
+                {
+                    "name": "Id",
+                    "caption": "Id",
+                    "width": "0px",
+                    "visible": false,
+                    "save": true,
+                    "add": ""
+                },
+                {
+                    "caption": "Name",
+                    "name": "Name",
+                    "width": "150px",
+                    "add": "",
+                    "edit": {
+                        "type": "ValidationTextBox"
+                    }
+                },
+                {
+                    "caption": "Supplier",
+                    "name": "Supplier",
+                    "width": "150px",
+                    "add": "",
+                    "edit": {
+                        "type": "ValidationTextBox"
+                    }
+                },
+                {
+                    "caption": "Valid from",
+                    "name": "ValidFrom",
+                    "width": "110px",
+                    "add": {
+                        "year": 2025,
+                        "month": 1,
+                        "day": 1
+                    },
+                    "edit": {
+                        "type": "SelectDate"
+                    }
+                },
+                {
+                    "caption": "Price (day)",
+                    "name": "PriceDay",
+                    "width": "110px",
+                    "add": 0.3,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 7,
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Price (night)",
+                    "name": "PriceNight",
+                    "width": "110px",
+                    "add": 0,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 7,
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Night from",
+                    "name": "NightFrom",
+                    "width": "100px",
+                    "add": {
+                        "hour": 0,
+                        "minute": 0,
+                        "second": 0
+                    },
+                    "edit": {
+                        "type": "SelectTime"
+                    }
+                },
+                {
+                    "caption": "Night until",
+                    "name": "NightTo",
+                    "width": "100px",
+                    "add": {
+                        "hour": 0,
+                        "minute": 0,
+                        "second": 0
+                    },
+                    "edit": {
+                        "type": "SelectTime"
+                    }
+                },
+                {
+                    "caption": "Base price per year",
+                    "name": "BasePrice",
+                    "width": "130px",
+                    "add": 0,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 4,
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Advance payment",
+                    "name": "Advance",
+                    "width": "120px",
+                    "add": 0,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 2,
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Payments per year",
+                    "name": "AdvanceCount",
+                    "width": "120px",
+                    "add": 12,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Gas conversion factor",
+                    "name": "GasFactor",
+                    "width": "150px",
+                    "add": 1,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 4,
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Gas Z-number",
+                    "name": "GasZ",
+                    "width": "110px",
+                    "add": 0.95,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 4,
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Gas calorific value",
+                    "name": "GasCalorific",
+                    "width": "140px",
+                    "add": 10,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 4,
+                        "minimum": 0
+                    }
+                }
+            ],
+            "values": []
+        },
+        {
+            "type": "Label",
+            "caption": "Night window: leave 'Night from' and 'Night until' identical (e.g. both 00:00) if there is no night tariff. A night price of 0 uses the day price."
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Instance is active"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "No tariff periods defined"
+        }
+    ]
+}

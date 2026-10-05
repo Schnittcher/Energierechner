@@ -1,0 +1,16 @@
+{
+    "id": "{1765D09A-4E07-4B50-A6AC-B75B17D773EB}",
+    "name": "Energierechner Tarif 2",
+    "type": 2,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [
+        "{EC6EE5AC-D081-4AB4-9F2C-5F4232781DD9}"
+    ],
+    "implemented": [
+        "{933FDCC6-2D94-454E-A696-84988700E4D1}"
+    ],
+    "prefix": "ER2T",
+    "url": "https://deinsmarthome.info/ip-symcon-module/energierechner"
+}

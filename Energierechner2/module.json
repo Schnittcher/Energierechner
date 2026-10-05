@@ -1,0 +1,16 @@
+{
+    "id": "{4E7A6F79-8C7E-4D15-900E-1B97DD916FC4}",
+    "name": "Energierechner 2",
+    "type": 3,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": [
+        "{933FDCC6-2D94-454E-A696-84988700E4D1}"
+    ],
+    "childRequirements": [],
+    "implemented": [
+        "{EC6EE5AC-D081-4AB4-9F2C-5F4232781DD9}"
+    ],
+    "prefix": "ER2",
+    "url": "https://deinsmarthome.info/ip-symcon-module/energierechner"
+}

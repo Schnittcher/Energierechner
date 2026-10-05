@@ -1,0 +1,305 @@
+{
+    "elements": [
+        {
+            "type": "CheckBox",
+            "name": "Active",
+            "caption": "Active"
+        },
+        {
+            "type": "SelectVariable",
+            "name": "ConsumptionVariableID",
+            "caption": "Consumption variable (counter, logged in the archive)"
+        },
+        {
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "Select",
+                    "name": "Unit",
+                    "caption": "Meter unit",
+                    "onChange": "IPS_RequestAction($id, 'UnitChanged', $Unit);",
+                    "options": [
+                        {
+                            "caption": "Please select a unit.",
+                            "value": ""
+                        },
+                        {
+                            "caption": "kWh",
+                            "value": "kWh"
+                        },
+                        {
+                            "caption": "Wh (converted to kWh)",
+                            "value": "Wh"
+                        },
+                        {
+                            "caption": "Pulses (converted to kWh)",
+                            "value": "Impulse"
+                        },
+                        {
+                            "caption": "m³",
+                            "value": "m3"
+                        },
+                        {
+                            "caption": "Liter",
+                            "value": "Liter"
+                        }
+                    ]
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "ImpulsesPerKwh",
+                    "caption": "Pulses per kWh",
+                    "minimum": 1,
+                    "visible": false
+                }
+            ]
+        },
+        {
+            "type": "CheckBox",
+            "name": "GasConversion",
+            "caption": "Gas: convert m³ to kWh with the values of the tariff (meter unit m³ only)"
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Periods",
+            "expanded": true,
+            "items": [
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "DayCurrent",
+                            "caption": "Today"
+                        },
+                        {
+                            "type": "CheckBox",
+                            "name": "DayPrevious",
+                            "caption": "Yesterday"
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "WeekCurrent",
+                            "caption": "Current week"
+                        },
+                        {
+                            "type": "CheckBox",
+                            "name": "WeekPrevious",
+                            "caption": "Previous week"
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "MonthCurrent",
+                            "caption": "Current month"
+                        },
+                        {
+                            "type": "CheckBox",
+                            "name": "MonthPrevious",
+                            "caption": "Previous month"
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "YearCurrent",
+                            "caption": "Current year"
+                        },
+                        {
+                            "type": "CheckBox",
+                            "name": "YearPrevious",
+                            "caption": "Previous year"
+                        }
+                    ]
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TariffPeriods",
+                    "caption": "One set of values per tariff period, plus total"
+                },
+                {
+                    "type": "List",
+                    "name": "CustomPeriods",
+                    "caption": "Custom periods",
+                    "rowCount": 5,
+                    "add": true,
+                    "delete": true,
+                    "columns": [
+                        {
+                            "name": "Id",
+                            "caption": "Id",
+                            "width": "0px",
+                            "visible": false,
+                            "save": true,
+                            "add": ""
+                        },
+                        {
+                            "caption": "Name",
+                            "name": "Name",
+                            "width": "auto",
+                            "add": "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        },
+                        {
+                            "caption": "From",
+                            "name": "From",
+                            "width": "130px",
+                            "add": {
+                                "year": 2025,
+                                "month": 1,
+                                "day": 1
+                            },
+                            "edit": {
+                                "type": "SelectDate"
+                            }
+                        },
+                        {
+                            "caption": "To (inclusive)",
+                            "name": "To",
+                            "width": "130px",
+                            "add": {
+                                "year": 2025,
+                                "month": 12,
+                                "day": 31
+                            },
+                            "edit": {
+                                "type": "SelectDate"
+                            }
+                        }
+                    ],
+                    "values": []
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Additional values",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "IncludeBaseCosts",
+                    "caption": "Include the base price in the costs"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowBaseCosts",
+                    "caption": "Show usage costs and base price separately"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowDayNight",
+                    "caption": "Show day and night consumption and costs separately"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowForecast",
+                    "caption": "Forecast for current week, month and year"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "LogClosedPeriods",
+                    "caption": "Log completed periods in the archive (yesterday, previous week, month and year; costs and consumption)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowBalance",
+                    "caption": "Balance of advance payments (current and previous year, tariff periods and total)"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Expert settings",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "UpdateInterval",
+                    "caption": "Update interval",
+                    "suffix": "minutes",
+                    "minimum": 1
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Take over from the old Energierechner",
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "Copies settings, custom periods and tariffs from an instance of the old Energierechner module. The new instance stays inactive until you have checked the values."
+                },
+                {
+                    "type": "SelectInstance",
+                    "name": "LegacyInstance",
+                    "caption": "Old Energierechner",
+                    "validModules": [
+                        "{E02FA048-D39D-4B25-A241-9FAD43789764}"
+                    ]
+                },
+                {
+                    "type": "Button",
+                    "caption": "Take over settings",
+                    "onClick": "echo ER2_ImportLegacy($id, $LegacyInstance);"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Recalculate",
+            "onClick": "ER2_Recalculate($id); echo 'OK';"
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Instance is active"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Instance is inactive"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "Please select a consumption variable and a unit"
+        },
+        {
+            "code": 202,
+            "icon": "error",
+            "caption": "No archive found"
+        },
+        {
+            "code": 203,
+            "icon": "error",
+            "caption": "The consumption variable is not logged in the archive"
+        },
+        {
+            "code": 204,
+            "icon": "error",
+            "caption": "The consumption variable must be logged with the aggregation type counter"
+        },
+        {
+            "code": 205,
+            "icon": "error",
+            "caption": "No tariff connected or no tariff periods defined"
+        }
+    ]
+}
