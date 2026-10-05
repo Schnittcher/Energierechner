@@ -107,7 +107,7 @@ function setCompact(){
   var changed=c!==compact;compact=c;return changed}
 function infoLine(v){
   var d=delta(v),p=perDay(v)>0?'<span class="pd">'+(d?' · ':'')+'Ø '+eur(perDay(v))+' / '+esc(L('day'))+'</span>':'';
-  return d||p?'<div class="delta hint">'+d+p+'</div>':''}
+  return d||p?'<div class="delta hint opt" data-drop="4">'+d+p+'</div>':''}
 /* Guthaben oder Nachzahlung gegenueber den Abschlaegen, falls der Zeitraum einen Saldo hat */
 function balanceLine(v){
   if(!(DATA.flags||{}).balance||v.balance==null||Math.abs(v.balance)<0.005)return '';
@@ -145,12 +145,12 @@ function render(){
     if(DATA.tariff)h+='<div class="g">'+esc(L('tariff'))+'</div>'+row(DATA.tariff.name||L('tariff'),tariffText());
     h+='</div>';
   }else{
-    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div>'+(balanceLine(v)?'':'<div class="hint extra">'+esc(L('tapDetails'))+'</div>')+balanceLine(v)+infoLine(v);
-    if(F.forecast&&p.open&&v.forecastCosts>0)h+='<div class="extra"><div class="lab"><span>'+esc(L('forecastCosts'))+'</span><span>'+eur(v.forecastCosts)+'</span></div><div class="track"><i style="width:'+Math.min(100,pct(v.costs||0,v.forecastCosts))+'%"></i></div></div>';
+    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div>'+(balanceLine(v)?'':'<div class="hint extra opt" data-drop="3">'+esc(L('tapDetails'))+'</div>')+balanceLine(v)+infoLine(v);
+    if(F.forecast&&p.open&&v.forecastCosts>0)h+='<div class="extra opt" data-drop="2"><div class="lab"><span>'+esc(L('forecastCosts'))+'</span><span>'+eur(v.forecastCosts)+'</span></div><div class="track"><i style="width:'+Math.min(100,pct(v.costs||0,v.forecastCosts))+'%"></i></div></div>';
     var t=(v.consumptionHt||0)+(v.consumptionNt||0);
     if(showHtNt()&&t>0){
       var ph=(v.consumptionHt||0)/t*100,pn=100-ph;
-      h+='<div class="extra"><div class="lab"><span>'+esc(L('ht'))+' / '+esc(L('nt'))+'</span><span>'+Math.round(ph)+' % / '+Math.round(pn)+' %</span></div><div class="stack">'+(ph>0?'<i style="width:'+ph+'%;background:var(--ac)"></i>':'')+(pn>0?'<i style="width:'+pn+'%;background:var(--bd)"></i>':'')+'</div></div>';
+      h+='<div class="extra opt" data-drop="1"><div class="lab"><span>'+esc(L('ht'))+' / '+esc(L('nt'))+'</span><span>'+Math.round(ph)+' % / '+Math.round(pn)+' %</span></div><div class="stack">'+(ph>0?'<i style="width:'+ph+'%;background:var(--ac)"></i>':'')+(pn>0?'<i style="width:'+pn+'%;background:var(--bd)"></i>':'')+'</div></div>';
     }
   }
   var ws=DATA.warnings||[];
@@ -158,6 +158,7 @@ function render(){
   if(DATA.updated){var d=new Date(DATA.updated*1000);h+='<div class="foot extra"><span>'+(!detail&&DATA.tariff?tariffText():'')+'</span><span>'+esc(L('updated'))+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span></div>'}
   w.innerHTML=h;
   bind(p);
+  fitHeight();
 }
 
 function bind(p){
@@ -190,6 +191,13 @@ function measure(){
   },{threshold:[0,1]});
   io.observe(p);
 }
+/* Reicht die Hoehe nicht, werden weniger wichtige Zeilen ausgeblendet (zuerst HT/NT, Prognose, Hinweis, Vorjahr/Ø);
+   Hauptwert, Saldo, Warnung und die Fusszeile mit dem Stand bleiben immer stehen. */
+function fitHeight(){
+  var w=document.getElementById('wrap');if(!w)return;
+  var opts=Array.prototype.slice.call(w.querySelectorAll('.opt')).sort(function(a,b){return a.getAttribute('data-drop')-b.getAttribute('data-drop')});
+  opts.forEach(function(e){e.style.display=''});
+  for(var i=0;i<opts.length&&w.scrollHeight>w.clientHeight+1;i++)opts[i].style.display='none'}
 function fit(){
   var w=document.getElementById('wrap');
   var top=null;
@@ -201,7 +209,8 @@ function fit(){
   w.style.setProperty('--pb',top!==null&&top<10?'12px':'48px');
   // Der Rahmen ist beim Start oft noch nicht fertig platziert: mehrfach messen
   measure();
-  [250,1000,3000].forEach(function(ms){setTimeout(measure,ms)});
+  fitHeight();
+  [250,1000,3000].forEach(function(ms){setTimeout(function(){measure();fitHeight()},ms)});
 }
 
 /* Die Kachel soll sich nicht seitlich verschieben lassen (abgeschnittener Rand der App). Waagerechtes Wischen wird abgefangen,
