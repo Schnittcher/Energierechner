@@ -201,8 +201,8 @@
                 },
                 {
                     "type": "CheckBox",
-                    "name": "ShowDayNight",
-                    "caption": "Show day and night consumption and costs separately"
+                    "name": "ShowHtNt",
+                    "caption": "Show high and low tariff (HT/NT) consumption and costs separately"
                 },
                 {
                     "type": "CheckBox",

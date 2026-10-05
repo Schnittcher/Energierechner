@@ -26,8 +26,8 @@ final class ErArchiveReader
     public static function aggregationFor(ErTariff $tariff): int
     {
         $grid = 1440;
-        if ($tariff->hasNight()) {
-            $grid = min($grid, $tariff->nightGridMinutes());
+        if ($tariff->hasNt()) {
+            $grid = min($grid, $tariff->ntGridMinutes());
         }
         if ($tariff->hasDynamic()) {
             $grid = min($grid, $tariff->dynamicResolutionMinutes());

@@ -1,6 +1,6 @@
 # Energierechner 2
 
-Berechnet Verbrauch und Kosten eines im Archiv geloggten Zählers für beliebige Zeiträume. Tarifwechsel, Nachttarif, **dynamische Preise** (z. B. Börsenstrom), Grundpreis, Prognose und der Saldo der Abschlagszahlungen werden berücksichtigt.
+Berechnet Verbrauch und Kosten eines im Archiv geloggten Zählers für beliebige Zeiträume. Tarifwechsel, Hoch- und Niedertarif (HT/NT, auch mit mehreren Zeitfenstern und Wochenende), **dynamische Preise** (z. B. Börsenstrom), Grundpreis, Prognose und der Saldo der Abschlagszahlungen werden berücksichtigt.
 
 Voraussetzung: Symcon 8.1 oder neuer. Die Tarife liegen in einer eigenen Instanz, dem [Energierechner Tarif 2](../EnergierechnerTarif2/README.md). Mehrere Zähler können sich einen Tarif teilen.
 
@@ -35,7 +35,7 @@ Voraussetzung: Symcon 8.1 oder neuer. Die Tarife liegen in einer eigenen Instanz
 | Eigene Zeiträume | Beliebige Zeiträume mit Name, Start- und Enddatum (Enddatum inklusive). |
 | Grundpreis einrechnen | Rechnet den Grundpreis in die Kosten ein. |
 | Arbeitskosten und Grundpreis getrennt | Zusätzliche Variablen für beide Anteile. |
-| Tag und Nacht getrennt | Verbrauch und Arbeitskosten getrennt nach Tag- und Nachtfenster. |
+| Hoch- und Niedertarif getrennt | Verbrauch und Arbeitskosten getrennt nach Hochtarif (HT) und Niedertarif (NT). Siehe [Hochtarif und Niedertarif](#hochtarif-und-niedertarif). |
 | Prognose | Hochrechnung für die laufende Woche, den Monat und das Jahr. Siehe [Prognose](#prognose). |
 | Prognose mit Vorjahresverlauf | Für Monat und Jahr den Verlauf des Vorjahres nutzen, damit Winter- und Sommerverbrauch die Prognose nicht verzerren. Ohne Vorjahresdaten rechnet das Modul linear. Standardmäßig an. |
 | Abgeschlossene Zeiträume loggen | Schaltet das Archiv-Logging für Kosten und Verbrauch von Gestern, Vorwoche, Vormonat und Vorjahr ein (nur für aktivierte Zeiträume). Diese Werte ändern sich nur einmal je Zeitraum und ergeben saubere Verlaufsdiagramme. Beim Ausschalten der Option wird nur das wieder abgeschaltet, was das Modul selbst eingeschaltet hat. Von Hand geloggte Variablen bleiben unberührt, und bereits archivierte Werte bleiben erhalten. |
@@ -58,6 +58,17 @@ Die Instanz zeigt im Formular, warum sie nicht rechnet:
 
 Nur die **Eingangsdaten** müssen geloggt sein (Zähler und, bei dynamischen Tarifen, die Preisvariable). Die berechneten Variablen brauchen kein Logging, es ist nur für Verläufe gedacht (siehe unten).
 
+### Hochtarif und Niedertarif
+
+Der Tarif kennt zwei Preise: **Hochtarif (HT)** und **Niedertarif (NT)**. Wann der Niedertarif gilt, legst du in der Tarifzeile fest:
+
+- bis zu **zwei Zeitfenster** pro Tag (ein Fenster darf über Mitternacht gehen, z. B. 22:00 bis 06:00),
+- optional **Wochenende ganztägig NT** (Samstag und Sonntag).
+
+Typische Fälle: Nachtstrom 22:00 bis 06:00 (ein Fenster), Nachtspeicherheizung 22:00 bis 06:00 plus 13:00 bis 15:00 (zwei Fenster), Zweitarif mit Niedertarif am Wochenende (Haken). Alles außerhalb der NT-Zeiten ist Hochtarif. Feiertage lassen sich nicht abbilden.
+
+Mit „Hoch- und Niedertarif getrennt" bekommst du Verbrauch und Kosten je Tarif als eigene Variablen (`…HT`, `…NT`).
+
 ### Gas: m³ in kWh
 
 Gas wird in m³ gemessen, aber in **kWh** abgerechnet. Der Preis auf der Rechnung ist ein kWh-Preis.
@@ -77,11 +88,11 @@ Stellt das Modul bei der Berechnung ein Problem fest, steht oben im Konfiguratio
 |---|---|
 | Teil des Zeitraums liegt vor dem ersten Tarifzeitraum | Verbrauch aus der Zeit vor dem ersten Tarif hat keinen Preis und keinen Grundpreis. Lösung: einen früheren Tarifzeitraum eintragen. |
 | Gas-Umrechnungswerte fehlen | Faktor, Zustandszahl oder Brennwert ist 0 (nur bei „Gas: m³ in kWh umrechnen"). |
-| Für einen dynamischen Tarif fehlen Preisdaten | In einigen Intervallen gibt es keinen Preis. Dort gilt der feste Preis (Tag) als Ausweichwert. |
+| Für einen dynamischen Tarif fehlen Preisdaten | In einigen Intervallen gibt es keinen Preis. Dort gilt der feste Preis (HT, in den NT-Zeiten NT) als Ausweichwert. |
 | Preisvariable nicht nutzbar | Die Variable eines dynamischen Tarifs existiert nicht oder wird nicht im Archiv geloggt. |
 | Archivdaten haben sich geändert | Nachdem ein abgeschlossener Zeitraum berechnet wurde, wurden Verbrauchs- oder Preisdaten im Archiv nachträglich geändert (z. B. Lücke nachgetragen, Werte korrigiert). Die Warnung nennt die betroffenen Zeiträume. Mit *Neu berechnen* werden sie aktualisiert, danach verschwindet die Warnung. |
 
-**Wie die Änderung erkannt wird:** Beim Zwischenspeichern eines abgeschlossenen Zeitraums merkt sich das Modul die Summe der Tageswerte aus dem Archiv, bei dynamischen Tarifen auch die der Preisvariablen. Bei jedem Durchlauf vergleicht es diese Summen mit dem aktuellen Stand. Das sind wenige Datensätze und kostet kaum Zeit. Eine Änderung, die die Summe über den ganzen Zeitraum nicht verändert (z. B. Verbrauch von einer Stunde in eine andere verschoben, was bei Nachttarif oder dynamischen Preisen die Kosten ändern würde), wird nicht erkannt.
+**Wie die Änderung erkannt wird:** Beim Zwischenspeichern eines abgeschlossenen Zeitraums merkt sich das Modul die Summe der Tageswerte aus dem Archiv, bei dynamischen Tarifen auch die der Preisvariablen. Bei jedem Durchlauf vergleicht es diese Summen mit dem aktuellen Stand. Das sind wenige Datensätze und kostet kaum Zeit. Eine Änderung, die die Summe über den ganzen Zeitraum nicht verändert (z. B. Verbrauch von einer Stunde in eine andere verschoben, was bei Niedertarif oder dynamischen Preisen die Kosten ändern würde), wird nicht erkannt.
 
 Die Warnung verschwindet nach der nächsten Berechnung, wenn die Ursache behoben ist.
 
@@ -113,7 +124,7 @@ Schema: `<Zeitraum>_<Art>`
 |---|---|
 | `Costs` / `Consumption` | Kosten und Verbrauch |
 | `CostsWork` / `CostsBase` | Arbeitskosten und Grundpreis getrennt |
-| `ConsumptionDay` / `CostsDay` / `ConsumptionNight` / `CostsNight` | Tag und Nacht (Kosten ohne Grundpreis) |
+| `ConsumptionHT` / `CostsHT` / `ConsumptionNT` / `CostsNT` | Hochtarif und Niedertarif (Kosten ohne Grundpreis) |
 | `Energy` | kWh bei Gas mit Umrechnung |
 | `ForecastCosts` / `ForecastConsumption` | Prognose (nur laufende Woche, Monat, Jahr) |
 | `Balance` | Saldo der Abschläge (aktuelles Jahr, Vorjahr, Tarifzeiträume und Summe; positiv = Guthaben) |
@@ -122,9 +133,9 @@ Außerdem gibt es `LastCalculation` mit dem Zeitpunkt der letzten Berechnung.
 
 ## 4. So wird gerechnet
 
-- **Archivwerte:** Ohne Nachtfenster und ohne dynamischen Preis im Tarif werden Tageswerte gelesen. Mit Nachtfenster oder dynamischem Preis sind es Stundenwerte, und bei Nachtgrenzen oder Preisen im Viertelstundenraster Viertelstundenwerte. Abfragen werden so geteilt, dass das Limit von 10.000 Datensätzen nie erreicht wird.
+- **Archivwerte:** Ohne Niedertarif und ohne dynamischen Preis im Tarif werden Tageswerte gelesen. Mit Niedertarif oder dynamischem Preis sind es Stundenwerte, und bei NT-Grenzen oder Preisen im Viertelstundenraster Viertelstundenwerte. Abfragen werden so geteilt, dass das Limit von 10.000 Datensätzen nie erreicht wird.
 - **Tarifzeiträume:** Ein Tarifabschnitt gilt von seinem Datum bis zum Beginn des nächsten. Der letzte Abschnitt hat kein Ende. In den Variablen reicht er bis heute.
-- **Tarifwechsel und Nachtfenster:** Jedes Intervall wird an Tarifwechseln und Grenzen des Nachtfensters geteilt und anteilig bewertet. Das Nachtfenster beginnt inklusive und endet exklusive: Bei 22:00 bis 06:00 gehört die Stunde ab 22:00 zur Nacht und die ab 06:00 zum Tag.
+- **Tarifwechsel und Niedertarif:** Jedes Intervall wird an Tarifwechseln und an den Grenzen der NT-Zeiten geteilt und anteilig bewertet. Ein NT-Zeitfenster beginnt inklusive und endet exklusive: Bei 22:00 bis 06:00 gehört die Stunde ab 22:00 zum Niedertarif und die ab 06:00 zum Hochtarif. Siehe [Hochtarif und Niedertarif](#hochtarif-und-niedertarif).
 - **Grundpreis:** Jahrespreis geteilt durch die Tage des Kalenderjahres (365 oder 366), je Tag mit dem Tarif dieses Tages. Laufende Zeiträume zählen bis einschließlich heute, abgeschlossene vollständig. Eine Woche hat damit 7 Tage Grundpreis, ein Monat so viele wie er Tage hat.
 - **Abschlag und Saldo:** Abschlag mal Zahlungen pro Jahr, tageweise aufgelaufen wie der Grundpreis. Der Saldo ist damit eine **gleichmäßige Hochrechnung**: aufgelaufener Abschlag minus aufgelaufene Kosten. Echte Zahlungen (Zeitpunkt, Betrag) fließen nicht ein. Positiv bedeutet Guthaben.
 - **Sommer- und Winterzeit:** Ein Tag mit Zeitumstellung hat 23 oder 25 Stunden. Gerechnet wird mit den tatsächlichen Stunden aus dem Archiv.
@@ -154,7 +165,7 @@ Der **Anteil** sagt, welcher Teil des Zeitraums schon erreicht ist. Er wird auf 
 - **Woche:** bleibt linear, weil der Wochenrhythmus (Werktag, Wochenende) im Kalender-Vorjahr keine Entsprechung hat.
 - **Arbeitskosten** werden mit demselben Anteil hochgerechnet, der **Grundpreis** zählt voll für den ganzen Zeitraum, tageweise mit dem Tarif des jeweiligen Tages (für künftige Tage mit dem zuletzt gültigen).
 - **Dynamische Preise:** Hochgerechnet werden die bisher angefallenen Kosten zu den tatsächlichen Preisen, es gibt keine Preisvorhersage.
-- **Tag und Nacht** werden nicht getrennt prognostiziert.
+- **HT und NT** werden nicht getrennt prognostiziert.
 - Das Vorjahr wird je Zeitraum nur einmal am Tag aus dem Archiv gelesen, weil es sich nicht mehr ändert.
 
 ### Wann wird was neu berechnet
@@ -170,7 +181,7 @@ Ein Durchlauf startet alle *Aktualisierungsintervall* Minuten, nach jedem Übern
 | `Custom_<Id>_…` | Solange der Zeitraum läuft oder nicht länger als eine Stunde vorbei ist, danach aus dem Zwischenspeicher. |
 | `LastCalculation` | Bei jedem Durchlauf. |
 
-Alle Variablen eines Zeitraums werden gemeinsam geschrieben. Abgeschlossene Zeiträume werden **automatisch** neu berechnet, wenn sich ein Tarifwert, die Verbrauchsvariable, die Einheit, die Impulse pro kWh, der Gas-Schalter oder „Grundpreis einrechnen" ändert. Reine Anzeige-Optionen (Prognose, Tag/Nacht usw.) legen nur Variablen an oder entfernen sie.
+Alle Variablen eines Zeitraums werden gemeinsam geschrieben. Abgeschlossene Zeiträume werden **automatisch** neu berechnet, wenn sich ein Tarifwert, die Verbrauchsvariable, die Einheit, die Impulse pro kWh, der Gas-Schalter oder „Grundpreis einrechnen" ändert. Reine Anzeige-Optionen (Prognose, HT/NT usw.) legen nur Variablen an oder entfernen sie.
 
 **Neu berechnen** ändert nichts an Einstellungen, Tarif, Variablen oder Archiv. Das Archiv schreibt Vergangenes nicht um: Ändert sich durch das Neuberechnen der Wert einer **geloggten** Ergebnisvariable, bleibt der alte Datenpunkt im Archiv, und der neue Wert kommt mit dem aktuellen Zeitstempel hinzu. Läuft gerade eine Berechnung, tut *Neu berechnen* nichts.
 
@@ -184,11 +195,11 @@ Die Debug-Ausgabe der Instanz zeigt, wie viele Archivwerte gelesen wurden, welch
 - **Verläufe:** `Year_Current_Balance` und die Prognosen ändern sich bei jeder Aktualisierung (bei 10 Minuten rund 144 Werte pro Tag). Nur gezielt von Hand loggen.
 - **Nicht nötig:** die laufenden Zeiträume (`…_Current`), sie lassen sich jederzeit aus dem Zählerarchiv neu berechnen.
 - Berechnete Werte werden mit dem Aggregationstyp *Standard* geloggt, nicht als Zähler.
-- Den Zähler selbst nicht verdichten oder Rohdaten löschen lassen: Für Nacht und Tarifwechsel sind die Stundenwerte nötig.
+- Den Zähler selbst nicht verdichten oder Rohdaten löschen lassen: Für Niedertarif, dynamische Preise und Tarifwechsel sind die Stundenwerte nötig.
 
 ## 5. Grenzen
 
-- **Datenlücken im Archiv:** Das Archiv füllt Lücken mit Nullwerten auf. Der Zählerstand-Zuwachs der Lücke erscheint gesammelt in der ersten Stunde danach. Die **Summe stimmt**, aber die Zuordnung zu Tag/Nacht und Tarifwechseln innerhalb der Lücke nicht.
+- **Datenlücken im Archiv:** Das Archiv füllt Lücken mit Nullwerten auf. Der Zählerstand-Zuwachs der Lücke erscheint gesammelt in der ersten Stunde danach. Die **Summe stimmt**, aber die Zuordnung zu HT/NT und Tarifwechseln innerhalb der Lücke nicht.
 - **Zählerreset:** Ein Rücksetzen auf einen kleineren Wert ignoriert das Archiv. Der Verbrauch der Stunde, in der es passiert, fehlt.
 - **Erster Archivwert:** Der erste geloggte Wert eines Zählers ist nur Referenz und wird nicht als Verbrauch gezählt.
 - **Zeiträume vor dem ersten Tarif** werden ohne Preis berechnet (Kosten 0). Dazu zeigt die Instanz eine Warnung an.
@@ -204,14 +215,14 @@ Die Schaltfläche *Einstellungen übernehmen* kopiert Zählervariable, Einheit, 
 Dabei ändern sich einige Dinge in den **Beträgen**, weil das alte Modul sie falsch berechnet hat:
 
 - Der Grundpreis zählt jetzt alle Tage des Zeitraums (früher fehlte ein Tag), und ein Tarifwechsel innerhalb eines Zeitraums wird berücksichtigt.
-- Die Grenzen des Nachtfensters sind jetzt halboffen. Früher wurde die Stunde ab 22:00 als Tag und die ab 06:00 als Nacht gewertet.
+- Die Grenzen der Niedertarif-Zeiten sind jetzt halboffen. Früher wurde die Stunde ab 22:00 als Tag (Hochtarif) und die ab 06:00 noch als Nacht gewertet.
 - Das Enddatum eigener Zeiträume ist jetzt inklusive.
 - Der Saldo rechnet mit dem bis heute aufgelaufenen Abschlag. Früher wurde der volle Jahresabschlag gegen die Kosten gerechnet.
 - Bei der Einheit **Wh** werden die Werte jetzt in kWh umgerechnet, die Preise im Tarif müssen deshalb **je kWh** stehen. Das alte Modul hat Wh-Werte ohne Umrechnung mit dem eingetragenen Preis multipliziert. Wer dort einen Preis **je Wh** eingetragen hatte, muss ihn beim Umstieg mit 1000 multiplizieren, sonst sind die Kosten 1000-fach zu niedrig. Die Übernahme kopiert die Preise unverändert und weist darauf hin.
 
 Weitere Unterschiede zum alten Modul:
 
-- Die Schalter „Verbrauch Tag" und „Verbrauch Nacht" sind zu **Tag und Nacht getrennt** zusammengefasst. Der Nachtpreis wirkt immer, sobald im Tarif ein Nachtfenster steht. Beim Übernehmen entsteht nur dann ein Nachtfenster, wenn das alte Modul den Nachttarif benutzt hat, damit die Kosten gleich bleiben.
+- Aus „Tag" und „Nacht" wird **Hochtarif (HT)** und **Niedertarif (NT)**, wie auf der Stromrechnung. Die Schalter „Verbrauch Tag" und „Verbrauch Nacht" sind zu **Hoch- und Niedertarif getrennt** zusammengefasst. Der NT-Preis wirkt immer, sobald im Tarif eine NT-Zeit steht. Das Nachtfenster des alten Moduls wird zum ersten NT-Zeitfenster. Beim Übernehmen entsteht nur dann ein NT-Fenster, wenn das alte Modul den Nachttarif benutzt hat, damit die Kosten gleich bleiben.
 - Die Schalter für Monats-, Wochen- und Jahresaggregation und „Durch Parameteränderung aktualisieren" entfallen. Die Aggregation wird automatisch gewählt, und bei Änderungen wird immer neu gerechnet.
 - Bei Gas bleibt der Verbrauch in m³, die kWh stehen in der Variable `…_Energy`.
 - Das Aktualisierungsintervall ist in Minuten (früher Sekunden).
@@ -227,7 +238,7 @@ Umbenennung der Variablen:
 | `CurrentWeek…`, `PreviousWeek…` | `Week_Current_…`, `Week_Previous_…` |
 | `CurrentMonth…`, `LastMonth…` | `Month_Current_…`, `Month_Previous_…` |
 | `CurrentYear…`, `LastYear…` | `Year_Current_…`, `Year_Previous_…` |
-| `…Daytime`, `…Nighttime` | `ConsumptionDay`, `CostsDay`, `ConsumptionNight`, `CostsNight` |
+| `…Daytime`, `…Nighttime` | `ConsumptionHT`, `CostsHT`, `ConsumptionNT`, `CostsNT` |
 | `totalCosts`, `totalConsumption` | `Total_Costs`, `Total_Consumption` |
 | `Total_costs_period1_1_2024` | `Tariff_<Id>_Costs` |
 | `Balance_period1_1_2024` | `Tariff_<Id>_Balance` |

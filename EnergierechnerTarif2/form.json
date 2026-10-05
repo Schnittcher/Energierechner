@@ -56,8 +56,8 @@
                     }
                 },
                 {
-                    "caption": "Price (day)",
-                    "name": "PriceDay",
+                    "caption": "Price (HT)",
+                    "name": "PriceHT",
                     "width": "110px",
                     "add": 0.3,
                     "edit": {
@@ -67,8 +67,8 @@
                     }
                 },
                 {
-                    "caption": "Price (night)",
-                    "name": "PriceNight",
+                    "caption": "Price (NT)",
+                    "name": "PriceNT",
                     "width": "110px",
                     "add": 0,
                     "edit": {
@@ -140,9 +140,9 @@
                     }
                 },
                 {
-                    "caption": "Night from",
-                    "name": "NightFrom",
-                    "width": "100px",
+                    "caption": "NT 1 from",
+                    "name": "NtFrom1",
+                    "width": "90px",
                     "add": {
                         "hour": 0,
                         "minute": 0,
@@ -153,9 +153,9 @@
                     }
                 },
                 {
-                    "caption": "Night until",
-                    "name": "NightTo",
-                    "width": "100px",
+                    "caption": "NT 1 until",
+                    "name": "NtTo1",
+                    "width": "90px",
                     "add": {
                         "hour": 0,
                         "minute": 0,
@@ -163,6 +163,41 @@
                     },
                     "edit": {
                         "type": "SelectTime"
+                    }
+                },
+                {
+                    "caption": "NT 2 from",
+                    "name": "NtFrom2",
+                    "width": "90px",
+                    "add": {
+                        "hour": 0,
+                        "minute": 0,
+                        "second": 0
+                    },
+                    "edit": {
+                        "type": "SelectTime"
+                    }
+                },
+                {
+                    "caption": "NT 2 until",
+                    "name": "NtTo2",
+                    "width": "90px",
+                    "add": {
+                        "hour": 0,
+                        "minute": 0,
+                        "second": 0
+                    },
+                    "edit": {
+                        "type": "SelectTime"
+                    }
+                },
+                {
+                    "caption": "Weekend all day NT",
+                    "name": "NtWeekend",
+                    "width": "130px",
+                    "add": false,
+                    "edit": {
+                        "type": "CheckBox"
                     }
                 },
                 {
@@ -235,11 +270,11 @@
         },
         {
             "type": "Label",
-            "caption": "Night window: leave 'Night from' and 'Night until' identical (e.g. both 00:00) if there is no night tariff. A night price of 0 uses the day price."
+            "caption": "Low tariff (NT): enter up to two time windows per row (a window may cross midnight, e.g. 22:00 to 06:00). Leave 'from' and 'until' identical (e.g. both 00:00) for an unused window. 'Weekend all day NT' makes Saturday and Sunday low tariff for the whole day. A price (NT) of 0 uses the price (HT). Everything else is high tariff (HT)."
         },
         {
             "type": "Label",
-            "caption": "Dynamic price: select a variable that holds the current price and is logged in the archive (aggregation type standard). The price used is variable value × unit factor + surcharge. Price (day) is used as fallback for hours without price data."
+            "caption": "Dynamic price: select a variable that holds the current price and is logged in the archive (aggregation type standard). The price used is variable value × unit factor + surcharge. Price (HT) is used as fallback for hours without price data (price (NT) in the low tariff times)."
         }
     ],
     "status": [

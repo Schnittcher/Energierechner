@@ -4,18 +4,26 @@ declare(strict_types=1);
 
 /**
  * Ein Tarifabschnitt (gültig ab einem Datum bis zum nächsten Abschnitt).
+ * HT = Hochtarif, NT = Niedertarif. Der Niedertarif gilt in bis zu zwei Zeitfenstern pro Tag
+ * und optional an Samstag und Sonntag ganztägig.
  * Reine Datenklasse, keine IPS-Abhängigkeit.
  */
 final class ErTariffSegment
 {
+    /** @var array<int, array{0:int,1:int}> Niedertarif-Zeitfenster als [von, bis] in Minuten seit Mitternacht (bis exklusiv) */
+    public readonly array $ntWindows;
+
+    /**
+     * @param array<int, array{0:int,1:int}> $ntWindows Fenster mit von == bis werden ignoriert
+     */
     public function __construct(
         public readonly string $id,
         public readonly string $name,
         public readonly int $validFrom,      // Unix-Timestamp, lokaler Tagesbeginn
-        public readonly float $priceDay,     // Arbeitspreis pro Einheit (Tag)
-        public readonly float $priceNight,   // Arbeitspreis pro Einheit (Nacht), = priceDay wenn nicht gesetzt
-        public readonly int $nightFrom,      // Minuten seit Mitternacht
-        public readonly int $nightTo,        // Minuten seit Mitternacht (Ende exklusiv)
+        public readonly float $priceHt,      // Arbeitspreis pro Einheit im Hochtarif
+        public readonly float $priceNt,      // Arbeitspreis pro Einheit im Niedertarif, = priceHt wenn nicht gesetzt
+        array $ntWindows,
+        public readonly bool $ntWeekend,     // Samstag und Sonntag ganztägig Niedertarif
         public readonly float $baseYear,     // Grundpreis pro Jahr
         public readonly float $advance,      // Abschlag je Zahlung
         public readonly int $advanceCount,   // Zahlungen pro Jahr
@@ -28,6 +36,13 @@ final class ErTariffSegment
         public readonly float $surcharge = 0.0,         // fester Aufschlag je Einheit auf den dynamischen Preis
         public readonly int $priceResolution = 60       // Auflösung des Preises in Minuten (60 oder 15)
     ) {
+        $windows = [];
+        foreach ($ntWindows as $window) {
+            if ((int) $window[0] !== (int) $window[1]) {
+                $windows[] = [(int) $window[0], (int) $window[1]];
+            }
+        }
+        $this->ntWindows = $windows;
     }
 
     /** Kommt der Arbeitspreis aus einer Variable statt aus dem festen Preis? */
@@ -36,22 +51,28 @@ final class ErTariffSegment
         return $this->priceVariableId > 0;
     }
 
-    /** Gibt es ein Nachtfenster (Beginn != Ende)? */
-    public function hasNight(): bool
+    /** Gibt es einen Niedertarif (mindestens ein Zeitfenster oder Wochenende)? */
+    public function hasNt(): bool
     {
-        return $this->nightFrom !== $this->nightTo;
+        return count($this->ntWindows) > 0 || $this->ntWeekend;
     }
 
-    /** Liegt die Minute des Tages im Nachtfenster? Beginn inklusive, Ende exklusive. */
-    public function isNight(int $minuteOfDay): bool
+    /**
+     * Gilt zum Zeitpunkt $ts der Niedertarif? Zeitfenster beginnen inklusive und enden exklusive,
+     * ein Fenster darf über Mitternacht gehen (22:00 bis 06:00).
+     */
+    public function isNt(int $ts): bool
     {
-        if (!$this->hasNight()) {
-            return false;
+        if ($this->ntWeekend && (int) date('N', $ts) >= 6) {
+            return true;
         }
-        if ($this->nightFrom < $this->nightTo) {
-            return $minuteOfDay >= $this->nightFrom && $minuteOfDay < $this->nightTo;
+        $minute = ErTariff::minuteOfDay($ts);
+        foreach ($this->ntWindows as [$from, $to]) {
+            if ($from < $to ? ($minute >= $from && $minute < $to) : ($minute >= $from || $minute < $to)) {
+                return true;
+            }
         }
-        return $minuteOfDay >= $this->nightFrom || $minuteOfDay < $this->nightTo;
+        return false;
     }
 
     /** kWh pro m³ aus Umrechnungsfaktor, Zustandszahl und Brennwert. */
@@ -66,10 +87,10 @@ final class ErTariffSegment
             'id'              => $this->id,
             'name'            => $this->name,
             'validFrom'       => $this->validFrom,
-            'priceDay'        => $this->priceDay,
-            'priceNight'      => $this->priceNight,
-            'nightFrom'       => $this->nightFrom,
-            'nightTo'         => $this->nightTo,
+            'priceHt'         => $this->priceHt,
+            'priceNt'         => $this->priceNt,
+            'ntWindows'       => $this->ntWindows,
+            'ntWeekend'       => $this->ntWeekend,
             'baseYear'        => $this->baseYear,
             'advance'         => $this->advance,
             'advanceCount'    => $this->advanceCount,
@@ -90,10 +111,10 @@ final class ErTariffSegment
             (string) ($a['id'] ?? ''),
             (string) ($a['name'] ?? ''),
             (int) ($a['validFrom'] ?? 0),
-            (float) ($a['priceDay'] ?? 0),
-            (float) ($a['priceNight'] ?? ($a['priceDay'] ?? 0)),
-            (int) ($a['nightFrom'] ?? 0),
-            (int) ($a['nightTo'] ?? 0),
+            (float) ($a['priceHt'] ?? 0),
+            (float) ($a['priceNt'] ?? ($a['priceHt'] ?? 0)),
+            (array) ($a['ntWindows'] ?? []),
+            (bool) ($a['ntWeekend'] ?? false),
             (float) ($a['baseYear'] ?? 0),
             (float) ($a['advance'] ?? 0),
             (int) ($a['advanceCount'] ?? 0),
@@ -112,7 +133,7 @@ final class ErTariffSegment
 /**
  * Sortierte Folge von Tarifabschnitten.
  * Ermittelt den gültigen Abschnitt zu einem Zeitpunkt und zerlegt Zeiträume
- * an Tarifwechseln und Nachtfenster-Grenzen.
+ * an Tarifwechseln und Grenzen der Niedertarif-Zeiten.
  */
 final class ErTariff
 {
@@ -160,10 +181,11 @@ final class ErTariff
         return isset($this->segments[$index + 1]) ? $this->segments[$index + 1]->validFrom : $openEnd;
     }
 
-    public function hasNight(): bool
+    /** Hat mindestens ein Abschnitt einen Niedertarif? */
+    public function hasNt(): bool
     {
         foreach ($this->segments as $s) {
-            if ($s->hasNight()) {
+            if ($s->hasNt()) {
                 return true;
             }
         }
@@ -193,17 +215,16 @@ final class ErTariff
         return $resolution;
     }
 
-    /** Kleinste Rastergröße (in Minuten), auf der alle Nachtfenster-Grenzen liegen: 60, 15 oder 1. */
-    public function nightGridMinutes(): int
+    /** Kleinste Rastergröße (in Minuten), auf der alle Grenzen der Niedertarif-Zeitfenster liegen: 60, 15 oder 1. */
+    public function ntGridMinutes(): int
     {
         $grid = 60;
         foreach ($this->segments as $s) {
-            if (!$s->hasNight()) {
-                continue;
-            }
-            foreach ([$s->nightFrom, $s->nightTo] as $m) {
-                if ($m % 60 !== 0) {
-                    $grid = min($grid, ($m % 15 === 0) ? 15 : 1);
+            foreach ($s->ntWindows as $window) {
+                foreach ($window as $minute) {
+                    if ($minute % 60 !== 0) {
+                        $grid = min($grid, ($minute % 15 === 0) ? 15 : 1);
+                    }
                 }
             }
         }
@@ -226,11 +247,11 @@ final class ErTariff
     }
 
     /**
-     * Zerlegt [$a, $b) an Tarifwechseln, Nachtfenster-Grenzen und weiteren Schnittpunkten
+     * Zerlegt [$a, $b) an Tarifwechseln, Grenzen der Niedertarif-Zeiten und weiteren Schnittpunkten
      * (z. B. den Grenzen der Preisintervalle eines dynamischen Tarifs).
      *
      * @param int[] $extraCuts zusätzliche Schnittpunkte; Werte außerhalb von ($a, $b) werden ignoriert
-     * @return array<int, array{from:int,to:int,seg:?ErTariffSegment,night:bool}>
+     * @return array<int, array{from:int,to:int,seg:?ErTariffSegment,nt:bool}>
      */
     public function split(int $a, int $b, array $extraCuts = []): array
     {
@@ -250,11 +271,15 @@ final class ErTariff
             }
         }
 
+        // Minuten des Tages, an denen sich der Niedertarif ändern kann; bei "Wochenende ganztägig" auch Mitternacht
         $minutes = [];
         foreach ($this->segments as $s) {
-            if ($s->hasNight()) {
-                $minutes[$s->nightFrom] = true;
-                $minutes[$s->nightTo] = true;
+            foreach ($s->ntWindows as [$from, $to]) {
+                $minutes[$from] = true;
+                $minutes[$to] = true;
+            }
+            if ($s->ntWeekend) {
+                $minutes[0] = true;
             }
         }
         if (count($minutes) > 0) {
@@ -282,10 +307,10 @@ final class ErTariff
             $from = $points[$i];
             $seg = $this->segmentAt($from);
             $pieces[] = [
-                'from'  => $from,
-                'to'    => $points[$i + 1],
-                'seg'   => $seg,
-                'night' => $seg !== null && $seg->isNight(self::minuteOfDay($from))
+                'from' => $from,
+                'to'   => $points[$i + 1],
+                'seg'  => $seg,
+                'nt'   => $seg !== null && $seg->isNt($from)
             ];
         }
         return $pieces;
@@ -324,19 +349,23 @@ final class ErTariff
             }
             $seen[$validFrom] = true;
 
-            $priceDay = (float) ($row['PriceDay'] ?? 0);
-            $priceNight = (float) ($row['PriceNight'] ?? 0);
-            if ($priceNight <= 0.0) {
-                $priceNight = $priceDay;
+            $priceHt = (float) ($row['PriceHT'] ?? 0);
+            $priceNt = (float) ($row['PriceNT'] ?? 0);
+            if ($priceNt <= 0.0) {
+                $priceNt = $priceHt;
             }
+            $windows = [
+                [self::minutes($row['NtFrom1'] ?? null), self::minutes($row['NtTo1'] ?? null)],
+                [self::minutes($row['NtFrom2'] ?? null), self::minutes($row['NtTo2'] ?? null)]
+            ];
             $segments[] = new ErTariffSegment(
                 (string) ($row['Id'] ?? ''),
                 (string) ($row['Name'] ?? ''),
                 $validFrom,
-                $priceDay,
-                $priceNight,
-                self::minutes($row['NightFrom'] ?? null),
-                self::minutes($row['NightTo'] ?? null),
+                $priceHt,
+                $priceNt,
+                $windows,
+                (bool) ($row['NtWeekend'] ?? false),
                 (float) ($row['BasePrice'] ?? 0),
                 (float) ($row['Advance'] ?? 0),
                 (int) ($row['AdvanceCount'] ?? 0),

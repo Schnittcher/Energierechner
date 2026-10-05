@@ -45,10 +45,10 @@ function segment(array $o = []): ErTariffSegment
         'id'           => 'a',
         'name'         => 'A',
         'validFrom'    => ts(2025, 1, 1),
-        'priceDay'     => 0.30,
-        'priceNight'   => 0.20,
-        'nightFrom'    => 0,
-        'nightTo'      => 0,
+        'priceHt'      => 0.30,
+        'priceNt'      => 0.20,
+        'ntWindows'    => [],
+        'ntWeekend'    => false,
         'baseYear'     => 0.0,
         'advance'      => 0.0,
         'advanceCount' => 0,
@@ -77,35 +77,87 @@ function daily(int $from, int $to, float $value): array
     return $out;
 }
 
-$night = ['nightFrom' => 22 * 60, 'nightTo' => 6 * 60];
+$night = ['ntWindows' => [[22 * 60, 6 * 60]]];
 $pattern = static fn (int $t): float => ((int) date('G', $t) >= 22 || (int) date('G', $t) < 6) ? 0.2 : 0.5;
 
 // ---------------------------------------------------------------- Nachtfenster
 $tariff = new ErTariff([segment($night)]);
 $p = $tariff->split(ts(2025, 3, 3, 22), ts(2025, 3, 3, 23));
-check('Nacht: 22:00 gehört zur Nacht', [count($p), $p[0]['night']], [1, true]);
+check('NT: 22:00 gehört zum Niedertarif', [count($p), $p[0]['nt']], [1, true]);
 $p = $tariff->split(ts(2025, 3, 3, 6), ts(2025, 3, 3, 7));
-check('Nacht: 06:00 gehört zum Tag', [count($p), $p[0]['night']], [1, false]);
+check('NT: 06:00 gehört zum Hochtarif', [count($p), $p[0]['nt']], [1, false]);
 $p = $tariff->split(ts(2025, 3, 3, 5), ts(2025, 3, 3, 6));
-check('Nacht: 05:00 gehört zur Nacht', $p[0]['night'], true);
+check('NT: 05:00 gehört zum Niedertarif', $p[0]['nt'], true);
 $p = $tariff->split(ts(2025, 3, 3, 21), ts(2025, 3, 3, 22));
-check('Nacht: 21:00 gehört zum Tag', $p[0]['night'], false);
+check('NT: 21:00 gehört zum Hochtarif', $p[0]['nt'], false);
 
-$half = new ErTariff([segment(['nightFrom' => 22 * 60 + 30, 'nightTo' => 6 * 60 + 30])]);
+$half = new ErTariff([segment(['ntWindows' => [[22 * 60 + 30, 6 * 60 + 30]]])]);
 $p = $half->split(ts(2025, 3, 3, 22), ts(2025, 3, 3, 23));
-check('Nacht 22:30: Stunde wird geteilt', [count($p), $p[0]['night'], $p[1]['night']], [2, false, true]);
-check('Nacht 22:30: Raster', $half->nightGridMinutes(), 30 % 15 === 0 ? 15 : 1);
+check('NT 22:30: Stunde wird geteilt', [count($p), $p[0]['nt'], $p[1]['nt']], [2, false, true]);
+check('NT 22:30: Raster', $half->ntGridMinutes(), 30 % 15 === 0 ? 15 : 1);
 check('Aggregation volle Stunde', ErArchiveReader::aggregationFor($tariff), ErArchiveReader::HOURLY);
 check('Aggregation Viertelstunde', ErArchiveReader::aggregationFor($half), ErArchiveReader::QUARTER_HOUR);
-check('Aggregation ohne Nacht = täglich', ErArchiveReader::aggregationFor(new ErTariff([segment()])), ErArchiveReader::DAILY);
+check('Aggregation ohne NT = täglich', ErArchiveReader::aggregationFor(new ErTariff([segment()])), ErArchiveReader::DAILY);
+
+// ---------------------------------------------------------------- Mehrere NT-Fenster und Wochenende
+$twoWindows = new ErTariff([segment(['ntWindows' => [[22 * 60, 6 * 60], [13 * 60, 15 * 60]]])]);
+$isNt = static fn (ErTariff $t, int $ts): bool => $t->segmentAt($ts)->isNt($ts);
+check('NT 2 Fenster: 13:00 (Mittagsfenster) ist NT', $isNt($twoWindows, ts(2025, 3, 5, 13)), true);
+check('NT 2 Fenster: 14:59 ist NT', $isNt($twoWindows, ts(2025, 3, 5, 14, 59)), true);
+check('NT 2 Fenster: 15:00 ist HT', $isNt($twoWindows, ts(2025, 3, 5, 15)), false);
+check('NT 2 Fenster: 12:59 ist HT', $isNt($twoWindows, ts(2025, 3, 5, 12, 59)), false);
+check('NT 2 Fenster: 23:00 ist NT (Nachtfenster)', $isNt($twoWindows, ts(2025, 3, 5, 23)), true);
+check('NT 2 Fenster: 10:00 ist HT', $isNt($twoWindows, ts(2025, 3, 5, 10)), false);
+$mid = $twoWindows->split(ts(2025, 3, 5, 12), ts(2025, 3, 5, 14));
+check('NT 2 Fenster: Intervall 12-14 Uhr wird an 13:00 geteilt', [count($mid), $mid[0]['nt'], $mid[1]['nt']], [2, false, true]);
+
+$weekend = new ErTariff([segment(['ntWeekend' => true])]);
+check('Wochenende: Samstag 12:00 ist NT', $isNt($weekend, ts(2025, 3, 8, 12)), true);
+check('Wochenende: Sonntag 23:00 ist NT', $isNt($weekend, ts(2025, 3, 9, 23)), true);
+check('Wochenende: Freitag 12:00 ist HT', $isNt($weekend, ts(2025, 3, 7, 12)), false);
+check('Wochenende: Montag 00:00 ist HT', $isNt($weekend, ts(2025, 3, 10, 0)), false);
+check('Wochenende allein zählt als Niedertarif', [$weekend->hasNt(), $weekend->segments()[0]->hasNt()], [true, true]);
+check('Wochenende allein: Aggregation stündlich', ErArchiveReader::aggregationFor($weekend), ErArchiveReader::HOURLY);
+$overMidnight = $weekend->split(ts(2025, 3, 7, 23), ts(2025, 3, 8, 1));
+check('Wochenende: Freitag 23 Uhr bis Samstag 1 Uhr wird um Mitternacht geteilt', [count($overMidnight), $overMidnight[0]['nt'], $overMidnight[1]['nt']], [2, false, true]);
+
+$weekendNight = new ErTariff([segment(['ntWeekend' => true, 'ntWindows' => [[22 * 60, 6 * 60]]])]);
+check('Wochenende + Nacht: Sonntag 12:00 ist NT', $isNt($weekendNight, ts(2025, 3, 9, 12)), true);
+check('Wochenende + Nacht: Montag 03:00 ist NT (Nachtfenster)', $isNt($weekendNight, ts(2025, 3, 10, 3)), true);
+check('Wochenende + Nacht: Montag 12:00 ist HT', $isNt($weekendNight, ts(2025, 3, 10, 12)), false);
+
+$saturday = hourly(ts(2025, 3, 8), ts(2025, 3, 9), static fn (): float => 1.0);
+$r = ErCalculator::calculate($saturday, new ErTariff([segment(['ntWeekend' => true, 'priceHt' => 0.30, 'priceNt' => 0.20])]), 1.0, false, ts(2025, 3, 8), ts(2025, 3, 9), ts(2025, 3, 9));
+check('Wochenende: ganzer Samstag ist NT-Verbrauch', [$r['consumptionNt'], $r['consumptionHt']], [24.0, 0.0]);
+check('Wochenende: ganzer Samstag zum NT-Preis', $r['costsWork'], 24 * 0.20);
+$wednesday = hourly(ts(2025, 3, 5), ts(2025, 3, 6), static fn (): float => 1.0);
+$r = ErCalculator::calculate($wednesday, new ErTariff([segment(['ntWindows' => [[22 * 60, 6 * 60], [13 * 60, 15 * 60]], 'priceHt' => 0.30, 'priceNt' => 0.20])]), 1.0, false, ts(2025, 3, 5), ts(2025, 3, 6), ts(2025, 3, 6));
+check('2 Fenster: 10 NT-Stunden (22-6 Uhr plus 13-15 Uhr) und 14 HT-Stunden', [$r['consumptionNt'], $r['consumptionHt']], [10.0, 14.0]);
+check('2 Fenster: Kosten', $r['costsWork'], 10 * 0.20 + 14 * 0.30);
+
+check('NT-Raster: zweites Fenster mit 13:30 -> Viertelstunden', (new ErTariff([segment(['ntWindows' => [[22 * 60, 6 * 60], [13 * 60 + 30, 15 * 60]]])]))->ntGridMinutes(), 15);
+check('Fenster mit gleicher Zeit wird ignoriert', segment(['ntWindows' => [[0, 0], [600, 600]]])->hasNt(), false);
+[$twoFromForm] = ErTariff::fromFormRows([[
+    'Id'        => 'w1',
+    'ValidFrom' => '{"year":2025,"month":1,"day":1}',
+    'PriceHT'   => 0.3,
+    'NtFrom1'   => '{"hour":22,"minute":0,"second":0}',
+    'NtTo1'     => '{"hour":6,"minute":0,"second":0}',
+    'NtFrom2'   => '{"hour":13,"minute":0,"second":0}',
+    'NtTo2'     => '{"hour":15,"minute":0,"second":0}',
+    'NtWeekend' => true
+]]);
+check('Formular: zwei NT-Fenster und Wochenende', [$twoFromForm->segments()[0]->ntWindows, $twoFromForm->segments()[0]->ntWeekend], [[[1320, 360], [780, 900]], true]);
+check('Formular: zweites Fenster leer wird ignoriert', ErTariff::fromFormRows([['ValidFrom' => '{"year":2025,"month":1,"day":1}', 'NtFrom1' => '{"hour":22,"minute":0,"second":0}', 'NtTo1' => '{"hour":6,"minute":0,"second":0}']])[0]->segments()[0]->ntWindows, [[1320, 360]]);
+check('Transportformat enthält Fenster und Wochenende', ErTariff::fromArray($twoFromForm->toArray())->toArray(), $twoFromForm->toArray());
 
 // ---------------------------------------------------------------- Ein Tag mit Tag/Nacht
 $tariff = new ErTariff([segment($night + ['baseYear' => 120.0])]);
 $day = ['start' => ts(2025, 3, 3), 'end' => ts(2025, 3, 4)];
 $r = ErCalculator::calculate(hourly($day['start'], $day['end'], $pattern), $tariff, 1.0, false, $day['start'], $day['end'], ts(2025, 3, 3, 23, 59));
 check('Tag: Verbrauch', $r['consumption'], 9.6);
-check('Tag: Verbrauch Tag', $r['consumptionDay'], 8.0);
-check('Tag: Verbrauch Nacht', $r['consumptionNight'], 1.6);
+check('Tag: Verbrauch HT', $r['consumptionHt'], 8.0);
+check('Tag: Verbrauch NT', $r['consumptionNt'], 1.6);
 check('Tag: Arbeitskosten', $r['costsWork'], 16 * 0.5 * 0.30 + 8 * 0.2 * 0.20);
 check('Tag: Grundpreis genau 1 Tag', $r['costsBase'], 120 / 365);
 check('Tag: Gesamtkosten', $r['costs'], 2.72 + 120 / 365);
@@ -121,7 +173,7 @@ $r = ErCalculator::calculate(hourly($day['start'], $day['end'], static fn () => 
 check('Impulse: Verbrauch', $r['consumption'], 12.0);
 
 // ---------------------------------------------------------------- Gas
-$gasTariff = new ErTariff([segment(['priceDay' => 0.07, 'gasFactor' => 1.0, 'gasZ' => 0.95, 'gasCalorific' => 11.5])]);
+$gasTariff = new ErTariff([segment(['priceHt' => 0.07, 'gasFactor' => 1.0, 'gasZ' => 0.95, 'gasCalorific' => 11.5])]);
 $r = ErCalculator::calculate([['start' => $day['start'], 'end' => ts(2025, 3, 4), 'value' => 10.0]], $gasTariff, 1.0, true, $day['start'], $day['end'], $day['end']);
 check('Gas: Verbrauch bleibt in m³', $r['consumption'], 10.0);
 check('Gas: Energie in kWh', $r['energy'], 10 * 0.95 * 11.5);
@@ -131,8 +183,8 @@ check('Gas: fehlende Parameter melden', $r['warnings'], ['gasParameters']);
 
 // ---------------------------------------------------------------- Tarifwechsel im Zeitraum
 $change = new ErTariff([
-    segment(['id' => 'a', 'validFrom' => ts(2025, 1, 1), 'priceDay' => 0.30, 'baseYear' => 365.0]),
-    segment(['id' => 'b', 'validFrom' => ts(2025, 2, 1), 'priceDay' => 0.40, 'baseYear' => 730.0])
+    segment(['id' => 'a', 'validFrom' => ts(2025, 1, 1), 'priceHt' => 0.30, 'baseYear' => 365.0]),
+    segment(['id' => 'b', 'validFrom' => ts(2025, 2, 1), 'priceHt' => 0.40, 'baseYear' => 730.0])
 ]);
 $s = ts(2025, 1, 15);
 $e = ts(2025, 2, 16);
@@ -280,13 +332,13 @@ check('Leser: leerer Bereich', ErArchiveReader::read($fetch, ErArchiveReader::HO
 
 // ---------------------------------------------------------------- Formularzeilen
 [$t, $warn] = ErTariff::fromFormRows([
-    ['Id' => 'x1', 'ValidFrom' => '{"year":2025,"month":1,"day":1}', 'PriceDay' => 0.3, 'PriceNight' => 0.0, 'NightFrom' => '{"hour":22,"minute":0,"second":0}', 'NightTo' => '{"hour":6,"minute":0,"second":0}', 'BasePrice' => 100.0],
-    ['Id' => 'x2', 'ValidFrom' => '{"year":2025,"month":1,"day":1}', 'PriceDay' => 0.4],
+    ['Id' => 'x1', 'ValidFrom' => '{"year":2025,"month":1,"day":1}', 'PriceHT' => 0.3, 'PriceNT' => 0.0, 'NtFrom1' => '{"hour":22,"minute":0,"second":0}', 'NtTo1' => '{"hour":6,"minute":0,"second":0}', 'BasePrice' => 100.0],
+    ['Id' => 'x2', 'ValidFrom' => '{"year":2025,"month":1,"day":1}', 'PriceHT' => 0.4],
     ['Id' => 'x3', 'ValidFrom' => '']
 ]);
 check('Formular: doppelte und fehlende Datumsangaben werden gemeldet', count($warn), 2);
-check('Formular: Nachtpreis 0 = Tagpreis', $t->segments()[0]->priceNight, 0.3);
-check('Formular: Nachtfenster in Minuten', [$t->segments()[0]->nightFrom, $t->segments()[0]->nightTo], [1320, 360]);
+check('Formular: NT-Preis 0 = HT-Preis', $t->segments()[0]->priceNt, 0.3);
+check('Formular: NT-Fenster in Minuten', $t->segments()[0]->ntWindows, [[1320, 360]]);
 $round = ErTariff::fromArray($t->toArray());
 check('Tarif: Transportformat verlustfrei', $round->toArray(), $t->toArray());
 
@@ -307,7 +359,7 @@ $settings = ErLegacy::convertSettings([
 check('Migration: Einheit', $settings['Unit'], 'Wh');
 check('Migration: Zeiträume', [$settings['DayCurrent'], $settings['MonthPrevious'], $settings['WeekCurrent']], [true, true, false]);
 check('Migration: Intervall in Minuten', $settings['UpdateInterval'], 10);
-check('Migration: Tag/Nacht', $settings['ShowDayNight'], true);
+check('Migration: HT/NT getrennt anzeigen', $settings['ShowHtNt'], true);
 check('Migration: Grundpreis', $settings['IncludeBaseCosts'], true);
 $custom = json_decode($settings['CustomPeriods'], true);
 check('Migration: eigener Zeitraum', [count($custom), json_decode($custom[0]['To'], true)['day']], [1, 15]);
@@ -319,14 +371,14 @@ $with = ErLegacy::convertTariffRows($old, true);
 $without = ErLegacy::convertTariffRows($old, false);
 [$tw] = ErTariff::fromFormRows($with);
 [$tn] = ErTariff::fromFormRows($without);
-check('Migration Tarif: Nachtfenster übernommen', $tw->segments()[0]->hasNight(), true);
-check('Migration Tarif: Nachtpreis ungenutzt -> kein Fenster', $tn->segments()[0]->hasNight(), false);
+check('Migration Tarif: NT-Fenster übernommen', $tw->segments()[0]->hasNt(), true);
+check('Migration Tarif: Nachtpreis ungenutzt -> kein NT-Fenster', $tn->segments()[0]->hasNt(), false);
 $withSupplier = ErLegacy::convertTariffRows([$old[0] + ['ElectricitySuppliers' => 'Stadtwerke Beispiel']], true);
 check('Migration Tarif: Stromanbieter wird zu Anbieter', $withSupplier[0]['Supplier'], 'Stadtwerke Beispiel');
 [$ts] = ErTariff::fromFormRows($withSupplier);
 check('Anbieter bleibt im Tarif erhalten', $ts->segments()[0]->supplier, 'Stadtwerke Beispiel');
 check('Anbieter überlebt das Transportformat', ErTariff::fromArray($ts->toArray())->segments()[0]->supplier, 'Stadtwerke Beispiel');
-check('Migration Tarif: Preise', [$tw->segments()[0]->priceDay, $tw->segments()[0]->priceNight, $tw->segments()[0]->advanceCount], [0.3, 0.2, 12]);
+check('Migration Tarif: Preise', [$tw->segments()[0]->priceHt, $tw->segments()[0]->priceNt, $tw->segments()[0]->advanceCount], [0.3, 0.2, 12]);
 
 // ---------------------------------------------------------------- Dynamische Preise
 require_once __DIR__ . '/../libs/ErPriceSeries.php';
@@ -343,7 +395,7 @@ check('Preisreihe: vor dem ersten Wert', $series->priceAt(ts(2025, 3, 2, 23)), n
 check('Preisreihe: Grenzen im Intervall', $series->boundariesWithin(ts(2025, 3, 3, 5, 30), ts(2025, 3, 3, 8)), [ts(2025, 3, 3, 6), ts(2025, 3, 3, 7)]);
 check('Preisreihe: leer', (new ErPriceSeries([]))->priceAt(ts(2025, 3, 3)), null);
 
-$dynSegment = static fn (array $o = []): ErTariffSegment => segment($o + ['id' => 'dyn', 'priceVariableId' => 42, 'priceFactor' => 0.01, 'surcharge' => 0.05, 'priceDay' => 0.30]);
+$dynSegment = static fn (array $o = []): ErTariffSegment => segment($o + ['id' => 'dyn', 'priceVariableId' => 42, 'priceFactor' => 0.01, 'surcharge' => 0.05, 'priceHt' => 0.30]);
 $dyn = new ErTariff([$dynSegment()]);
 $dayStart = ts(2025, 3, 3);
 $dayEnd = ts(2025, 3, 4);
@@ -385,7 +437,7 @@ check('Dynamisch: Stunde mit 4 Viertelstunden-Preisen = Mittel der Preise', $r['
 
 // Mischung: fester Tarif, ab 2025-03-03 dynamisch
 $mixed = new ErTariff([
-    segment(['id' => 'fix', 'validFrom' => ts(2025, 1, 1), 'priceDay' => 0.30]),
+    segment(['id' => 'fix', 'validFrom' => ts(2025, 1, 1), 'priceHt' => 0.30]),
     $dynSegment(['validFrom' => ts(2025, 3, 3), 'surcharge' => 0.0])
 ]);
 $twoDays = hourly(ts(2025, 3, 2), ts(2025, 3, 4), static fn (): float => 1.0);
@@ -402,8 +454,8 @@ check('Aggregation: fester Preis täglich', ErArchiveReader::aggregationFor(new 
 check('Split: zusätzlicher Schnittpunkt', count((new ErTariff([segment()]))->split(ts(2025, 3, 3, 10), ts(2025, 3, 3, 11), [ts(2025, 3, 3, 10, 30), ts(2025, 3, 3, 9)])), 2);
 
 [$dynFromForm] = ErTariff::fromFormRows([
-    ['Id' => 'd1', 'ValidFrom' => '{"year":2025,"month":1,"day":1}', 'PriceDay' => 0.3, 'PriceVariable' => 4711, 'PriceUnit' => 'CT_KWH', 'Surcharge' => 0.07, 'PriceResolution' => 15],
-    ['Id' => 'd2', 'ValidFrom' => '{"year":2025,"month":6,"day":1}', 'PriceDay' => 0.3, 'PriceVariable' => 4712, 'PriceUnit' => 'EUR_MWH']
+    ['Id' => 'd1', 'ValidFrom' => '{"year":2025,"month":1,"day":1}', 'PriceHT' => 0.3, 'PriceVariable' => 4711, 'PriceUnit' => 'CT_KWH', 'Surcharge' => 0.07, 'PriceResolution' => 15],
+    ['Id' => 'd2', 'ValidFrom' => '{"year":2025,"month":6,"day":1}', 'PriceHT' => 0.3, 'PriceVariable' => 4712, 'PriceUnit' => 'EUR_MWH']
 ]);
 $d1 = $dynFromForm->segments()[0];
 check('Formular: dynamischer Tarif', [$d1->isDynamic(), $d1->priceVariableId, $d1->priceFactor, $d1->surcharge, $d1->priceResolution], [true, 4711, 0.01, 0.07, 15]);
@@ -426,7 +478,7 @@ if (function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectI
     $end = ts(2026, 1, 1);
     $far = ts(2030, 1, 1);
 
-    $gas = new ErTariff([segment(['validFrom' => ts(2024, 1, 1), 'priceDay' => 0.10])]);
+    $gas = new ErTariff([segment(['validFrom' => ts(2024, 1, 1), 'priceHt' => 0.10])]);
     foreach ([ErArchiveReader::DAILY, ErArchiveReader::HOURLY] as $agg) {
         $r = ErCalculator::calculate($read('T02_GasM3', $agg, $start, $end - 1), $gas, 1.0, false, $start, $end, $far);
         check("Archiv Gas 2025 (Aggregation $agg): 365 x 7,2 m³", $r['consumption'], 365 * 7.2, 1e-6);
@@ -437,11 +489,11 @@ if (function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectI
     $dayStart = ts(2025, 3, 3);
     $r = ErCalculator::calculate($read('T01_StromEinfach', $agg, $dayStart, ts(2025, 3, 4) - 1), $strom, 1.0, false, $dayStart, ts(2025, 3, 4), ts(2025, 3, 4));
     check('Archiv Strom: Tagesverbrauch', $r['consumption'], 9.6);
-    check('Archiv Strom: Kosten Tag/Nacht', $r['costsWork'], 16 * 0.5 * 0.30 + 8 * 0.2 * 0.20);
+    check('Archiv Strom: Kosten HT/NT', $r['costsWork'], 16 * 0.5 * 0.30 + 8 * 0.2 * 0.20);
 
     // Dynamischer Preis aus dem Archiv (T06: 10 ct + Stunde des Tages), Verbrauch aus T01
     $priceVariable = $var('T06_PreisDynamisch');
-    $dynamicTariff = new ErTariff([segment(['id' => 'dyn', 'validFrom' => ts(2024, 1, 1), 'priceVariableId' => $priceVariable, 'priceFactor' => 0.01, 'surcharge' => 0.05, 'priceDay' => 0.30])]);
+    $dynamicTariff = new ErTariff([segment(['id' => 'dyn', 'validFrom' => ts(2024, 1, 1), 'priceVariableId' => $priceVariable, 'priceFactor' => 0.01, 'surcharge' => 0.05, 'priceHt' => 0.30])]);
     $dynAgg = ErArchiveReader::aggregationFor($dynamicTariff);
     check('Archiv dynamisch: Aggregation stündlich', $dynAgg, ErArchiveReader::HOURLY);
     $priceSeries = new ErPriceSeries(ErArchiveReader::read(

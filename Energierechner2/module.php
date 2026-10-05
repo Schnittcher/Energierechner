@@ -46,10 +46,10 @@ class Energierechner2 extends IPSModuleStrict
         'Consumption'         => 'consumption',
         'CostsWork'           => 'costsWork',
         'CostsBase'           => 'costsBase',
-        'ConsumptionDay'      => 'consumptionDay',
-        'CostsDay'            => 'costsDay',
-        'ConsumptionNight'    => 'consumptionNight',
-        'CostsNight'          => 'costsNight',
+        'ConsumptionHT'       => 'consumptionHt',
+        'CostsHT'             => 'costsHt',
+        'ConsumptionNT'       => 'consumptionNt',
+        'CostsNT'             => 'costsNt',
         'Energy'              => 'energy',
         'ForecastCosts'       => 'forecastCosts',
         'ForecastConsumption' => 'forecastConsumption',
@@ -61,10 +61,10 @@ class Energierechner2 extends IPSModuleStrict
         'Consumption'         => 'Consumption',
         'CostsWork'           => 'Costs (usage)',
         'CostsBase'           => 'Costs (base price)',
-        'ConsumptionDay'      => 'Consumption (day)',
-        'CostsDay'            => 'Costs (day)',
-        'ConsumptionNight'    => 'Consumption (night)',
-        'CostsNight'          => 'Costs (night)',
+        'ConsumptionHT'       => 'Consumption (HT)',
+        'CostsHT'             => 'Costs (HT)',
+        'ConsumptionNT'       => 'Consumption (NT)',
+        'CostsNT'             => 'Costs (NT)',
         'Energy'              => 'Energy (kWh)',
         'ForecastCosts'       => 'Forecast costs',
         'ForecastConsumption' => 'Forecast consumption',
@@ -88,7 +88,7 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterPropertyBoolean('TariffPeriods', false);
         $this->RegisterPropertyString('CustomPeriods', '[]');
 
-        $this->RegisterPropertyBoolean('ShowDayNight', false);
+        $this->RegisterPropertyBoolean('ShowHtNt', false);
         $this->RegisterPropertyBoolean('ShowBaseCosts', false);
         $this->RegisterPropertyBoolean('IncludeBaseCosts', true);
         $this->RegisterPropertyBoolean('ShowForecast', false);
@@ -602,7 +602,7 @@ class Energierechner2 extends IPSModuleStrict
             case 'gasParameters':
                 return $this->Translate('Gas conversion values (factor, Z-number, calorific value) are missing in a tariff period. The costs are too low.');
             case 'priceFallback':
-                return $this->Translate('No price data for a dynamic tariff in some intervals. The fixed price (day) was used there.');
+                return $this->Translate('No price data for a dynamic tariff in some intervals. The fixed price (HT) was used there.');
             case 'priceVariable':
                 return $this->Translate('The price variable of a dynamic tariff does not exist or is not logged in the archive.');
             case 'archiveChanged':
@@ -705,8 +705,8 @@ class Energierechner2 extends IPSModuleStrict
             if ($this->ReadPropertyBoolean('ShowBaseCosts')) {
                 array_push($kinds, 'CostsWork', 'CostsBase');
             }
-            if ($this->ReadPropertyBoolean('ShowDayNight')) {
-                array_push($kinds, 'ConsumptionDay', 'CostsDay', 'ConsumptionNight', 'CostsNight');
+            if ($this->ReadPropertyBoolean('ShowHtNt')) {
+                array_push($kinds, 'ConsumptionHT', 'CostsHT', 'ConsumptionNT', 'CostsNT');
             }
             if ($this->gasConversion()) {
                 $kinds[] = 'Energy';

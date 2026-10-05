@@ -43,7 +43,7 @@ final class ErLegacy
             'Unit'                  => self::UNITS[$old['ProfileType'] ?? ''] ?? '',
             'ImpulsesPerKwh'        => max(1, (int) ($old['Impulse_kWh'] ?? 1000)),
             'GasConversion'         => (bool) ($old['GasPriceCalculationActive'] ?? false),
-            'ShowDayNight'          => (bool) ($old['DailyConsumption'] ?? false) || (bool) ($old['NightlyConsumption'] ?? false),
+            'ShowHtNt'              => (bool) ($old['DailyConsumption'] ?? false) || (bool) ($old['NightlyConsumption'] ?? false),
             'UpdateInterval'        => max(1, intdiv((int) ($old['UpdateInterval'] ?? 600), 60))
         ];
         if (!empty($old['Impulse_kWhBool'])) {
@@ -76,8 +76,9 @@ final class ErLegacy
 
     /**
      * Wandelt die Tarifliste des alten Tarif-Moduls in Zeilen des neuen um.
-     * Hat das alte Modul die Nachtpreise nicht benutzt, wird kein Nachtfenster übernommen,
-     * damit die Kosten unverändert bleiben.
+     * Das Nachtfenster des alten Moduls wird zum ersten Niedertarif-Zeitfenster (NT), der Tagpreis zum
+     * Hochtarif-Preis (HT). Hat das alte Modul den Nachttarif nicht benutzt, wird kein NT-Fenster
+     * übernommen, damit die Kosten unverändert bleiben.
      *
      * @param array<int, array<string, mixed>> $oldRows
      * @return array<int, array<string, mixed>>
@@ -96,10 +97,13 @@ final class ErLegacy
                 'Name'         => $date !== null ? sprintf('%02d.%02d.%04d', $date['day'], $date['month'], $date['year']) : '',
                 'Supplier'     => (string) ($old['ElectricitySuppliers'] ?? ''),
                 'ValidFrom'    => json_encode($date ?? []),
-                'PriceDay'     => (float) ($old['DayPrice'] ?? 0),
-                'PriceNight'   => $nightWasUsed ? (float) ($old['NightPrice'] ?? 0) : 0.0,
-                'NightFrom'    => $time($nightFrom),
-                'NightTo'      => $time($nightTo),
+                'PriceHT'      => (float) ($old['DayPrice'] ?? 0),
+                'PriceNT'      => $nightWasUsed ? (float) ($old['NightPrice'] ?? 0) : 0.0,
+                'NtFrom1'      => $time($nightFrom),
+                'NtTo1'        => $time($nightTo),
+                'NtFrom2'      => $time(null),
+                'NtTo2'        => $time(null),
+                'NtWeekend'    => false,
                 'BasePrice'    => (float) ($old['BasePrice'] ?? 0),
                 'Advance'      => (float) ($old['AdvancePayment'] ?? 0),
                 'AdvanceCount' => (int) ($old['DeductionsPerYear'] ?? 0),

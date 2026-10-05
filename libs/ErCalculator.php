@@ -39,11 +39,11 @@ final class ErCalculator
         ?float $seasonalShare = null
     ): array {
         $consumption = 0.0;
-        $consumptionDay = 0.0;
-        $consumptionNight = 0.0;
+        $consumptionHt = 0.0;
+        $consumptionNt = 0.0;
         $energy = 0.0;
-        $workDay = 0.0;
-        $workNight = 0.0;
+        $workHt = 0.0;
+        $workNt = 0.0;
         $noTariffConsumption = 0.0;
         $gasMissing = false;
         $priceFallback = false;
@@ -88,7 +88,7 @@ final class ErCalculator
                 }
 
                 // Fester Preis; bei dynamischem Tarif der Preis der Reihe, ohne Preis der feste Preis als Ausweichwert
-                $price = $piece['night'] ? $seg->priceNight : $seg->priceDay;
+                $price = $piece['nt'] ? $seg->priceNt : $seg->priceHt;
                 if ($seg->isDynamic()) {
                     $dynamic = isset($prices[$seg->id]) ? $prices[$seg->id]->priceAt($piece['from']) : null;
                     if ($dynamic === null) {
@@ -98,18 +98,18 @@ final class ErCalculator
                     }
                 }
 
-                if ($piece['night']) {
-                    $consumptionNight += $v;
-                    $workNight += $basis * $price;
+                if ($piece['nt']) {
+                    $consumptionNt += $v;
+                    $workNt += $basis * $price;
                 } else {
-                    $consumptionDay += $v;
-                    $workDay += $basis * $price;
+                    $consumptionHt += $v;
+                    $workHt += $basis * $price;
                 }
             }
         }
 
         $accrual = self::accrue($tariff, $periodStart, $periodEnd, $now);
-        $work = $workDay + $workNight;
+        $work = $workHt + $workNt;
         $base = $includeBase ? $accrual['base'] : 0.0;
         $costs = $work + $base;
 
@@ -126,14 +126,14 @@ final class ErCalculator
 
         $result = [
             'consumption'         => $consumption,
-            'consumptionDay'      => $consumptionDay,
-            'consumptionNight'    => $consumptionNight,
+            'consumptionHt'       => $consumptionHt,
+            'consumptionNt'       => $consumptionNt,
             'energy'              => $energy,
             'costs'               => $costs,
             'costsWork'           => $work,
             'costsBase'           => $base,
-            'costsDay'            => $workDay,
-            'costsNight'          => $workNight,
+            'costsHt'             => $workHt,
+            'costsNt'             => $workNt,
             'advance'             => $accrual['advance'],
             'balance'             => $accrual['advance'] - $costs,
             'days'                => $accrual['days'],
@@ -207,7 +207,7 @@ final class ErCalculator
      */
     public static function sum(array $results): array
     {
-        $keys = ['consumption', 'consumptionDay', 'consumptionNight', 'energy', 'costs', 'costsWork', 'costsBase', 'costsDay', 'costsNight', 'advance', 'balance', 'days'];
+        $keys = ['consumption', 'consumptionHt', 'consumptionNt', 'energy', 'costs', 'costsWork', 'costsBase', 'costsHt', 'costsNt', 'advance', 'balance', 'days'];
         $sum = array_fill_keys($keys, 0.0);
         $warnings = [];
         foreach ($results as $r) {
