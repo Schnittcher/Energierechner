@@ -14,7 +14,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
   --bd:color-mix(in srgb,var(--tx) 20%,transparent);
   --bg:color-mix(in srgb,var(--tx) 14%,transparent);
 }
-#wrap{width:100%;height:100%;font-size:12px;color:var(--tx);padding:var(--pt,28px) 14px var(--pb,48px);display:flex;flex-direction:column;gap:8px;overflow:hidden;container-type:inline-size}
+#wrap{width:100%;height:100%;font-size:12px;color:var(--tx);padding:var(--pt,28px) var(--pr,36px) var(--pb,48px) 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden;container-type:inline-size}
 .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
 .chips::-webkit-scrollbar{display:none}
@@ -43,7 +43,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
 .det .r b{font-weight:500}
 .foot{margin-top:2px;font-size:11px;color:var(--hint)}
 .empty{color:var(--sub);font-size:14px;margin:auto;text-align:center}
-@container (max-width:300px){#wrap{padding:var(--pt,26px) 10px var(--pb,40px);gap:6px}.extra{display:none}.hero .n{font-size:clamp(24px,13cqw,34px)}.nav{font-size:12px}.chips .chip:not(.on){display:none}}
+@container (max-width:300px){#wrap{padding:var(--pt,26px) var(--pr,32px) var(--pb,40px) 10px;gap:6px}.extra{display:none}.hero .n{font-size:clamp(24px,13cqw,34px)}.nav{font-size:12px}.chips .chip:not(.on){display:none}}
 </style>
 </head>
 <body>
