@@ -173,7 +173,7 @@ function sizeMore(){
 function bind(p){
   var q=function(s){return document.querySelector(s)};
   sizeMore();
-  Array.prototype.forEach.call(document.querySelectorAll('.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;render()}});
+  Array.prototype.forEach.call(document.querySelectorAll('button.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;render()}});
   var m=q('#more');if(m)m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;render()};
   var pv=q('#prev'),nx=q('#next');
   if(pv)pv.onclick=function(){if(sel.group){sel.role='prev';render()}};
