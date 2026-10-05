@@ -29,6 +29,7 @@
             "Show usage costs and base price separately": "Arbeitskosten und Grundpreis getrennt anzeigen",
             "Show day and night consumption and costs separately": "Verbrauch und Kosten für Tag und Nacht getrennt anzeigen",
             "Forecast for current week, month and year": "Prognose für aktuelle Woche, Monat und Jahr",
+            "Forecast with last year's profile (month and year, if last year's data is available)": "Prognose mit Vorjahresverlauf (Monat und Jahr, wenn Vorjahresdaten vorhanden sind)",
             "Log completed periods in the archive (yesterday, previous week, month and year; costs and consumption)": "Abgeschlossene Zeiträume im Archiv loggen (Gestern, Vorwoche, Vormonat und Vorjahr; Kosten und Verbrauch)",
             "Balance of advance payments (current and previous year, tariff periods and total)": "Saldo der Abschläge (aktuelles Jahr, Vorjahr, Tarifzeiträume und Summe)",
             "Expert settings": "Experteneinstellungen",

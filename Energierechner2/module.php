@@ -7,6 +7,7 @@ require_once __DIR__ . '/../libs/ErCalculator.php';
 require_once __DIR__ . '/../libs/ErArchiveReader.php';
 require_once __DIR__ . '/../libs/ErPeriods.php';
 require_once __DIR__ . '/../libs/ErPriceSeries.php';
+require_once __DIR__ . '/../libs/ErForecast.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
 
 /**
@@ -91,12 +92,14 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterPropertyBoolean('ShowBaseCosts', false);
         $this->RegisterPropertyBoolean('IncludeBaseCosts', true);
         $this->RegisterPropertyBoolean('ShowForecast', false);
+        $this->RegisterPropertyBoolean('ForecastLastYear', true);
         $this->RegisterPropertyBoolean('ShowBalance', false);
         $this->RegisterPropertyBoolean('LogClosedPeriods', false);
         $this->RegisterPropertyInteger('UpdateInterval', 10);
 
         $this->RegisterAttributeString('AutoLogged', '[]');
         $this->RegisterAttributeString('Warnings', '[]');
+        $this->RegisterAttributeString('ForecastShares', '{}');
         $this->RegisterAttributeString('Cache', '{}');
         $this->RegisterAttributeString('Idents', '[]');
         $this->RegisterAttributeString('TariffSig', '');
@@ -200,6 +203,7 @@ class Energierechner2 extends IPSModuleStrict
     public function Recalculate(): bool
     {
         $this->WriteAttributeString('Cache', '{}');
+        $this->WriteAttributeString('ForecastShares', '{}');
         return $this->calculate();
     }
 
@@ -383,7 +387,14 @@ class Energierechner2 extends IPSModuleStrict
                     $intervals,
                     static fn (array $iv): bool => $iv['start'] >= $job['start'] && $iv['start'] < $job['end']
                 ));
-                $result = ErCalculator::calculate($slice, $tariff, $unit['factor'], $gas, $job['start'], $job['end'], $now, $includeBase, $prices);
+                $share = null;
+                if ($this->ReadPropertyBoolean('ForecastLastYear') && in_array($job['key'], ErPeriods::FORECAST_SEASONAL, true)) {
+                    $share = $this->seasonalShare($archiveID, $variableID, $job['key'], $job['start'], $job['end'], $now);
+                }
+                $result = ErCalculator::calculate($slice, $tariff, $unit['factor'], $gas, $job['start'], $job['end'], $now, $includeBase, $prices, $share);
+                if ($result['forecastMethod'] !== null) {
+                    $this->SendDebug($job['key'], 'Forecast method: ' . $result['forecastMethod'] . ($share !== null ? sprintf(' (last year share %.3f)', $share) : ''), 0);
+                }
                 if ($priceProblems !== []) {
                     $result['warnings'][] = 'priceVariable';
                 }
@@ -432,6 +443,28 @@ class Energierechner2 extends IPSModuleStrict
             $this->SetValue('LastCalculation', $now);
         }
         return true;
+    }
+
+    /**
+     * Anteil, den der Zeitraum im Vorjahr zum gleichen Zeitpunkt schon erreicht hatte (für die Prognose).
+     * Das Vorjahr ändert sich nicht mehr, deshalb wird der Wert je Zeitraum nur einmal am Tag aus dem Archiv gelesen.
+     */
+    private function seasonalShare(int $archiveID, int $variableID, string $key, int $start, int $end, int $now): ?float
+    {
+        $cache = json_decode($this->ReadAttributeString('ForecastShares'), true);
+        $cache = is_array($cache) ? $cache : [];
+        $today = date('Y-m-d', $now);
+        if (isset($cache[$key]) && $cache[$key]['day'] === $today && $cache[$key]['start'] === $start) {
+            return $cache[$key]['share'];
+        }
+
+        $fetch = static fn (int $a, int $f, int $t): array => (array) AC_GetAggregatedValues($archiveID, $variableID, $a, $f, $t, 0);
+        $daily = ErArchiveReader::read($fetch, ErArchiveReader::DAILY, ErForecast::lastYear($start), ErForecast::lastYear($end) - 1);
+        $share = ErForecast::seasonalShare($daily, $start, $end, $now);
+
+        $cache[$key] = ['day' => $today, 'start' => $start, 'share' => $share];
+        $this->WriteAttributeString('ForecastShares', json_encode($cache));
+        return $share;
     }
 
     /**

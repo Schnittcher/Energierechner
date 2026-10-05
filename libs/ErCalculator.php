@@ -22,6 +22,8 @@ final class ErCalculator
      * @param int $now aktueller Zeitpunkt, begrenzt "aufgelaufene" Grund-/Abschlagskosten
      * @param bool $includeBase Grundpreis in die Gesamtkosten einrechnen
      * @param array<string, ErPriceSeries> $prices Preisreihen dynamischer Tarifabschnitte, Schlüssel = Id des Abschnitts
+     * @param float|null $seasonalShare Anteil, den der Zeitraum im Vorjahr bis jetzt erreicht hatte (siehe ErForecast);
+     *                                  ohne Angabe rechnet die Prognose linear nach verstrichener Zeit
      * @return array<string, mixed>
      */
     public static function calculate(
@@ -33,7 +35,8 @@ final class ErCalculator
         int $periodEnd,
         int $now,
         bool $includeBase = true,
-        array $prices = []
+        array $prices = [],
+        ?float $seasonalShare = null
     ): array {
         $consumption = 0.0;
         $consumptionDay = 0.0;
@@ -136,14 +139,21 @@ final class ErCalculator
             'days'                => $accrual['days'],
             'forecastCosts'       => null,
             'forecastConsumption' => null,
+            'forecastMethod'      => null,
             'warnings'            => $warnings
         ];
 
-        // Prognose nur für laufende Zeiträume, lineare Hochrechnung nach verstrichener Zeit
+        // Prognose nur für laufende Zeiträume. Anteil des Zeitraums, der bis jetzt erreicht ist:
+        // aus dem Vorjahresverlauf, sonst linear nach verstrichener Zeit.
         $span = $periodEnd - $periodStart;
         $elapsed = $now - $periodStart;
         if ($periodEnd > $now && $span > 0 && $elapsed >= 6 * 3600) {
             $fraction = $elapsed / $span;
+            $result['forecastMethod'] = 'linear';
+            if ($seasonalShare !== null && $seasonalShare > 0.0 && $seasonalShare <= 1.0) {
+                $fraction = $seasonalShare;
+                $result['forecastMethod'] = 'seasonal';
+            }
             $result['forecastConsumption'] = $consumption / $fraction;
             $result['forecastCosts'] = $work / $fraction + ($includeBase ? $accrual['baseFull'] : 0.0);
         }

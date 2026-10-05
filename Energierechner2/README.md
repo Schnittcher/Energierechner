@@ -36,7 +36,8 @@ Voraussetzung: Symcon 8.1 oder neuer. Die Tarife liegen in einer eigenen Instanz
 | Grundpreis einrechnen | Rechnet den Grundpreis in die Kosten ein. |
 | Arbeitskosten und Grundpreis getrennt | Zusätzliche Variablen für beide Anteile. |
 | Tag und Nacht getrennt | Verbrauch und Arbeitskosten getrennt nach Tag- und Nachtfenster. |
-| Prognose | Hochrechnung für die laufende Woche, den Monat und das Jahr. |
+| Prognose | Hochrechnung für die laufende Woche, den Monat und das Jahr. Siehe [Prognose](#prognose). |
+| Prognose mit Vorjahresverlauf | Für Monat und Jahr den Verlauf des Vorjahres nutzen, damit Winter- und Sommerverbrauch die Prognose nicht verzerren. Ohne Vorjahresdaten rechnet das Modul linear. Standardmäßig an. |
 | Abgeschlossene Zeiträume loggen | Schaltet das Archiv-Logging für Kosten und Verbrauch von Gestern, Vorwoche, Vormonat und Vorjahr ein (nur für aktivierte Zeiträume). Diese Werte ändern sich nur einmal je Zeitraum und ergeben saubere Verlaufsdiagramme. Beim Ausschalten der Option wird nur das wieder abgeschaltet, was das Modul selbst eingeschaltet hat. Von Hand geloggte Variablen bleiben unberührt, und bereits archivierte Werte bleiben erhalten. |
 | Saldo der Abschläge | Abschläge abzüglich Kosten, für das aktuelle Jahr, das Vorjahr, je Tarifzeitraum und als Summe. |
 | Aktualisierungsintervall | Wie oft die laufenden Zeiträume neu berechnet werden (Minuten). |
@@ -127,9 +128,34 @@ Außerdem gibt es `LastCalculation` mit dem Zeitpunkt der letzten Berechnung.
 - **Grundpreis:** Jahrespreis geteilt durch die Tage des Kalenderjahres (365 oder 366), je Tag mit dem Tarif dieses Tages. Laufende Zeiträume zählen bis einschließlich heute, abgeschlossene vollständig. Eine Woche hat damit 7 Tage Grundpreis, ein Monat so viele wie er Tage hat.
 - **Abschlag und Saldo:** Abschlag mal Zahlungen pro Jahr, tageweise aufgelaufen wie der Grundpreis. Der Saldo ist damit eine **gleichmäßige Hochrechnung**: aufgelaufener Abschlag minus aufgelaufene Kosten. Echte Zahlungen (Zeitpunkt, Betrag) fließen nicht ein. Positiv bedeutet Guthaben.
 - **Sommer- und Winterzeit:** Ein Tag mit Zeitumstellung hat 23 oder 25 Stunden. Gerechnet wird mit den tatsächlichen Stunden aus dem Archiv.
-- **Prognose:** Lineare Hochrechnung nach verstrichener Zeit. Arbeitskosten werden hochgerechnet, der Grundpreis gilt für den ganzen Zeitraum. Sie erscheint erst, wenn mindestens 6 Stunden des Zeitraums vergangen sind.
+- **Prognose:** siehe [Prognose](#prognose).
 - **Abgeschlossene Zeiträume** werden zwischengespeichert und erst neu berechnet, wenn sich Tarif oder Einstellungen ändern. Laufende Zeiträume werden bei jeder Aktualisierung neu berechnet.
 - **Neu berechnen:** Ändern sich **Archivdaten** nachträglich, bleiben abgeschlossene Zeiträume bei ihrem alten Wert. Das betrifft Verbrauchsdaten (Datenlücke nachgetragen, falsche Zählerwerte korrigiert oder gelöscht, neu aggregiert) genauso wie Preisdaten eines dynamischen Tarifs. Die Schaltfläche **Neu berechnen** am Ende des Konfigurationsformulars der Instanz (im Bereich der Aktionen) oder die Funktion `ER2_Recalculate($InstanzID)` verwirft den Zwischenspeicher und rechnet alles neu.
+
+### Prognose
+
+Die Prognose gibt es für die **aktuelle Woche, den aktuellen Monat und das aktuelle Jahr** (Variablen `ForecastConsumption` und `ForecastCosts`). Sie erscheint erst, wenn mindestens 6 Stunden des Zeitraums vergangen sind.
+
+```
+Prognose Verbrauch = bisheriger Verbrauch ÷ Anteil
+Prognose Kosten   = bisherige Arbeitskosten ÷ Anteil + voller Grundpreis des Zeitraums
+```
+
+Der **Anteil** sagt, welcher Teil des Zeitraums schon erreicht ist. Er wird auf zwei Arten bestimmt:
+
+| Methode | Wann | Anteil |
+|---|---|---|
+| **Vorjahresverlauf** | Monat und Jahr, wenn „Prognose mit Vorjahresverlauf" an ist und das Vorjahr brauchbare Daten hat | Welchen Anteil seines Verbrauchs der Zeitraum im Vorjahr zum **gleichen Zeitpunkt** schon erreicht hatte |
+| **Linear** | Woche (immer), sowie Monat und Jahr, wenn der Vorjahresverlauf nicht nutzbar ist | Verstrichene Zeit ÷ Gesamtdauer des Zeitraums |
+
+**Beispiel:** Ein Haus mit Wärmepumpe hatte im Vorjahr bis Ende März schon 50 % seines Jahresverbrauchs, obwohl erst 25 % der Zeit vorbei waren. Hat es dieses Jahr bis Ende März 2.700 kWh verbraucht, sagt die lineare Prognose 10.800 kWh voraus, der Vorjahresverlauf 5.400 kWh (2.700 ÷ 0,5). Das Verbrauchsniveau kommt aus dem laufenden Jahr, nur die Saisonform aus dem Vorjahr.
+
+- **Fallback auf linear:** Das Modul nutzt den Vorjahresverlauf nur, wenn das Vorjahr Verbrauch enthält und der Anteil plausibel ist. Weicht er um mehr als das Dreifache vom zeitlichen Anteil ab (typisch bei einem Zähler, der erst im Vorjahr in Betrieb ging oder lückenhaft geloggt wurde), rechnet das Modul linear. Welche Methode benutzt wurde, zeigt die Debug-Ausgabe.
+- **Woche:** bleibt linear, weil der Wochenrhythmus (Werktag, Wochenende) im Kalender-Vorjahr keine Entsprechung hat.
+- **Arbeitskosten** werden mit demselben Anteil hochgerechnet, der **Grundpreis** zählt voll für den ganzen Zeitraum, tageweise mit dem Tarif des jeweiligen Tages (für künftige Tage mit dem zuletzt gültigen).
+- **Dynamische Preise:** Hochgerechnet werden die bisher angefallenen Kosten zu den tatsächlichen Preisen, es gibt keine Preisvorhersage.
+- **Tag und Nacht** werden nicht getrennt prognostiziert.
+- Das Vorjahr wird je Zeitraum nur einmal am Tag aus dem Archiv gelesen, weil es sich nicht mehr ändert.
 
 ### Wann wird was neu berechnet
 
@@ -166,6 +192,7 @@ Die Debug-Ausgabe der Instanz zeigt, wie viele Archivwerte gelesen wurden, welch
 - **Zählerreset:** Ein Rücksetzen auf einen kleineren Wert ignoriert das Archiv. Der Verbrauch der Stunde, in der es passiert, fehlt.
 - **Erster Archivwert:** Der erste geloggte Wert eines Zählers ist nur Referenz und wird nicht als Verbrauch gezählt.
 - **Zeiträume vor dem ersten Tarif** werden ohne Preis berechnet (Kosten 0). Dazu zeigt die Instanz eine Warnung an.
+- **Prognose:** Sie ist eine Hochrechnung und keine Vorhersage. Sie kennt weder Wetter noch Verhaltensänderungen. Gerade kurz nach Beginn eines Zeitraums (Jahresanfang, Monatsanfang) schwankt sie stark, weil wenige Tage hochgerechnet werden. Künftige Tarifwechsel sind nicht bekannt.
 - **Dynamische Preise:** Der Preis gilt für das Intervall, in dem er im Archiv steht. Hat das Archiv für ein Intervall keinen Wert, wird der feste Preis (Tag) verwendet und eine Warnung angezeigt. Änderungen an der Tarifzeile (Preis, Aufschlag, Grundpreis, Datum) werden automatisch auch für abgeschlossene Zeiträume übernommen. Werden dagegen **Preisdaten im Archiv** nachträglich geändert oder nachgeliefert (z. B. korrigierte Börsenpreise), bleiben bereits abgeschlossene Zeiträume bei ihrem alten Wert, bis du *Neu berechnen* drückst (siehe unten).
 
 ## 6. Umstieg vom alten Energierechner

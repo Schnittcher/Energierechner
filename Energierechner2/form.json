@@ -211,6 +211,11 @@
                 },
                 {
                     "type": "CheckBox",
+                    "name": "ForecastLastYear",
+                    "caption": "Forecast with last year's profile (month and year, if last year's data is available)"
+                },
+                {
+                    "type": "CheckBox",
                     "name": "LogClosedPeriods",
                     "caption": "Log completed periods in the archive (yesterday, previous week, month and year; costs and consumption)"
                 },

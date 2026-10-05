@@ -27,6 +27,12 @@ final class ErPeriods
     /** Zeiträume, für die eine Prognose Sinn ergibt (laufende Woche/Monat/Jahr). */
     public const FORECAST = ['Week_Current', 'Month_Current', 'Year_Current'];
 
+    /**
+     * Zeiträume, deren Prognose den Vorjahresverlauf nutzen kann. Die Woche bleibt linear: Der Wochenrhythmus
+     * (Werktag, Wochenende) hat im Kalender-Vorjahr keine Entsprechung.
+     */
+    public const FORECAST_SEASONAL = ['Month_Current', 'Year_Current'];
+
     /** Zeiträume mit Saldo der Abschläge (zusätzlich zu Tarifzeiträumen und Summe). */
     public const BALANCE = ['Year_Current', 'Year_Previous'];
 

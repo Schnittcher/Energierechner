@@ -174,6 +174,45 @@ check('Prognose: Kosten = Arbeit hochgerechnet + voller Grundpreis', $r['forecas
 $r = ErCalculator::calculate(daily($ms, $me, 10.0), $fc, 1.0, false, $ms, $me, ts(2025, 3, 1));
 check('Prognose: nicht für abgeschlossene Zeiträume', $r['forecastCosts'], null);
 
+// ---------------------------------------------------------------- Prognose mit Vorjahresverlauf
+require_once __DIR__ . '/../libs/ErForecast.php';
+
+check('Vorjahr: gleicher Zeitpunkt', ErForecast::lastYear(ts(2025, 3, 3, 12, 30)), ts(2024, 3, 3, 12, 30));
+check('Vorjahr: 29.02. wird 01.03.', ErForecast::lastYear(ts(2028, 2, 29)), ts(2027, 3, 1));
+
+// Vorjahr 2024 (Schaltjahr): Januar bis März je 3,0 pro Tag (Winter), danach 1,0 pro Tag
+$winterHeavy = static function (): array
+{
+    $out = [];
+    for ($t = ts(2024, 1, 1); $t < ts(2025, 1, 1); $t = ErTariff::nextDay($t)) {
+        $out[] = ['start' => $t, 'end' => ErTariff::nextDay($t), 'value' => $t < ts(2024, 4, 1) ? 3.0 : 1.0];
+    }
+    return $out;
+};
+$lastYearDaily = $winterHeavy();
+$share = ErForecast::seasonalShare($lastYearDaily, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1));
+check('Vorjahresanteil: Winterverbrauch zählt stärker als der Zeitanteil', $share, 273.0 / 548.0);
+check('Vorjahresanteil liegt über dem zeitlichen Anteil', $share > 91 / 366, true);
+
+$r = ErCalculator::calculate(daily(ts(2025, 1, 1), ts(2025, 4, 1), 3.0), new ErTariff([segment()]), 1.0, false, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1), true, [], $share);
+check('Prognose Vorjahr: Verbrauch = bisheriger Verbrauch / Vorjahresanteil', $r['forecastConsumption'], 270.0 / (273.0 / 548.0));
+check('Prognose Vorjahr: Methode', $r['forecastMethod'], 'seasonal');
+$linear = ErCalculator::calculate(daily(ts(2025, 1, 1), ts(2025, 4, 1), 3.0), new ErTariff([segment()]), 1.0, false, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1));
+check('Prognose linear: Methode', $linear['forecastMethod'], 'linear');
+check('Prognose Vorjahr ist deutlich niedriger als linear (kein Winter auf das ganze Jahr)', $r['forecastConsumption'] < $linear['forecastConsumption'] * 0.6, true);
+$r = ErCalculator::calculate(daily(ts(2025, 1, 1), ts(2025, 4, 1), 3.0), new ErTariff([segment()]), 1.0, false, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1), true, [], null);
+check('Prognose ohne Vorjahresanteil bleibt linear', $r['forecastMethod'], 'linear');
+
+check('Vorjahresanteil: keine Vorjahresdaten', ErForecast::seasonalShare([], ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1)), null);
+$zeros = array_map(static fn (array $iv): array => ['value' => 0.0] + $iv, $lastYearDaily);
+check('Vorjahresanteil: Vorjahr ohne Verbrauch', ErForecast::seasonalShare($zeros, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1)), null);
+// Vorjahresdaten beginnen erst im November: bis April fast nichts, der Anteil wäre unglaubwürdig klein
+$lateStart = array_map(static fn (array $iv): array => ['value' => $iv['start'] < ts(2024, 11, 1) ? 0.0 : 1.0] + $iv, $lastYearDaily);
+check('Vorjahresanteil: lückenhafte Vorjahresdaten -> unglaubwürdig', ErForecast::seasonalShare($lateStart, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1)), null);
+check('Vorjahresanteil: Monat im Vorjahr', ErForecast::seasonalShare($lastYearDaily, ts(2025, 3, 1), ts(2025, 4, 1), ts(2025, 3, 16)) !== null, true);
+check('Vorjahresanteil: gleichmäßiges Vorjahr entspricht dem Zeitanteil', ErForecast::seasonalShare(daily(ts(2024, 1, 1), ts(2025, 1, 1), 2.0), ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 7, 1)), 182 / 366);
+check('Vorjahresverlauf nur für Monat und Jahr, die Woche bleibt linear', ErPeriods::FORECAST_SEASONAL, ['Month_Current', 'Year_Current']);
+
 // ---------------------------------------------------------------- Summe
 $sum = ErCalculator::sum([['costs' => 1.5, 'consumption' => 2.0, 'warnings' => ['noTariff']], ['costs' => 2.5, 'consumption' => 3.0, 'warnings' => ['noTariff']]]);
 check('Summe Kosten', $sum['costs'], 4.0);
