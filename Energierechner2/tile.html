@@ -68,6 +68,8 @@ function current(){
   if(!sel||!sel.group||gs.indexOf(sel.group)<0){sel={group:gs.indexOf('month')>=0?'month':(gs[0]||null),role:'cur'}}
   if(sel.group){var o=byGroup(sel.group);return o[sel.role]||o.cur||o.prev}
   sel={key:ps[0].key};return ps[0]}
+/* HT/NT nur zeigen, wenn die Instanz es eingeschaltet hat und der Tarif einen Niedertarif kennt */
+function showHtNt(){var F=DATA.flags||{};return !!F.htnt&&F.hasNt!==false}
 function row(l,v){return '<div class="r"><span>'+esc(l)+'</span><b>'+v+'</b></div>'}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
 
@@ -88,7 +90,7 @@ function render(){
     if(F.base&&v.costsWork!=null)h+=row(L('costsWork'),eur(v.costsWork))+row(L('costsBase'),eur(v.costsBase||0));
     if(v.consumption>0)h+=row(L('effective'),num((v.costs||0)/v.consumption*100,1)+' ct');
     h+='<div class="g">'+esc(L('consumption'))+'</div>'+row(L('consumption'),kwh(v.consumption||0));
-    if(F.htnt&&v.consumptionHt!=null)h+=row(L('ht'),kwh(v.consumptionHt)+' / '+eur(v.costsHt||0))+row(L('nt'),kwh(v.consumptionNt||0)+' / '+eur(v.costsNt||0));
+    if(showHtNt()&&v.consumptionHt!=null)h+=row(L('ht'),kwh(v.consumptionHt)+' / '+eur(v.costsHt||0))+row(L('nt'),kwh(v.consumptionNt||0)+' / '+eur(v.costsNt||0));
     if(v.energy>0)h+=row(L('energy'),num(v.energy,0)+' kWh');
     if(F.forecast&&v.forecastCosts!=null)h+='<div class="g">'+esc(L('forecast'))+'</div>'+row(L('forecastCosts'),eur(v.forecastCosts))+row(L('forecastConsumption'),kwh(v.forecastConsumption||0));
     if(F.balance&&v.balance!=null)h+='<div class="g">'+esc(L('advance'))+'</div>'+row(L('balance'),eur(v.balance));
@@ -97,7 +99,10 @@ function render(){
     h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div><div class="hint extra">'+esc(L('tapDetails'))+'</div>';
     if(F.forecast&&p.open&&v.forecastCosts>0)h+='<div class="extra"><div class="lab"><span>'+esc(L('forecastCosts'))+'</span><span>'+eur(v.forecastCosts)+'</span></div><div class="track"><i style="width:'+Math.min(100,pct(v.costs||0,v.forecastCosts))+'%"></i></div></div>';
     var t=(v.consumptionHt||0)+(v.consumptionNt||0);
-    if(F.htnt&&t>0)h+='<div class="extra"><div class="lab"><span>'+esc(L('ht'))+' / '+esc(L('nt'))+'</span><span>'+pct(v.consumptionHt||0,t)+' % / '+pct(v.consumptionNt||0,t)+' %</span></div><div class="stack"><i style="flex:'+(v.consumptionHt||0)+';background:var(--ac)"></i><i style="flex:'+(v.consumptionNt||0)+';background:var(--bd)"></i></div></div>';
+    if(showHtNt()&&t>0){
+      var ph=(v.consumptionHt||0)/t*100,pn=100-ph;
+      h+='<div class="extra"><div class="lab"><span>'+esc(L('ht'))+' / '+esc(L('nt'))+'</span><span>'+Math.round(ph)+' % / '+Math.round(pn)+' %</span></div><div class="stack">'+(ph>0?'<i style="width:'+ph+'%;background:var(--ac)"></i>':'')+(pn>0?'<i style="width:'+pn+'%;background:var(--bd)"></i>':'')+'</div></div>';
+    }
   }
   var ws=DATA.warnings||[];
   if(ws.length&&!detail)h+='<div class="warn extra"><span>⚠ '+esc(ws[0])+(ws.length>1?' (+'+(ws.length-1)+')':'')+'</span><button id="recalc">'+esc(L('recalculate'))+'</button></div>';

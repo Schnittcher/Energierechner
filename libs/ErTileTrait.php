@@ -57,7 +57,7 @@ trait ErTileTrait
      * @param array<string, array<string, mixed>> $results
      * @param array<int, array{key:string,label:string,start:int,end:int}> $defs
      */
-    private function tileUpdate(array $results, array $defs, string $unitSuffix, int $now): void
+    private function tileUpdate(array $results, array $defs, string $unitSuffix, int $now, bool $hasNt): void
     {
         if (!$this->ReadPropertyBoolean('TileEnabled')) {
             return;
@@ -69,6 +69,7 @@ trait ErTileTrait
             'warnings' => is_array($warnings) ? $warnings : [],
             'flags'    => [
                 'htnt'     => $this->ReadPropertyBoolean('ShowHtNt'),
+                'hasNt'    => $hasNt,
                 'base'     => $this->ReadPropertyBoolean('ShowBaseCosts'),
                 'forecast' => $this->ReadPropertyBoolean('ShowForecast'),
                 'balance'  => $this->ReadPropertyBoolean('ShowBalance')
