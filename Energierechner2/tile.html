@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-action:pan-y;overscroll-behavior:none}
 :root{
   --tx:var(--content-color,#fff);
   --ac:var(--accent-color,#3b82c4);
@@ -16,7 +16,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 }
 #wrap{width:100%;height:100%;font-size:12px;color:var(--tx);padding:var(--pt,28px) 14px 10px;display:flex;flex-direction:column;gap:8px;overflow:hidden;container-type:inline-size}
 .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
 .chips::-webkit-scrollbar{display:none}
 .chip,.sel{font-size:12px;line-height:1.2;color:var(--tx);padding:3px 10px;border-radius:999px;border:1px solid var(--bd);background:transparent;cursor:pointer;flex:none}
 .chip.on,.sel.on{background:var(--ac);border-color:var(--ac);color:#fff}
@@ -37,7 +37,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 .warn{display:flex;gap:8px;align-items:center;font-size:12px;padding:8px 10px;border-radius:8px;background:rgba(224,160,40,.22)}
 .warn span{flex:1}
 .warn button{font-size:12px;color:var(--tx);background:transparent;border:1px solid var(--bd);border-radius:6px;padding:3px 8px;cursor:pointer;white-space:nowrap}
-.det{overflow:auto;font-size:13px;flex:1;min-height:0}
+.det{overflow-x:hidden;overflow-y:auto;font-size:13px;flex:1;min-height:0}
 .det .g{font-size:11px;color:var(--hint);padding:8px 0 2px;text-transform:uppercase;letter-spacing:.5px}
 .det .r{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bd)}
 .det .r b{font-weight:500}
@@ -47,6 +47,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 </style>
 </head>
 <body>
+<div id="probe" style="position:fixed;left:0;top:0;width:100%;height:1px;pointer-events:none"></div>
 <div id="wrap"></div>
 <script>
 var DATA = __TILE_DATA__;
@@ -125,27 +126,49 @@ function bind(p){
 
 /* Die App setzt die Kachel je nach Ansicht versetzt in ihren Rahmen und schneidet rechts ab, ohne die Breite zu kuerzen.
    Hier wird gemessen, wo die Kachel tatsaechlich liegt, und der Inhalt auf den sichtbaren Bereich begrenzt. */
+function measure(){
+  if(!('IntersectionObserver' in window))return;
+  var p=document.getElementById('probe'),w=document.getElementById('wrap');
+  if(!p||!w)return;
+  // Der Messpunkt ist so breit wie der Rahmen. Seine sichtbare Breite zeigt, wie viel die App tatsaechlich zeigt.
+  var io=new IntersectionObserver(function(es){
+    io.disconnect();
+    var e=es[es.length-1],b=e.boundingClientRect,i=e.intersectionRect;
+    if(b.width<50)return;
+    if(i.width>50&&i.width<b.width-1)w.style.width=Math.floor(i.width)+'px';
+    else if(i.width>=b.width-1)w.style.width='';
+  },{threshold:[0,1]});
+  io.observe(p);
+}
 function fit(){
   var w=document.getElementById('wrap');
-  w.style.width='';
   var top=null;
   try{var fr=window.frameElement;if(fr&&fr.parentElement){top=fr.getBoundingClientRect().top-fr.parentElement.getBoundingClientRect().top}}catch(e){}
   // Liegt der App-Kopf schon oberhalb der Kachel, braucht sie kaum Abstand; liegt er darueber, muss Platz bleiben
   w.style.setProperty('--pt',top===null?'28px':(top>=36?'12px':'38px'));
-  if(!('IntersectionObserver' in window))return;
-  var io=new IntersectionObserver(function(es){
-    io.disconnect();var e=es[0],b=e.boundingClientRect,i=e.intersectionRect;
-    if(i.width>50&&i.width<b.width-1)w.style.width=Math.floor(i.width)+'px';
-  },{threshold:[0,0.01,1]});
-  io.observe(w);
+  // Der Rahmen ist beim Start oft noch nicht fertig platziert: mehrfach messen
+  measure();
+  [250,1000,3000].forEach(function(ms){setTimeout(measure,ms)});
 }
+
+/* Die Kachel soll nicht seitlich wischbar sein (auch nicht, um den abgeschnittenen Rand der App zu zeigen).
+   Waagerechte Wischgesten werden abgefangen, ausser auf der Chip-Leiste, die bei Bedarf selbst scrollt. */
+(function(){
+  var sx=0,sy=0,inChips=false;
+  document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;inChips=!!(e.target.closest&&e.target.closest('.chips'))},{passive:true});
+  document.addEventListener('touchmove',function(e){
+    var t=e.touches[0];
+    if(!inChips&&Math.abs(t.clientX-sx)>Math.abs(t.clientY-sy)&&e.cancelable)e.preventDefault();
+  },{passive:false});
+  window.addEventListener('scroll',function(){if(window.scrollX!==0)window.scrollTo(0,window.scrollY)});
+})();
 
 function handleMessage(data){
   try{DATA=(typeof data==='string')?JSON.parse(data):data;render()}catch(e){}
 }
 render();
 fit();
-window.addEventListener('resize',fit);
+window.addEventListener('resize',function(){document.getElementById('wrap').style.width='';fit()});
 </script>
 </body>
 </html>
