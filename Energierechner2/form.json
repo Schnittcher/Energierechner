@@ -248,11 +248,6 @@
                     "caption": "Update interval",
                     "suffix": "minutes",
                     "minimum": 1
-                },
-                {
-                    "type": "CheckBox",
-                    "name": "TileEnabled",
-                    "caption": "Provide a tile for the tile visualization (experimental)"
                 }
             ]
         },

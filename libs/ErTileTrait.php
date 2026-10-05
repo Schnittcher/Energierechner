@@ -9,8 +9,8 @@ require_once __DIR__ . '/ErExtras.php';
  * Kachel-Visualisierung für Energierechner 2 (experimentell).
  *
  * Alles zur Kachel steckt in dieser Datei, in ErTile.php und in Energierechner2/tile.html.
- * Im Modul sind nur die mit "KACHEL" markierten Zeilen eingehängt. Zum Entfernen diese drei Dateien löschen,
- * die markierten Zeilen in module.php sowie die Eigenschaft TileEnabled im Formular entfernen.
+ * Im Modul sind nur die mit "KACHEL" markierten Zeilen eingehängt. Zum Entfernen diese drei Dateien löschen
+ * (und den Ordner EnergierechnerKachel) sowie die markierten Zeilen in module.php entfernen.
  */
 trait ErTileTrait
 {
@@ -42,19 +42,12 @@ trait ErTileTrait
 
     private function tileCreate(): void
     {
-        $this->RegisterPropertyBoolean('TileEnabled', true);
         $this->RegisterAttributeString('TileData', '{}');
         $this->SetVisualizationType(1);
     }
 
-    private function tileApply(): void
-    {
-        $this->SetVisualizationType($this->ReadPropertyBoolean('TileEnabled') ? 1 : 0);
-    }
-
     /**
      * Baut die Kacheldaten und merkt sie für das nächste Öffnen und für die Anzeige-Instanz Energierechner Kachel.
-     * An die eigene Kachel gehen die Werte nur, wenn sie eingeschaltet ist.
      *
      * @param array<string, array<string, mixed>> $results
      * @param array<int, array{key:string,label:string,start:int,end:int}> $defs
@@ -78,9 +71,7 @@ trait ErTileTrait
         ], $now);
         $json = json_encode($data);
         $this->WriteAttributeString('TileData', $json);
-        if ($this->ReadPropertyBoolean('TileEnabled')) {
-            $this->UpdateVisualizationValue($json);
-        }
+        $this->UpdateVisualizationValue($json);
     }
 
     /** Aktionen aus der Kachel. Gibt true zurück, wenn die Aktion zur Kachel gehört. */

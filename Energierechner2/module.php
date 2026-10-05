@@ -137,7 +137,6 @@ class Energierechner2 extends IPSModuleStrict
     {
         //Never delete this line!
         parent::ApplyChanges();
-        $this->tileApply(); // KACHEL
 
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             $this->RegisterMessage(0, IPS_KERNELSTARTED);
@@ -465,9 +464,9 @@ class Energierechner2 extends IPSModuleStrict
             $results['Total'] = ErCalculator::sum($tariffResults);
         }
 
-        // Zusatzwerte (Vorjahresvergleich, teuerster Tag) lesen das Archiv; nur nötig, wenn Variablen oder Kachel sie brauchen
+        // Zusatzwerte (Vorjahresvergleich, teuerster Tag) lesen das Archiv; nur nötig, wenn die Option eingeschaltet ist
         $extras = [];
-        if ($this->ReadPropertyBoolean('ShowExtras') || $this->ReadPropertyBoolean('TileEnabled')) {
+        if ($this->ReadPropertyBoolean('ShowExtras')) {
             $extras = $this->calculateExtras($defs, $tariff, $unit['factor'], $gas, $includeBase, $archiveID, $variableID, $now);
         }
         foreach ($results as $key => $result) {

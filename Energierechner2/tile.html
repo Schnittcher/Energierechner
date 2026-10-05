@@ -20,10 +20,12 @@ html,body{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;ov
 .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}
 .chips::-webkit-scrollbar{display:none}
-.chip,.sel{font-size:13px;line-height:1.2;color:var(--tx);padding:6px 10px;border-radius:999px;border:1px solid var(--bd);background:transparent;cursor:pointer;flex:none}
-.chip.on,.sel.on{background:var(--ac);border-color:var(--ac);color:#fff}
-.sel{appearance:none;-webkit-appearance:none;width:72px;text-overflow:ellipsis}
-.sel option{color:#222}
+.chip{font-size:13px;line-height:1.2;color:var(--tx);padding:6px 10px;border-radius:999px;border:1px solid var(--bd);background:transparent;cursor:pointer;flex:none}
+/* Der Chip "Mehr" ist ein Beschriftungs-Chip mit unsichtbarer Auswahlliste darueber: Er ist nur so breit wie sein Text */
+.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.chip.more{position:relative;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.more select{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+.chip.more select option{color:#222}
 .nav{font-size:13px}
 .arrow{font-size:22px;font-weight:600;line-height:1;color:var(--ac);background:color-mix(in srgb,var(--ac) 16%,transparent);border:1px solid color-mix(in srgb,var(--ac) 55%,transparent);border-radius:999px;width:32px;height:28px;padding:0 0 3px;cursor:pointer;flex:none}
 .arrow:disabled{color:var(--hint);background:transparent;border-color:var(--bd);opacity:.5;cursor:default}
@@ -124,7 +126,9 @@ function render(){
   var v=p.v||{},F=DATA.flags||{},h='';
   var chips=groups().map(function(g){return '<button class="chip'+(sel.group===g?' on':'')+'" data-g="'+g+'">'+esc(L(g))+'</button>'}).join('');
   var oth=others();
-  if(oth.length){chips+='<select class="sel'+(sel.key?' on':'')+'" id="more"><option value="">'+esc(L('more'))+'</option>'+oth.map(function(o){return '<option value="'+esc(o.key)+'"'+(sel.key===o.key?' selected':'')+'>'+esc(o.label)+'</option>'}).join('')+'</select>'}
+  if(oth.length){
+    var cur=oth.filter(function(o){return o.key===sel.key})[0];
+    chips+='<label class="chip more'+(sel.key?' on':'')+'">'+esc(cur?cur.label:L('more'))+'<select id="more"><option value="">'+esc(L('more'))+'</option>'+oth.map(function(o){return '<option value="'+esc(o.key)+'"'+(sel.key===o.key?' selected':'')+'>'+esc(o.label)+'</option>'}).join('')+'</select></label>'}
   if(!compact&&!DATA.fixed)h+='<div class="row"><div class="chips">'+chips+'</div></div>';
 
   var o=sel.group?byGroup(sel.group):{},canNav=!!(o.cur&&o.prev);
