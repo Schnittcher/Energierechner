@@ -209,7 +209,7 @@ Alle Variablen eines Zeitraums werden gemeinsam geschrieben. Abgeschlossene Zeit
 
 Jede Instanz stellt eine Kachel für die Kachel-Visualisierung bereit. Die Kachel zeigt nur, was der Rechner berechnet hat, und rechnet nichts selbst.
 
-- **Zeiträume:** Chips für Tag, Woche, Monat und Jahr, soweit aktiviert, dazu das Menü „Mehr" für Tarifzeiträume, die Summe und eigene Zeiträume. Mit den Pfeilen wechselst du zwischen dem laufenden und dem letzten abgeschlossenen Zeitraum.
+- **Zeiträume:** Chips für Tag, Woche, Monat und Jahr, soweit aktiviert, dazu das Menü „Mehr" für Tarifzeiträume, die Summe und eigene Zeiträume. Mit den Pfeilen oder durch Wischen wechselst du zwischen dem laufenden und dem letzten abgeschlossenen Zeitraum (nach rechts wischen: voriger Zeitraum, nach links: zurück). Auf der Chip-Leiste wird nicht gewischt.
 - **Übersicht:** Kosten und Verbrauch groß, dazu je nach Größe und Einstellungen (die Zusatzwerte sind dieselben wie die Variablen der Option *Zusatzwerte*):
   - **Guthaben oder Nachzahlung** gegenüber den bisher aufgelaufenen Abschlägen (bei Zeiträumen mit Saldo),
   - **Vorjahresvergleich** des Verbrauchs für Monat und Jahr (laufend bis zum gleichen Stichtag, abgeschlossen komplett), nur wenn das Archiv Vorjahreswerte hat; Kosten werden nicht verglichen, weil der Vorjahrestarif ein anderer gewesen sein kann,

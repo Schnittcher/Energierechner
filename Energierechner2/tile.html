@@ -162,6 +162,11 @@ function render(){
   fitHeight();
 }
 
+/* Wechselt zwischen laufendem und letztem Zeitraum der gewaehlten Gruppe (Pfeile und Wischen) */
+function stepPeriod(role){
+  if(DATA.fixed||compact||!sel||!sel.group)return;
+  var o=byGroup(sel.group);
+  if(o.cur&&o.prev&&sel.role!==role){sel.role=role;render()}}
 /* Breite der Auswahl "Mehr" an den gewaehlten Text anpassen (ein Select ist sonst so breit wie sein laengster Eintrag) */
 function sizeMore(){
   var m=document.getElementById('more');if(!m)return;
@@ -176,8 +181,8 @@ function bind(p){
   Array.prototype.forEach.call(document.querySelectorAll('button.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;render()}});
   var m=q('#more');if(m)m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;render()};
   var pv=q('#prev'),nx=q('#next');
-  if(pv)pv.onclick=function(){if(sel.group){sel.role='prev';render()}};
-  if(nx)nx.onclick=function(){if(sel.group){sel.role='cur';render()}};
+  if(pv)pv.onclick=function(){stepPeriod('prev')};
+  if(nx)nx.onclick=function(){stepPeriod('cur')};
   var hero=q('#hero');if(hero)hero.onclick=function(){
     if(compact){var gs=DATA.fixed?[]:groups();if(gs.length>1){var i=gs.indexOf(sel.group);sel={group:gs[(i+1)%gs.length],role:'cur'}}render()}
     else{detail=true;render()}};
@@ -234,6 +239,11 @@ function fit(){
     var horizontal=Math.abs(t.clientX-sx)>Math.abs(t.clientY-sy);
     if(horizontal&&!inChips&&e.cancelable)e.preventDefault();
   },{passive:false});
+  // Nach rechts wischen: voriger Zeitraum, nach links wischen: zurueck zum laufenden (wie die Pfeile)
+  document.addEventListener('touchend',function(e){
+    var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+    if(!inChips&&Math.abs(dx)>=50&&Math.abs(dx)>Math.abs(dy)*1.5)stepPeriod(dx>0?'prev':'cur');
+  },{passive:true});
 })();
 
 function handleMessage(data){
