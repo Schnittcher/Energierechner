@@ -222,6 +222,21 @@ check('Leser: aufsteigend sortiert', $iv[0]['start'] < $iv[1]['start'], true);
 check('Leser: Intervallende = Start + 1 h', $iv[0]['end'] - $iv[0]['start'], 3600);
 check('Leser: eine Abfrage je Monat', $calls, 2);
 
+$dailyFetch = static function (int $agg, int $from, int $to): array
+{
+    $rows = [];
+    for ($t = $from; $t <= $to; $t = ErTariff::nextDay($t)) {
+        $rows[] = ['TimeStamp' => $t, 'Avg' => 2.5];
+    }
+    return array_reverse($rows);
+};
+check('Fingerabdruck: Summe der Tageswerte', ErArchiveReader::sumDaily($dailyFetch, ts(2025, 1, 1), ts(2025, 1, 10, 23, 59)), 25.0);
+check('Fingerabdruck: leerer Bereich', ErArchiveReader::sumDaily($dailyFetch, 100, 50), 0.0);
+check('Fingerabdruck: gleich', ErArchiveReader::sameFingerprint(['consumption' => 100.0, 'price1' => 7.5], ['price1' => 7.5, 'consumption' => 100.0]), true);
+check('Fingerabdruck: Rundungsrauschen wird toleriert', ErArchiveReader::sameFingerprint(['consumption' => 3503.8], ['consumption' => 3503.8000000001]), true);
+check('Fingerabdruck: geänderter Verbrauch', ErArchiveReader::sameFingerprint(['consumption' => 3503.8], ['consumption' => 3503.9]), false);
+check('Fingerabdruck: geänderter Preis', ErArchiveReader::sameFingerprint(['consumption' => 1.0, 'priceA' => 5.0], ['consumption' => 1.0, 'priceA' => 5.1]), false);
+check('Fingerabdruck: andere Zusammensetzung', ErArchiveReader::sameFingerprint(['consumption' => 1.0], ['consumption' => 1.0, 'priceA' => 5.0]), false);
 check('Leser: leerer Bereich', ErArchiveReader::read($fetch, ErArchiveReader::HOURLY, 100, 50), []);
 
 // ---------------------------------------------------------------- Formularzeilen
@@ -274,6 +289,90 @@ check('Anbieter bleibt im Tarif erhalten', $ts->segments()[0]->supplier, 'Stadtw
 check('Anbieter überlebt das Transportformat', ErTariff::fromArray($ts->toArray())->segments()[0]->supplier, 'Stadtwerke Beispiel');
 check('Migration Tarif: Preise', [$tw->segments()[0]->priceDay, $tw->segments()[0]->priceNight, $tw->segments()[0]->advanceCount], [0.3, 0.2, 12]);
 
+// ---------------------------------------------------------------- Dynamische Preise
+require_once __DIR__ . '/../libs/ErPriceSeries.php';
+
+$hourPrices = static function (int $from, int $to, callable $fn): ErPriceSeries
+{
+    return new ErPriceSeries(hourly($from, $to, $fn));
+};
+$series = $hourPrices(ts(2025, 3, 3), ts(2025, 3, 4), static fn (int $t): float => 10.0 + (int) date('G', $t));
+check('Preisreihe: Preis zum Stundenbeginn', $series->priceAt(ts(2025, 3, 3, 5)), 15.0);
+check('Preisreihe: Preis mitten in der Stunde', $series->priceAt(ts(2025, 3, 3, 5, 59)), 15.0);
+check('Preisreihe: Ende ist exklusiv', $series->priceAt(ts(2025, 3, 4)), null);
+check('Preisreihe: vor dem ersten Wert', $series->priceAt(ts(2025, 3, 2, 23)), null);
+check('Preisreihe: Grenzen im Intervall', $series->boundariesWithin(ts(2025, 3, 3, 5, 30), ts(2025, 3, 3, 8)), [ts(2025, 3, 3, 6), ts(2025, 3, 3, 7)]);
+check('Preisreihe: leer', (new ErPriceSeries([]))->priceAt(ts(2025, 3, 3)), null);
+
+$dynSegment = static fn (array $o = []): ErTariffSegment => segment($o + ['id' => 'dyn', 'priceVariableId' => 42, 'priceFactor' => 0.01, 'surcharge' => 0.05, 'priceDay' => 0.30]);
+$dyn = new ErTariff([$dynSegment()]);
+$dayStart = ts(2025, 3, 3);
+$dayEnd = ts(2025, 3, 4);
+$consumption = hourly($dayStart, $dayEnd, $pattern);
+
+$expected = 0.0;
+foreach ($consumption as $iv) {
+    $expected += $iv['value'] * (0.01 * (10 + (int) date('G', $iv['start'])) + 0.05);
+}
+$r = ErCalculator::calculate($consumption, $dyn, 1.0, false, $dayStart, $dayEnd, $dayEnd, true, ['dyn' => $series]);
+check('Dynamisch: Kosten = Summe Verbrauch x Preis der Stunde', $r['costsWork'], $expected);
+check('Dynamisch: Verbrauch unverändert', $r['consumption'], 9.6);
+check('Dynamisch: keine Warnung bei vollständigen Preisen', $r['warnings'], []);
+
+$missing = $hourPrices(ts(2025, 3, 3, 6), $dayEnd, static fn (int $t): float => 10.0 + (int) date('G', $t));
+$r = ErCalculator::calculate($consumption, $dyn, 1.0, false, $dayStart, $dayEnd, $dayEnd, true, ['dyn' => $missing]);
+$expectedFallback = 0.0;
+foreach ($consumption as $iv) {
+    $h = (int) date('G', $iv['start']);
+    $expectedFallback += $iv['value'] * ($h < 6 ? 0.30 : 0.01 * (10 + $h) + 0.05);
+}
+check('Dynamisch: fehlende Preise -> fester Preis als Ausweichwert', $r['costsWork'], $expectedFallback);
+check('Dynamisch: fehlende Preise werden gemeldet', $r['warnings'], ['priceFallback']);
+
+$r = ErCalculator::calculate($consumption, $dyn, 1.0, false, $dayStart, $dayEnd, $dayEnd);
+check('Dynamisch: ganz ohne Preisreihe gilt der feste Preis', $r['costsWork'], 9.6 * 0.30);
+check('Dynamisch: ganz ohne Preisreihe wird gemeldet', $r['warnings'], ['priceFallback']);
+
+// Verbrauch je Stunde, Preis je Viertelstunde: anteilig bewerten
+$quarter = new ErPriceSeries([
+    ['start' => ts(2025, 3, 3, 10, 0), 'end' => ts(2025, 3, 3, 10, 15), 'value' => 10.0],
+    ['start' => ts(2025, 3, 3, 10, 15), 'end' => ts(2025, 3, 3, 10, 30), 'value' => 20.0],
+    ['start' => ts(2025, 3, 3, 10, 30), 'end' => ts(2025, 3, 3, 10, 45), 'value' => 30.0],
+    ['start' => ts(2025, 3, 3, 10, 45), 'end' => ts(2025, 3, 3, 11, 0), 'value' => 40.0]
+]);
+$oneHour = [['start' => ts(2025, 3, 3, 10), 'end' => ts(2025, 3, 3, 11), 'value' => 1.0]];
+$r = ErCalculator::calculate($oneHour, new ErTariff([$dynSegment(['surcharge' => 0.0])]), 1.0, false, $dayStart, $dayEnd, $dayEnd, true, ['dyn' => $quarter]);
+check('Dynamisch: Stunde mit 4 Viertelstunden-Preisen = Mittel der Preise', $r['costsWork'], 0.25);
+
+// Mischung: fester Tarif, ab 2025-03-03 dynamisch
+$mixed = new ErTariff([
+    segment(['id' => 'fix', 'validFrom' => ts(2025, 1, 1), 'priceDay' => 0.30]),
+    $dynSegment(['validFrom' => ts(2025, 3, 3), 'surcharge' => 0.0])
+]);
+$twoDays = hourly(ts(2025, 3, 2), ts(2025, 3, 4), static fn (): float => 1.0);
+$r = ErCalculator::calculate($twoDays, $mixed, 1.0, false, ts(2025, 3, 2), ts(2025, 3, 4), ts(2025, 3, 4), true, ['dyn' => $series]);
+$expectedMixed = 24 * 0.30;
+for ($h = 0; $h < 24; $h++) {
+    $expectedMixed += 0.01 * (10 + $h);
+}
+check('Mischtarif: erst fester, dann dynamischer Preis', $r['costsWork'], $expectedMixed);
+
+check('Aggregation: dynamischer Preis je Stunde', ErArchiveReader::aggregationFor($dyn), ErArchiveReader::HOURLY);
+check('Aggregation: dynamischer Preis je Viertelstunde', ErArchiveReader::aggregationFor(new ErTariff([$dynSegment(['priceResolution' => 15])])), ErArchiveReader::QUARTER_HOUR);
+check('Aggregation: fester Preis täglich', ErArchiveReader::aggregationFor(new ErTariff([segment()])), ErArchiveReader::DAILY);
+check('Split: zusätzlicher Schnittpunkt', count((new ErTariff([segment()]))->split(ts(2025, 3, 3, 10), ts(2025, 3, 3, 11), [ts(2025, 3, 3, 10, 30), ts(2025, 3, 3, 9)])), 2);
+
+[$dynFromForm] = ErTariff::fromFormRows([
+    ['Id' => 'd1', 'ValidFrom' => '{"year":2025,"month":1,"day":1}', 'PriceDay' => 0.3, 'PriceVariable' => 4711, 'PriceUnit' => 'CT_KWH', 'Surcharge' => 0.07, 'PriceResolution' => 15],
+    ['Id' => 'd2', 'ValidFrom' => '{"year":2025,"month":6,"day":1}', 'PriceDay' => 0.3, 'PriceVariable' => 4712, 'PriceUnit' => 'EUR_MWH']
+]);
+$d1 = $dynFromForm->segments()[0];
+check('Formular: dynamischer Tarif', [$d1->isDynamic(), $d1->priceVariableId, $d1->priceFactor, $d1->surcharge, $d1->priceResolution], [true, 4711, 0.01, 0.07, 15]);
+check('Formular: €/MWh', $dynFromForm->segments()[1]->priceFactor, 0.001);
+check('Formular: Standard-Auflösung', $dynFromForm->segments()[1]->priceResolution, 60);
+check('Formular: fester Tarif ohne Preisvariable', (new ErTariff([segment()]))->hasDynamic(), false);
+check('Tarif: dynamische Felder im Transportformat', ErTariff::fromArray($dynFromForm->toArray())->toArray(), $dynFromForm->toArray());
+
 // ---------------------------------------------------------------- Integration (nur auf einem Symcon-System)
 if (function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectIDByIdent')) {
     $cat = 41286;
@@ -300,6 +399,27 @@ if (function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectI
     $r = ErCalculator::calculate($read('T01_StromEinfach', $agg, $dayStart, ts(2025, 3, 4) - 1), $strom, 1.0, false, $dayStart, ts(2025, 3, 4), ts(2025, 3, 4));
     check('Archiv Strom: Tagesverbrauch', $r['consumption'], 9.6);
     check('Archiv Strom: Kosten Tag/Nacht', $r['costsWork'], 16 * 0.5 * 0.30 + 8 * 0.2 * 0.20);
+
+    // Dynamischer Preis aus dem Archiv (T06: 10 ct + Stunde des Tages), Verbrauch aus T01
+    $priceVariable = $var('T06_PreisDynamisch');
+    $dynamicTariff = new ErTariff([segment(['id' => 'dyn', 'validFrom' => ts(2024, 1, 1), 'priceVariableId' => $priceVariable, 'priceFactor' => 0.01, 'surcharge' => 0.05, 'priceDay' => 0.30])]);
+    $dynAgg = ErArchiveReader::aggregationFor($dynamicTariff);
+    check('Archiv dynamisch: Aggregation stündlich', $dynAgg, ErArchiveReader::HOURLY);
+    $priceSeries = new ErPriceSeries(ErArchiveReader::read(
+        static fn (int $a, int $f, int $t): array => AC_GetAggregatedValues($ac, $priceVariable, $a, $f, $t, 0),
+        ErArchiveReader::HOURLY,
+        $dayStart,
+        ts(2025, 3, 4) - 1
+    ));
+    $dynIntervals = $read('T01_StromEinfach', $dynAgg, $dayStart, ts(2025, 3, 4) - 1);
+    $expectedDynamic = 0.0;
+    foreach ($dynIntervals as $iv) {
+        $expectedDynamic += $iv['value'] * (0.01 * (10 + (int) date('G', $iv['start'])) + 0.05);
+    }
+    $dynResult = ErCalculator::calculate($dynIntervals, $dynamicTariff, 1.0, false, $dayStart, ts(2025, 3, 4), ts(2025, 3, 4), true, ['dyn' => $priceSeries]);
+    check('Archiv dynamisch: Tagesverbrauch', $dynResult['consumption'], 9.6);
+    check('Archiv dynamisch: Kosten aus Stundenpreisen des Archivs', $dynResult['costsWork'], $expectedDynamic);
+    check('Archiv dynamisch: keine Ausweichpreise nötig', $dynResult['warnings'], []);
 
     $imp = ErCalculator::calculate($read('T03_Impulse', $agg, $dayStart, ts(2025, 3, 4) - 1), $strom, 1 / 1000, false, $dayStart, ts(2025, 3, 4), ts(2025, 3, 4));
     check('Archiv Impulszähler: 9600 Impulse = 9,6 kWh', $imp['consumption'], 9.6);

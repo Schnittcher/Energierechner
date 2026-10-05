@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/ErTariff.php';
+require_once __DIR__ . '/ErPriceSeries.php';
 
 /**
  * Berechnet Verbrauch und Kosten eines Zeitraums aus Archivintervallen.
@@ -20,6 +21,7 @@ final class ErCalculator
      * @param int $periodEnd Ende (exklusive)
      * @param int $now aktueller Zeitpunkt, begrenzt "aufgelaufene" Grund-/Abschlagskosten
      * @param bool $includeBase Grundpreis in die Gesamtkosten einrechnen
+     * @param array<string, ErPriceSeries> $prices Preisreihen dynamischer Tarifabschnitte, Schlüssel = Id des Abschnitts
      * @return array<string, mixed>
      */
     public static function calculate(
@@ -30,7 +32,8 @@ final class ErCalculator
         int $periodStart,
         int $periodEnd,
         int $now,
-        bool $includeBase = true
+        bool $includeBase = true,
+        array $prices = []
     ): array {
         $consumption = 0.0;
         $consumptionDay = 0.0;
@@ -40,6 +43,7 @@ final class ErCalculator
         $workNight = 0.0;
         $noTariffConsumption = 0.0;
         $gasMissing = false;
+        $priceFallback = false;
 
         foreach ($intervals as $iv) {
             $length = $iv['end'] - $iv['start'];
@@ -53,7 +57,15 @@ final class ErCalculator
             }
             $value = $iv['value'] * $unitFactor;
 
-            foreach ($tariff->split($a, $b) as $piece) {
+            // Dynamische Preise ändern sich innerhalb eines Verbrauchsintervalls: an deren Grenzen zusätzlich teilen
+            $extraCuts = [];
+            foreach ($prices as $series) {
+                foreach ($series->boundariesWithin($a, $b) as $cut) {
+                    $extraCuts[] = $cut;
+                }
+            }
+
+            foreach ($tariff->split($a, $b, $extraCuts) as $piece) {
                 $v = $value * (($piece['to'] - $piece['from']) / $length);
                 $consumption += $v;
                 $seg = $piece['seg'];
@@ -72,12 +84,23 @@ final class ErCalculator
                     $energy += $basis;
                 }
 
+                // Fester Preis; bei dynamischem Tarif der Preis der Reihe, ohne Preis der feste Preis als Ausweichwert
+                $price = $piece['night'] ? $seg->priceNight : $seg->priceDay;
+                if ($seg->isDynamic()) {
+                    $dynamic = isset($prices[$seg->id]) ? $prices[$seg->id]->priceAt($piece['from']) : null;
+                    if ($dynamic === null) {
+                        $priceFallback = true;
+                    } else {
+                        $price = $dynamic * $seg->priceFactor + $seg->surcharge;
+                    }
+                }
+
                 if ($piece['night']) {
                     $consumptionNight += $v;
-                    $workNight += $basis * $seg->priceNight;
+                    $workNight += $basis * $price;
                 } else {
                     $consumptionDay += $v;
-                    $workDay += $basis * $seg->priceDay;
+                    $workDay += $basis * $price;
                 }
             }
         }
@@ -93,6 +116,9 @@ final class ErCalculator
         }
         if ($gasMissing) {
             $warnings[] = 'gasParameters';
+        }
+        if ($priceFallback) {
+            $warnings[] = 'priceFallback';
         }
 
         $result = [

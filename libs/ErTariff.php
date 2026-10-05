@@ -22,8 +22,18 @@ final class ErTariffSegment
         public readonly float $gasFactor,    // Zustandszahl-Faktoren für m³ -> kWh
         public readonly float $gasZ,
         public readonly float $gasCalorific,
-        public readonly string $supplier = ''   // Anbieter, nur zur Anzeige
+        public readonly string $supplier = '',          // Anbieter, nur zur Anzeige
+        public readonly int $priceVariableId = 0,       // dynamischer Preis: geloggte Variable (0 = fester Preis)
+        public readonly float $priceFactor = 1.0,       // Faktor Variablenwert -> Euro je Einheit (ct/kWh: 0.01, EUR/MWh: 0.001)
+        public readonly float $surcharge = 0.0,         // fester Aufschlag je Einheit auf den dynamischen Preis
+        public readonly int $priceResolution = 60       // Auflösung des Preises in Minuten (60 oder 15)
     ) {
+    }
+
+    /** Kommt der Arbeitspreis aus einer Variable statt aus dem festen Preis? */
+    public function isDynamic(): bool
+    {
+        return $this->priceVariableId > 0;
     }
 
     /** Gibt es ein Nachtfenster (Beginn != Ende)? */
@@ -53,20 +63,24 @@ final class ErTariffSegment
     public function toArray(): array
     {
         return [
-            'id'           => $this->id,
-            'name'         => $this->name,
-            'validFrom'    => $this->validFrom,
-            'priceDay'     => $this->priceDay,
-            'priceNight'   => $this->priceNight,
-            'nightFrom'    => $this->nightFrom,
-            'nightTo'      => $this->nightTo,
-            'baseYear'     => $this->baseYear,
-            'advance'      => $this->advance,
-            'advanceCount' => $this->advanceCount,
-            'gasFactor'    => $this->gasFactor,
-            'gasZ'         => $this->gasZ,
-            'gasCalorific' => $this->gasCalorific,
-            'supplier'     => $this->supplier
+            'id'              => $this->id,
+            'name'            => $this->name,
+            'validFrom'       => $this->validFrom,
+            'priceDay'        => $this->priceDay,
+            'priceNight'      => $this->priceNight,
+            'nightFrom'       => $this->nightFrom,
+            'nightTo'         => $this->nightTo,
+            'baseYear'        => $this->baseYear,
+            'advance'         => $this->advance,
+            'advanceCount'    => $this->advanceCount,
+            'gasFactor'       => $this->gasFactor,
+            'gasZ'            => $this->gasZ,
+            'gasCalorific'    => $this->gasCalorific,
+            'supplier'        => $this->supplier,
+            'priceVariableId' => $this->priceVariableId,
+            'priceFactor'     => $this->priceFactor,
+            'surcharge'       => $this->surcharge,
+            'priceResolution' => $this->priceResolution
         ];
     }
 
@@ -86,7 +100,11 @@ final class ErTariffSegment
             (float) ($a['gasFactor'] ?? 0),
             (float) ($a['gasZ'] ?? 0),
             (float) ($a['gasCalorific'] ?? 0),
-            (string) ($a['supplier'] ?? '')
+            (string) ($a['supplier'] ?? ''),
+            (int) ($a['priceVariableId'] ?? 0),
+            (float) ($a['priceFactor'] ?? 1.0),
+            (float) ($a['surcharge'] ?? 0.0),
+            (int) ($a['priceResolution'] ?? 60)
         );
     }
 }
@@ -152,6 +170,29 @@ final class ErTariff
         return false;
     }
 
+    /** Hat mindestens ein Abschnitt einen dynamischen Preis? */
+    public function hasDynamic(): bool
+    {
+        foreach ($this->segments as $s) {
+            if ($s->isDynamic()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Feinste Auflösung (Minuten) der dynamischen Preise: 15 oder 60. */
+    public function dynamicResolutionMinutes(): int
+    {
+        $resolution = 60;
+        foreach ($this->segments as $s) {
+            if ($s->isDynamic()) {
+                $resolution = min($resolution, $s->priceResolution === 15 ? 15 : 60);
+            }
+        }
+        return $resolution;
+    }
+
     /** Kleinste Rastergröße (in Minuten), auf der alle Nachtfenster-Grenzen liegen: 60, 15 oder 1. */
     public function nightGridMinutes(): int
     {
@@ -185,17 +226,24 @@ final class ErTariff
     }
 
     /**
-     * Zerlegt [$a, $b) an Tarifwechseln und Nachtfenster-Grenzen.
+     * Zerlegt [$a, $b) an Tarifwechseln, Nachtfenster-Grenzen und weiteren Schnittpunkten
+     * (z. B. den Grenzen der Preisintervalle eines dynamischen Tarifs).
      *
+     * @param int[] $extraCuts zusätzliche Schnittpunkte; Werte außerhalb von ($a, $b) werden ignoriert
      * @return array<int, array{from:int,to:int,seg:?ErTariffSegment,night:bool}>
      */
-    public function split(int $a, int $b): array
+    public function split(int $a, int $b, array $extraCuts = []): array
     {
         if ($b <= $a) {
             return [];
         }
 
         $cuts = [];
+        foreach ($extraCuts as $t) {
+            if ($t > $a && $t < $b) {
+                $cuts[] = $t;
+            }
+        }
         foreach ($this->segments as $s) {
             if ($s->validFrom > $a && $s->validFrom < $b) {
                 $cuts[] = $s->validFrom;
@@ -295,10 +343,27 @@ final class ErTariff
                 (float) ($row['GasFactor'] ?? 0),
                 (float) ($row['GasZ'] ?? 0),
                 (float) ($row['GasCalorific'] ?? 0),
-                (string) ($row['Supplier'] ?? '')
+                (string) ($row['Supplier'] ?? ''),
+                (int) ($row['PriceVariable'] ?? 0),
+                self::priceFactor((string) ($row['PriceUnit'] ?? 'EUR_KWH')),
+                (float) ($row['Surcharge'] ?? 0),
+                (int) ($row['PriceResolution'] ?? 60) === 15 ? 15 : 60
             );
         }
         return [new self($segments), $warnings];
+    }
+
+    /** Faktor vom Wert der Preisvariable zu Euro je Einheit. */
+    public static function priceFactor(string $unit): float
+    {
+        switch ($unit) {
+            case 'CT_KWH':
+                return 0.01;
+            case 'EUR_MWH':
+                return 0.001;
+            default:
+                return 1.0;
+        }
     }
 
     /** Liest SelectDate/SelectTime-Werte (JSON-String, Array oder Timestamp). */

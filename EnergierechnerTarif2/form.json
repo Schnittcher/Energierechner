@@ -78,6 +78,68 @@
                     }
                 },
                 {
+                    "caption": "Price variable (dynamic)",
+                    "name": "PriceVariable",
+                    "width": "170px",
+                    "add": 0,
+                    "edit": {
+                        "type": "SelectVariable"
+                    }
+                },
+                {
+                    "caption": "Unit of the price variable",
+                    "name": "PriceUnit",
+                    "width": "170px",
+                    "add": "EUR_KWH",
+                    "edit": {
+                        "type": "Select",
+                        "options": [
+                            {
+                                "caption": "€/kWh (or €/m³, €/L)",
+                                "value": "EUR_KWH"
+                            },
+                            {
+                                "caption": "ct/kWh",
+                                "value": "CT_KWH"
+                            },
+                            {
+                                "caption": "€/MWh",
+                                "value": "EUR_MWH"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "caption": "Surcharge per unit",
+                    "name": "Surcharge",
+                    "width": "150px",
+                    "add": 0,
+                    "edit": {
+                        "type": "NumberSpinner",
+                        "digits": 7,
+                        "minimum": 0
+                    }
+                },
+                {
+                    "caption": "Price resolution",
+                    "name": "PriceResolution",
+                    "width": "130px",
+                    "add": 60,
+                    "edit": {
+                        "type": "Select",
+                        "options": [
+                            {
+                                "caption": "1 hour",
+                                "value": 60
+                            },
+                            {
+                                "caption": "15 minutes",
+                                "value": 15
+                            }
+                        ]
+                    }
+                },
+                {
                     "caption": "Night from",
                     "name": "NightFrom",
                     "width": "100px",
@@ -174,6 +236,10 @@
         {
             "type": "Label",
             "caption": "Night window: leave 'Night from' and 'Night until' identical (e.g. both 00:00) if there is no night tariff. A night price of 0 uses the day price."
+        },
+        {
+            "type": "Label",
+            "caption": "Dynamic price: select a variable that holds the current price and is logged in the archive (aggregation type standard). The price used is variable value × unit factor + surcharge. Price (day) is used as fallback for hours without price data."
         }
     ],
     "status": [

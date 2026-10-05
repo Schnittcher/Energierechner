@@ -19,15 +19,23 @@ final class ErArchiveReader
 
     /**
      * Wählt die gröbste Aggregation, die für den Tarif noch exakt ist.
-     * Ohne Nachtfenster reicht täglich (Tarifwechsel liegen immer an Tagesgrenzen),
-     * mit Nachtfenster wird auf Stunden oder Viertelstunden gerechnet.
+     * Ohne Nachtfenster und ohne dynamische Preise reicht täglich (Tarifwechsel liegen immer an Tagesgrenzen).
+     * Mit Nachtfenster oder dynamischen Preisen wird auf Stunden gerechnet, bei Grenzen oder Preisen
+     * im Viertelstundenraster auf Viertelstunden.
      */
     public static function aggregationFor(ErTariff $tariff): int
     {
-        if (!$tariff->hasNight()) {
+        $grid = 1440;
+        if ($tariff->hasNight()) {
+            $grid = min($grid, $tariff->nightGridMinutes());
+        }
+        if ($tariff->hasDynamic()) {
+            $grid = min($grid, $tariff->dynamicResolutionMinutes());
+        }
+        if ($grid >= 1440) {
             return self::DAILY;
         }
-        return $tariff->nightGridMinutes() === 60 ? self::HOURLY : self::QUARTER_HOUR;
+        return $grid >= 60 ? self::HOURLY : self::QUARTER_HOUR;
     }
 
     /** Ende (exklusiv) eines Aggregationsintervalls, das bei $start beginnt. */
@@ -71,6 +79,42 @@ final class ErArchiveReader
         }
         ksort($byStart);
         return array_values($byStart);
+    }
+
+    /**
+     * Summe der Tageswerte in [$from, $to]. Billiger Fingerabdruck der Archivdaten eines Zeitraums:
+     * Ändert sich nachträglich ein Wert im Archiv, ändert sich auch die Summe.
+     *
+     * @param callable(int,int,int):array $fetch fn(aggregation, from, to) wie bei read()
+     */
+    public static function sumDaily(callable $fetch, int $from, int $to): float
+    {
+        $sum = 0.0;
+        foreach (self::read($fetch, self::DAILY, $from, $to) as $interval) {
+            $sum += $interval['value'];
+        }
+        return $sum;
+    }
+
+    /**
+     * Vergleicht zwei Fingerabdrücke (Name => Summe) mit relativer Toleranz gegen Rundungsrauschen.
+     *
+     * @param array<string, float> $a
+     * @param array<string, float> $b
+     */
+    public static function sameFingerprint(array $a, array $b, float $tolerance = 1e-6): bool
+    {
+        ksort($a);
+        ksort($b);
+        if (array_keys($a) !== array_keys($b)) {
+            return false;
+        }
+        foreach ($a as $name => $value) {
+            if (abs($value - $b[$name]) > $tolerance * max(1.0, abs($value))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

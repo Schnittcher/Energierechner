@@ -6,6 +6,7 @@ require_once __DIR__ . '/../libs/ErTariff.php';
 require_once __DIR__ . '/../libs/ErCalculator.php';
 require_once __DIR__ . '/../libs/ErArchiveReader.php';
 require_once __DIR__ . '/../libs/ErPeriods.php';
+require_once __DIR__ . '/../libs/ErPriceSeries.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
 
 /**
@@ -95,6 +96,7 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterPropertyInteger('UpdateInterval', 10);
 
         $this->RegisterAttributeString('AutoLogged', '[]');
+        $this->RegisterAttributeString('Warnings', '[]');
         $this->RegisterAttributeString('Cache', '{}');
         $this->RegisterAttributeString('Idents', '[]');
         $this->RegisterAttributeString('TariffSig', '');
@@ -172,6 +174,7 @@ class Energierechner2 extends IPSModuleStrict
     {
         if ($Ident === 'UnitChanged') {
             $this->UpdateFormField('ImpulsesPerKwh', 'visible', (string) $Value === 'Impulse');
+            $this->UpdateFormField('GasConversion', 'visible', (string) $Value === 'm3');
         }
     }
 
@@ -222,6 +225,9 @@ class Energierechner2 extends IPSModuleStrict
         }
 
         $messages = [$this->Translate('Settings imported.')];
+        if (($settings['Unit'] ?? '') === 'Wh') {
+            $messages[] = $this->Translate('Meter unit Wh: prices in the tariff must now be per kWh. If you entered a price per Wh in the old module, multiply it by 1000.');
+        }
         $legacyTariffID = (int) $legacy['ConnectionID'];
         if ($legacyTariffID > 0) {
             $oldTariff = json_decode(IPS_GetConfiguration($legacyTariffID), true);
@@ -255,13 +261,16 @@ class Energierechner2 extends IPSModuleStrict
     public function GetConfigurationForm(): string
     {
         $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
-        $isPulseMeter = $this->ReadPropertyString('Unit') === 'Impulse';
-        $walk = function (array &$elements) use (&$walk, $isPulseMeter): void
+        $unit = $this->ReadPropertyString('Unit');
+        $walk = function (array &$elements) use (&$walk, $unit): void
         {
             foreach ($elements as &$element) {
-                // Impulse pro kWh nur bei Impulszählern anzeigen
+                // Impulse pro kWh nur bei Impulszählern, die Gas-Umrechnung nur bei m³ anzeigen
                 if (($element['name'] ?? '') === 'ImpulsesPerKwh') {
-                    $element['visible'] = $isPulseMeter;
+                    $element['visible'] = $unit === 'Impulse';
+                }
+                if (($element['name'] ?? '') === 'GasConversion') {
+                    $element['visible'] = $unit === 'm3';
                 }
                 if (($element['name'] ?? '') === 'CustomPeriods') {
                     foreach ($element['columns'] as &$column) {
@@ -280,6 +289,15 @@ class Energierechner2 extends IPSModuleStrict
             unset($element);
         };
         $walk($form['elements']);
+
+        // Warnungen der letzten Berechnung oben im Formular anzeigen
+        $warnings = json_decode($this->ReadAttributeString('Warnings'), true);
+        $labels = [];
+        foreach (is_array($warnings) ? $warnings : [] as $warning) {
+            $labels[] = ['type' => 'Label', 'caption' => '⚠ ' . $warning, 'bold' => true];
+        }
+        $form['elements'] = array_merge($labels, $form['elements']);
+
         return json_encode($form);
     }
 
@@ -335,7 +353,9 @@ class Energierechner2 extends IPSModuleStrict
 
         $results = [];
         $jobs = [];
-        foreach ($this->periodDefs($tariff, $now) as $def) {
+        $fresh = [];
+        $defs = $this->periodDefs($tariff, $now);
+        foreach ($defs as $def) {
             if ($def['key'] === 'Total') {
                 continue;
             }
@@ -355,21 +375,42 @@ class Energierechner2 extends IPSModuleStrict
             $intervals = ErArchiveReader::read($fetch, $aggregation, $from, $to);
             $this->SendDebug(__FUNCTION__, sprintf('%d intervals (aggregation %d), %d periods', count($intervals), $aggregation, count($jobs)), 0);
 
+            $priceProblems = [];
+            $prices = $this->loadPrices($tariff, $archiveID, $from, $to, $priceProblems);
+
             foreach ($jobs as $job) {
                 $slice = array_values(array_filter(
                     $intervals,
                     static fn (array $iv): bool => $iv['start'] >= $job['start'] && $iv['start'] < $job['end']
                 ));
-                $result = ErCalculator::calculate($slice, $tariff, $unit['factor'], $gas, $job['start'], $job['end'], $now, $includeBase);
+                $result = ErCalculator::calculate($slice, $tariff, $unit['factor'], $gas, $job['start'], $job['end'], $now, $includeBase, $prices);
+                if ($priceProblems !== []) {
+                    $result['warnings'][] = 'priceVariable';
+                }
                 $results[$job['key']] = $result;
+                $fresh[$job['key']] = true;
                 if ($job['closed']) {
-                    $cache[$job['key']] = ['sig' => $signature, 'start' => $job['start'], 'end' => $job['end'], 'r' => $result];
+                    $cache[$job['key']] = [
+                        'sig'   => $signature,
+                        'start' => $job['start'],
+                        'end'   => $job['end'],
+                        'r'     => $result,
+                        'fp'    => $this->fingerprint($tariff, $archiveID, $variableID, $job['start'], $job['end'])
+                    ];
                 }
                 if ($result['warnings'] !== []) {
                     $this->SendDebug($job['key'], 'Warnings: ' . implode(', ', $result['warnings']), 0);
                 }
             }
-            $this->WriteAttributeString('Cache', json_encode($cache));
+        }
+
+        // Archivdaten abgeschlossener Zeiträume können sich nachträglich ändern (Lücke nachgetragen, Preise korrigiert)
+        $cache = $this->checkArchiveChanges($cache, $fresh, $defs, $tariff, $archiveID, $variableID);
+        $this->WriteAttributeString('Cache', json_encode($cache));
+        foreach ($cache as $key => $entry) {
+            if (!empty($entry['changed']) && isset($results[$key])) {
+                $results[$key]['warnings'][] = 'archiveChanged';
+            }
         }
 
         if ($this->ReadPropertyBoolean('TariffPeriods')) {
@@ -386,10 +427,155 @@ class Energierechner2 extends IPSModuleStrict
         foreach ($results as $key => $result) {
             $this->writeResult($key, $result, $wanted);
         }
+        $this->publishWarnings($results, $defs);
         if (isset($wanted['LastCalculation'])) {
             $this->SetValue('LastCalculation', $now);
         }
         return true;
+    }
+
+    /**
+     * Fingerabdruck der Archivdaten eines Zeitraums: Summe der Tageswerte des Zählers und je dynamischem Preis.
+     * Das sind wenige Datensätze und billig zu lesen.
+     *
+     * @return array<string, float>
+     */
+    private function fingerprint(ErTariff $tariff, int $archiveID, int $variableID, int $start, int $end): array
+    {
+        $fetchOf = static fn (int $id): callable => static fn (int $a, int $f, int $t): array => (array) AC_GetAggregatedValues($archiveID, $id, $a, $f, $t, 0);
+
+        $fingerprint = ['consumption' => ErArchiveReader::sumDaily($fetchOf($variableID), $start, $end - 1)];
+        foreach ($tariff->segments() as $i => $segment) {
+            if (!$segment->isDynamic() || !IPS_VariableExists($segment->priceVariableId) || !AC_GetLoggingStatus($archiveID, $segment->priceVariableId)) {
+                continue;
+            }
+            $from = max($start, $segment->validFrom);
+            $to = min($end, $tariff->segmentEnd($i, $end)) - 1;
+            if ($to >= $from) {
+                $fingerprint['price' . $segment->id] = ErArchiveReader::sumDaily($fetchOf($segment->priceVariableId), $from, $to);
+            }
+        }
+        return $fingerprint;
+    }
+
+    /**
+     * Vergleicht die Archivdaten der zwischengespeicherten Zeiträume mit dem Stand bei der Berechnung.
+     * Ein geänderter Zeitraum wird markiert und bleibt es, bis er neu berechnet wird.
+     *
+     * @param array<string, array<string, mixed>> $cache
+     * @param array<string, bool> $fresh in diesem Durchlauf frisch berechnete Zeiträume (ohne Prüfung)
+     * @param array<int, array{key:string,start:int,end:int}> $defs
+     * @return array<string, array<string, mixed>>
+     */
+    private function checkArchiveChanges(array $cache, array $fresh, array $defs, ErTariff $tariff, int $archiveID, int $variableID): array
+    {
+        foreach ($defs as $def) {
+            $key = $def['key'];
+            if (!isset($cache[$key]) || isset($fresh[$key]) || !empty($cache[$key]['changed'])) {
+                continue;
+            }
+            $entry = $cache[$key];
+            if ($entry['start'] !== $def['start'] || $entry['end'] !== $def['end']) {
+                continue;
+            }
+            $current = $this->fingerprint($tariff, $archiveID, $variableID, $entry['start'], $entry['end']);
+            if (!isset($entry['fp'])) {
+                $cache[$key]['fp'] = $current; // Eintrag aus einer älteren Version: aktuellen Stand als Referenz nehmen
+            } elseif (!ErArchiveReader::sameFingerprint($entry['fp'], $current)) {
+                $cache[$key]['changed'] = true;
+                $this->SendDebug(__FUNCTION__, $key . ': archive data changed ' . json_encode($entry['fp']) . ' -> ' . json_encode($current), 0);
+            }
+        }
+        return $cache;
+    }
+
+    /**
+     * Liest die Preisreihen der dynamischen Tarifabschnitte aus dem Archiv.
+     * Ohne geloggte Preisvariable gibt es keine Reihe; dann gilt der feste Preis als Ausweichwert.
+     *
+     * @param string[] $problems Namen der Tarifabschnitte, deren Preisvariable nicht nutzbar ist
+     * @return array<string, ErPriceSeries> Schlüssel = Id des Tarifabschnitts
+     */
+    private function loadPrices(ErTariff $tariff, int $archiveID, int $from, int $to, array &$problems): array
+    {
+        $series = [];
+        $openEnd = $to + 1;
+        foreach ($tariff->segments() as $i => $segment) {
+            if (!$segment->isDynamic()) {
+                continue;
+            }
+            $variableID = $segment->priceVariableId;
+            if (!IPS_VariableExists($variableID) || !AC_GetLoggingStatus($archiveID, $variableID)) {
+                $problems[] = $segment->name !== '' ? $segment->name : date('d.m.Y', $segment->validFrom);
+                continue;
+            }
+            $segmentFrom = max($from, $segment->validFrom);
+            $segmentTo = min($to, $tariff->segmentEnd($i, $openEnd) - 1);
+            if ($segmentTo < $segmentFrom) {
+                continue;
+            }
+            $aggregation = $segment->priceResolution === 15 ? ErArchiveReader::QUARTER_HOUR : ErArchiveReader::HOURLY;
+            $fetch = static fn (int $a, int $f, int $t): array => (array) AC_GetAggregatedValues($archiveID, $variableID, $a, $f, $t, 0);
+            $series[$segment->id] = new ErPriceSeries(ErArchiveReader::read($fetch, $aggregation, $segmentFrom, $segmentTo));
+        }
+        return $series;
+    }
+
+    /**
+     * Fasst die Warnungen aller Zeiträume zusammen, speichert sie für das Formular und schreibt neue ins Log.
+     *
+     * @param array<string, array<string, mixed>> $results
+     * @param array<int, array{key:string,label:string}> $defs
+     */
+    private function publishWarnings(array $results, array $defs): void
+    {
+        $labels = [];
+        foreach ($defs as $def) {
+            $labels[$def['key']] = $def['label'];
+        }
+
+        $byCode = [];
+        foreach ($results as $key => $result) {
+            foreach ($result['warnings'] ?? [] as $code) {
+                if ($key !== 'Total') {
+                    $byCode[$code][] = $labels[$key] ?? $key;
+                } else {
+                    $byCode[$code] = $byCode[$code] ?? [];
+                }
+            }
+        }
+
+        $messages = [];
+        foreach ($byCode as $code => $periods) {
+            $text = $this->warningText((string) $code);
+            $messages[] = $periods === [] ? $text : $text . ' (' . implode(', ', array_unique($periods)) . ')';
+        }
+
+        $previous = json_decode($this->ReadAttributeString('Warnings'), true);
+        $previous = is_array($previous) ? $previous : [];
+        foreach (array_diff($messages, $previous) as $message) {
+            $this->LogMessage($message, KL_WARNING);
+        }
+        if ($messages !== $previous) {
+            $this->WriteAttributeString('Warnings', json_encode($messages));
+        }
+    }
+
+    private function warningText(string $code): string
+    {
+        switch ($code) {
+            case 'noTariff':
+                return $this->Translate('Part of the period lies before the first tariff period. Consumption without a tariff has no price.');
+            case 'gasParameters':
+                return $this->Translate('Gas conversion values (factor, Z-number, calorific value) are missing in a tariff period. The costs are too low.');
+            case 'priceFallback':
+                return $this->Translate('No price data for a dynamic tariff in some intervals. The fixed price (day) was used there.');
+            case 'priceVariable':
+                return $this->Translate('The price variable of a dynamic tariff does not exist or is not logged in the archive.');
+            case 'archiveChanged':
+                return $this->Translate('Archive data changed after these periods were calculated. Press "Recalculate" to update them.');
+        }
+        return $code;
     }
 
     /**
