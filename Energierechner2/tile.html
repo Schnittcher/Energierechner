@@ -23,8 +23,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
 .sel{appearance:none;-webkit-appearance:none;width:72px;text-overflow:ellipsis}
 .sel option{color:#222}
 .nav{font-size:13px}
-.arrow{font-size:18px;line-height:1;color:var(--tx);background:transparent;border:0;padding:2px 10px;cursor:pointer}
-.arrow:disabled{opacity:.25;cursor:default}
+.arrow{font-size:22px;font-weight:600;line-height:1;color:var(--ac);background:color-mix(in srgb,var(--ac) 16%,transparent);border:1px solid color-mix(in srgb,var(--ac) 55%,transparent);border-radius:999px;width:32px;height:28px;padding:0 0 3px;cursor:pointer;flex:none}
+.arrow:disabled{color:var(--hint);background:transparent;border-color:var(--bd);opacity:.5;cursor:default}
 .hero{cursor:pointer;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .hero .n{font-size:clamp(26px,11cqw,44px);font-weight:300;line-height:1.1;letter-spacing:-.02em}
 .hero .u{font-size:14px;color:var(--sub)}
