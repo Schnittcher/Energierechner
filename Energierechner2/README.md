@@ -40,6 +40,8 @@ Voraussetzung: Symcon 8.1 oder neuer. Die Tarife liegen in einer eigenen Instanz
 | Prognose mit Vorjahresverlauf | Für Monat und Jahr den Verlauf des Vorjahres nutzen, damit Winter- und Sommerverbrauch die Prognose nicht verzerren. Ohne Vorjahresdaten rechnet das Modul linear. Standardmäßig an. |
 | Abgeschlossene Zeiträume loggen | Schaltet das Archiv-Logging für Kosten und Verbrauch von Gestern, Vorwoche, Vormonat und Vorjahr ein (nur für aktivierte Zeiträume). Diese Werte ändern sich nur einmal je Zeitraum und ergeben saubere Verlaufsdiagramme. Beim Ausschalten der Option wird nur das wieder abgeschaltet, was das Modul selbst eingeschaltet hat. Von Hand geloggte Variablen bleiben unberührt, und bereits archivierte Werte bleiben erhalten. |
 | Saldo der Abschläge | Abschläge abzüglich Kosten, für das aktuelle Jahr, das Vorjahr, je Tarifzeitraum und als Summe. |
+| Zusatzwerte | Legt zusätzliche Variablen an: Durchschnittskosten je Tag, Vergleich des Verbrauchs mit dem Vorjahr, teuerster Tag und die Eckdaten des aktuellen Tarifs (Preise, Gültig-bis-Datum, Tage bis zum Ende). Siehe [Zusatzwerte](#zusatzwerte). |
+| Vor dem Ende des Tarifzeitraums warnen | Ab so vielen Tagen vor dem Ende des aktuellen Tarifzeitraums erscheint eine Warnung (Formular, Meldungsfenster, Kachel). 0 = aus. Der Tarifzeitraum endet, wenn in der Tariftabelle eine spätere Zeile folgt; ohne spätere Zeile gibt es kein Ende und keine Warnung. |
 | Aktualisierungsintervall | Wie oft die laufenden Zeiträume neu berechnet werden (Minuten). |
 
 ### Statusmeldungen
@@ -90,6 +92,7 @@ Stellt das Modul bei der Berechnung ein Problem fest, steht oben im Konfiguratio
 | Gas-Umrechnungswerte fehlen | Faktor, Zustandszahl oder Brennwert ist 0 (nur bei „Gas: m³ in kWh umrechnen"). |
 | Für einen dynamischen Tarif fehlen Preisdaten | In einigen Intervallen gibt es keinen Preis. Dort gilt der feste Preis (HT, in den NT-Zeiten NT) als Ausweichwert. |
 | Preisvariable nicht nutzbar | Die Variable eines dynamischen Tarifs existiert nicht oder wird nicht im Archiv geloggt. |
+| Tarifzeitraum endet bald | Der aktuelle Tarifzeitraum endet in höchstens so vielen Tagen, wie bei „Vor dem Ende des Tarifzeitraums warnen" eingestellt sind. Die Warnung verschwindet, sobald der nächste Tarifzeitraum gilt oder die Einstellung geändert wird. |
 | Archivdaten haben sich geändert | Nachdem ein abgeschlossener Zeitraum berechnet wurde, wurden Verbrauchs- oder Preisdaten im Archiv nachträglich geändert (z. B. Lücke nachgetragen, Werte korrigiert). Die Warnung nennt die betroffenen Zeiträume. Mit *Neu berechnen* werden sie aktualisiert, danach verschwindet die Warnung. |
 
 **Wie die Änderung erkannt wird:** Beim Zwischenspeichern eines abgeschlossenen Zeitraums merkt sich das Modul die Summe der Tageswerte aus dem Archiv, bei dynamischen Tarifen auch die der Preisvariablen. Bei jedem Durchlauf vergleicht es diese Summen mit dem aktuellen Stand. Das sind wenige Datensätze und kostet kaum Zeit. Eine Änderung, die die Summe über den ganzen Zeitraum nicht verändert (z. B. Verbrauch von einer Stunde in eine andere verschoben, was bei Niedertarif oder dynamischen Preisen die Kosten ändern würde), wird nicht erkannt.
@@ -129,7 +132,24 @@ Schema: `<Zeitraum>_<Art>`
 | `ForecastCosts` / `ForecastConsumption` | Prognose (nur laufende Woche, Monat, Jahr) |
 | `Balance` | Saldo der Abschläge (aktuelles Jahr, Vorjahr, Tarifzeiträume und Summe; positiv = Guthaben) |
 
-Außerdem gibt es `LastCalculation` mit dem Zeitpunkt der letzten Berechnung.
+Mit der Option *Zusatzwerte* kommen diese Arten dazu (nur für die jeweils genannten Zeiträume):
+
+| Art | Inhalt | Zeiträume |
+|---|---|---|
+| `AvgPerDay` | Durchschnittskosten je Tag (Kosten ÷ vergangene Tage) | alle außer Heute/Gestern |
+| `LastYearConsumption` | Verbrauch im gleichen Zeitraum des Vorjahres (laufend: bis zum gleichen Stichtag) | Monat, Jahr (laufend und abgeschlossen) |
+| `ConsumptionVsLastYear` | Abweichung des Verbrauchs vom Vorjahr in Prozent (negativ = weniger) | wie oben |
+| `PeakDayDate` / `PeakDayCosts` | Datum und Kosten des teuersten abgeschlossenen Tages | Woche, Monat, Jahr (laufend und abgeschlossen) |
+
+Fehlt ein Wert (z. B. keine Vorjahresdaten im Archiv, noch kein abgeschlossener Tag), steht die Variable auf 0.
+
+Außerdem gibt es `LastCalculation` mit dem Zeitpunkt der letzten Berechnung und, mit der Option *Zusatzwerte*, die Variablen zum **aktuellen Tarif**: `CurrentTariff_PriceHT` und `CurrentTariff_PriceNT` (ct je Einheit; NT nur, wenn der Tarif einen Niedertarif hat), `CurrentTariff_ValidUntil` (letzter Gültigkeitstag, 0 = unbefristet) und `CurrentTariff_DaysLeft` (Tage bis dahin, 0 = letzter Tag ist heute, -1 = unbefristet).
+
+### Zusatzwerte
+
+Die Zusatzwerte stehen auch in der Kachel. Sie werden einmal am Tag aus dem Archiv berechnet und danach zwischengespeichert; heute zählt dabei nicht mit. Das Archiv wird nur gelesen, wenn die Option *Zusatzwerte* oder die Kachel an ist. Der teuerste Tag rechnet mit den Kosten wie die Tagesansicht, also mit Grundpreis (falls eingerechnet), HT/NT und dynamischen Preisen.
+
+Damit lassen sich zum Beispiel Benachrichtigungen bauen: "Tage bis Tarifende" unter 30, Verbrauch über 20 % über dem Vorjahr oder Durchschnittskosten je Tag über einem Schwellwert.
 
 ## 4. So wird gerechnet
 
@@ -190,7 +210,7 @@ Alle Variablen eines Zeitraums werden gemeinsam geschrieben. Abgeschlossene Zeit
 Jede Instanz stellt eine Kachel für die Kachel-Visualisierung bereit (Einstellung „Kachel für die Kachel-Visualisierung bereitstellen", standardmäßig an). Die Kachel zeigt nur, was der Rechner berechnet hat, und rechnet nichts selbst.
 
 - **Zeiträume:** Chips für Tag, Woche, Monat und Jahr, soweit aktiviert, dazu das Menü „Mehr" für Tarifzeiträume, die Summe und eigene Zeiträume. Mit den Pfeilen wechselst du zwischen dem laufenden und dem letzten abgeschlossenen Zeitraum.
-- **Übersicht:** Kosten und Verbrauch groß, dazu je nach Größe und Einstellungen:
+- **Übersicht:** Kosten und Verbrauch groß, dazu je nach Größe und Einstellungen (die Zusatzwerte sind dieselben wie die Variablen der Option *Zusatzwerte*):
   - **Guthaben oder Nachzahlung** gegenüber den bisher aufgelaufenen Abschlägen (bei Zeiträumen mit Saldo),
   - **Vorjahresvergleich** des Verbrauchs für Monat und Jahr (laufend bis zum gleichen Stichtag, abgeschlossen komplett), nur wenn das Archiv Vorjahreswerte hat; Kosten werden nicht verglichen, weil der Vorjahrestarif ein anderer gewesen sein kann,
   - **Durchschnittskosten je Tag** (nicht für einzelne Tage),
@@ -214,6 +234,7 @@ Die Debug-Ausgabe der Instanz zeigt, wie viele Archivwerte gelesen wurden, welch
 
 - **Abgeschlossene Zeiträume** (`Day_Previous`, `Week_Previous`, `Month_Previous`, `Year_Previous`, jeweils `Costs` und `Consumption`): ein Wert je Zeitraum. Dafür gibt es die Option oben. Die geloggten Werte halten außerdem fest, wie die Abrechnung damals war, auch wenn sich später der Tarif ändert.
 - **Verläufe:** `Year_Current_Balance` und die Prognosen ändern sich bei jeder Aktualisierung (bei 10 Minuten rund 144 Werte pro Tag). Nur gezielt von Hand loggen.
+- **Zusatzwerte:** `…_AvgPerDay`, `…_ConsumptionVsLastYear` und die Tarifvariablen ändern sich langsam. Für Verläufe sinnvoll sind die abgeschlossenen Zeiträume (zum Beispiel `Month_Previous_AvgPerDay`).
 - **Nicht nötig:** die laufenden Zeiträume (`…_Current`), sie lassen sich jederzeit aus dem Zählerarchiv neu berechnen.
 - Berechnete Werte werden mit dem Aggregationstyp *Standard* geloggt, nicht als Zähler.
 - Den Zähler selbst nicht verdichten oder Rohdaten löschen lassen: Für Niedertarif, dynamische Preise und Tarifwechsel sind die Stundenwerte nötig.

@@ -223,6 +223,18 @@
                     "type": "CheckBox",
                     "name": "ShowBalance",
                     "caption": "Balance of advance payments (current and previous year, tariff periods and total)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowExtras",
+                    "caption": "Additional values (average per day, comparison with the previous year, most expensive day, current tariff)"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "TariffEndWarningDays",
+                    "caption": "Warn before the end of the tariff period (days, 0 = off)",
+                    "minimum": 0,
+                    "maximum": 365
                 }
             ]
         },

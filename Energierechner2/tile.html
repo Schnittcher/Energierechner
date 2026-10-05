@@ -89,7 +89,7 @@ function delta(v){
   var d=Math.round((v.consumption/v.lastYearConsumption-1)*100),up=d>0;
   return '<b style="color:'+(up?'#e0734a':'var(--ac)')+'">'+(up?'▲ +':(d<0?'▼ ':'● '))+d+' %</b> <span class="pd">'+esc(L('consumption'))+' </span>'+esc(L('vsLastYear'))}
 /* Durchschnittskosten je Tag (nicht fuer einzelne Tage) */
-function perDay(v){return v.days>1&&v.costs>0?v.costs/v.days:0}
+function perDay(v){return v.avgPerDay>0?v.avgPerDay:0}
 /* Der aktuelle Tarifabschnitt als Text */
 function ct(x){return num(x,x%1?1:0)}
 function tariffText(){

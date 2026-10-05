@@ -16,6 +16,7 @@ require_once __DIR__ . '/../libs/ErTariff.php';
 require_once __DIR__ . '/../libs/ErCalculator.php';
 require_once __DIR__ . '/../libs/ErArchiveReader.php';
 require_once __DIR__ . '/../libs/ErPeriods.php';
+require_once __DIR__ . '/../libs/ErExtras.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
 
 $GLOBALS['er_pass'] = 0;
@@ -500,20 +501,20 @@ check('Kachel: fehlende Werte (null) fehlen in den Daten', [isset($tileNull['per
 check('Kachel: Rolle und Gruppe', [$tile['periods'][1]['group'], $tile['periods'][1]['role']], ['month', 'prev']);
 check('Kachel: Warnungen, Titel, Einheit und Flags werden durchgereicht', [$tile['warnings'], $tile['title'], $tile['unit'], $tile['flags']['htnt']], [['Warnung A'], 'Haus', 'kWh', true]);
 check('Kachel: Daten sind als JSON darstellbar', is_string(json_encode($tile)) && json_decode(json_encode($tile), true)['updated'] === $tileNow, true);
-$info = ErTile::tariffInfo(new ErTariff([segment(['supplier' => 'Stadtwerke', 'priceHt' => 0.324, 'priceNt' => 0.2, 'ntWeekend' => true]), segment(['id' => 'b', 'validFrom' => ts(2026, 1, 1)])]), ts(2025, 6, 1));
+$info = ErExtras::currentTariff(new ErTariff([segment(['supplier' => 'Stadtwerke', 'priceHt' => 0.324, 'priceNt' => 0.2, 'ntWeekend' => true]), segment(['id' => 'b', 'validFrom' => ts(2026, 1, 1)])]), ts(2025, 6, 1));
 check('Kachel: Tarifinfo Anbieter', $info['supplier'], 'Stadtwerke');
 check('Kachel: Tarifinfo Preise in ct', [$info['ht'], $info['nt']], [32.4, 20.0]);
 check('Kachel: Tarifinfo letzter Gültigkeitstag', date('Y-m-d', $info['until']), '2025-12-31');
-check('Kachel: Tarifinfo offenes Ende', ErTile::tariffInfo(new ErTariff([segment()]), ts(2025, 6, 1))['until'], null);
-check('Kachel: Tarifinfo ohne Niedertarif', ErTile::tariffInfo(new ErTariff([segment(['priceNt' => 0.3])]), ts(2025, 6, 1))['nt'], null);
-check('Kachel: Tarifinfo vor dem ersten Tarif', ErTile::tariffInfo(new ErTariff([segment()]), ts(2024, 6, 1)), null);
+check('Kachel: Tarifinfo offenes Ende', ErExtras::currentTariff(new ErTariff([segment()]), ts(2025, 6, 1))['until'], null);
+check('Kachel: Tarifinfo ohne Niedertarif', ErExtras::currentTariff(new ErTariff([segment(['priceNt' => 0.3])]), ts(2025, 6, 1))['nt'], null);
+check('Kachel: Tarifinfo vor dem ersten Tarif', ErExtras::currentTariff(new ErTariff([segment()]), ts(2024, 6, 1)), null);
 $peakIntervals = daily(ts(2025, 3, 1), ts(2025, 3, 6), 2.0);
 $peakIntervals[2]['value'] = 5.0;
-$peak = ErTile::peakDay($peakIntervals, new ErTariff([segment()]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 6), [], false);
+$peak = ErExtras::peakDay($peakIntervals, new ErTariff([segment()]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 6), [], false);
 check('Kachel: teuerster Tag', date('Y-m-d', $peak['day']), '2025-03-03');
 check('Kachel: teuerster Tag, Kosten', $peak['costs'], 1.5);
-check('Kachel: teuerster Tag ohne Verbrauch', ErTile::peakDay([], new ErTariff([segment()]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 6), [], false), null);
-check('Kachel: teuerster Tag mit Grundpreis zählt den Grundpreis mit', ErTile::peakDay(daily(ts(2025, 3, 1), ts(2025, 3, 3), 1.0), new ErTariff([segment(['baseYear' => 365.0])]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 3), [], true)['costs'], 1.3);
+check('Kachel: teuerster Tag ohne Verbrauch', ErExtras::peakDay([], new ErTariff([segment()]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 6), [], false), null);
+check('Kachel: teuerster Tag mit Grundpreis zählt den Grundpreis mit', ErExtras::peakDay(daily(ts(2025, 3, 1), ts(2025, 3, 3), 1.0), new ErTariff([segment(['baseYear' => 365.0])]), 1.0, false, ts(2025, 3, 1), ts(2025, 3, 3), [], true)['costs'], 1.3);
 $fixedSource = ['title' => 'Haus', 'periods' => [['key' => 'Month_Current', 'v' => ['costs' => 1.0]], ['key' => 'Year_Current', 'v' => ['costs' => 9.0]]]];
 $fixed = ErTile::fixed($fixedSource, 'Year_Current', 'compact', '');
 check('Anzeige-Instanz: nur der gewählte Zeitraum', array_column($fixed['periods'], 'key'), ['Year_Current']);
@@ -523,6 +524,19 @@ check('Anzeige-Instanz: eigener Titel', ErTile::fixed($fixedSource, 'Month_Curre
 check('Anzeige-Instanz: unbekannte Darstellung wird auto', ErTile::fixed($fixedSource, 'Month_Current', 'xyz', '')['mode'], 'auto');
 check('Anzeige-Instanz: nicht aktivierter Zeitraum ergibt keine Zeiträume', ErTile::fixed($fixedSource, 'Day_Current', 'auto', '')['periods'], []);
 check('Anzeige-Instanz: leere Quelle', ErTile::fixed([], 'Month_Current', 'auto', '')['periods'], []);
+$ex = ErExtras::apply(['costs' => 30.0, 'days' => 10, 'consumption' => 90.0], ['lastYearConsumption' => 100.0, 'peakDay' => ts(2025, 3, 3), 'peakCosts' => 4.5]);
+check('Zusatzwerte: Durchschnitt je Tag', $ex['avgPerDay'], 3.0);
+check('Zusatzwerte: Vorjahresabweichung in Prozent', round($ex['vsLastYear'], 6), -10.0);
+check('Zusatzwerte: teuerster Tag wird übernommen', [$ex['peakDay'], $ex['peakCosts']], [ts(2025, 3, 3), 4.5]);
+$none = ErExtras::apply(['costs' => 5.0, 'days' => 1, 'consumption' => 3.0], []);
+check('Zusatzwerte: ohne Daten alles 0', [$none['avgPerDay'], $none['lastYearConsumption'], $none['vsLastYear'], $none['peakDay'], $none['peakCosts']], [0.0, 0.0, 0.0, 0, 0.0]);
+$ending = new ErTariff([segment(), segment(['id' => 'b', 'validFrom' => ts(2026, 1, 1)])]);
+check('Zusatzwerte: Tage bis Tarifende', ErExtras::currentTariff($ending, ts(2025, 12, 20) + 3600)['daysLeft'], 11);
+check('Zusatzwerte: letzter Tag des Tarifs ist 0 Tage', ErExtras::currentTariff($ending, ts(2025, 12, 31) + 3600)['daysLeft'], 0);
+check('Zusatzwerte: offenes Tarifende', ErExtras::currentTariff($ending, ts(2026, 3, 1))['daysLeft'], null);
+check('Zusatzwerte: Tage über die Zeitumstellung', ErExtras::currentTariff($ending, ts(2025, 10, 20))['daysLeft'], 72);
+$tileEx = ErTile::build([['key' => 'Month_Current', 'label' => 'M', 'start' => ts(2025, 3, 1), 'end' => ts(2025, 4, 1)]], ['Month_Current' => $ex + ['costs' => 30.0]], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], ts(2025, 3, 11));
+check('Kachel übernimmt Zusatzwerte aus dem Ergebnis', [$tileEx['periods'][0]['v']['avgPerDay'], (int) $tileEx['periods'][0]['v']['peakDay']], [3.0, ts(2025, 3, 3)]);
 check('Kachel: ohne Ergebnisse keine Zeiträume', ErTile::build($tileDefs, [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], $tileNow)['periods'], []);
 
 // Zusammenbau der Kachel-HTML aus Vorlage und Daten (mit einem Ersatz für IPSModuleStrict)

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../libs/ErArchiveReader.php';
 require_once __DIR__ . '/../libs/ErPeriods.php';
 require_once __DIR__ . '/../libs/ErPriceSeries.php';
 require_once __DIR__ . '/../libs/ErForecast.php';
+require_once __DIR__ . '/../libs/ErExtras.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
 require_once __DIR__ . '/../libs/ErTileTrait.php'; // KACHEL
 
@@ -45,33 +46,51 @@ class Energierechner2 extends IPSModuleStrict
 
     /** Variablenart => Feld im Rechenergebnis */
     private const KINDS = [
-        'Costs'               => 'costs',
-        'Consumption'         => 'consumption',
-        'CostsWork'           => 'costsWork',
-        'CostsBase'           => 'costsBase',
-        'ConsumptionHT'       => 'consumptionHt',
-        'CostsHT'             => 'costsHt',
-        'ConsumptionNT'       => 'consumptionNt',
-        'CostsNT'             => 'costsNt',
-        'Energy'              => 'energy',
-        'ForecastCosts'       => 'forecastCosts',
-        'ForecastConsumption' => 'forecastConsumption',
-        'Balance'             => 'balance'
+        'Costs'                 => 'costs',
+        'Consumption'           => 'consumption',
+        'CostsWork'             => 'costsWork',
+        'CostsBase'             => 'costsBase',
+        'ConsumptionHT'         => 'consumptionHt',
+        'CostsHT'               => 'costsHt',
+        'ConsumptionNT'         => 'consumptionNt',
+        'CostsNT'               => 'costsNt',
+        'Energy'                => 'energy',
+        'ForecastCosts'         => 'forecastCosts',
+        'ForecastConsumption'   => 'forecastConsumption',
+        'Balance'               => 'balance',
+        'AvgPerDay'             => 'avgPerDay',
+        'LastYearConsumption'   => 'lastYearConsumption',
+        'ConsumptionVsLastYear' => 'vsLastYear',
+        'PeakDayDate'           => 'peakDay',
+        'PeakDayCosts'          => 'peakCosts'
     ];
 
     private const KIND_LABELS = [
-        'Costs'               => 'Costs',
-        'Consumption'         => 'Consumption',
-        'CostsWork'           => 'Costs (usage)',
-        'CostsBase'           => 'Costs (base price)',
-        'ConsumptionHT'       => 'Consumption (HT)',
-        'CostsHT'             => 'Costs (HT)',
-        'ConsumptionNT'       => 'Consumption (NT)',
-        'CostsNT'             => 'Costs (NT)',
-        'Energy'              => 'Energy (kWh)',
-        'ForecastCosts'       => 'Forecast costs',
-        'ForecastConsumption' => 'Forecast consumption',
-        'Balance'             => 'Balance'
+        'Costs'                 => 'Costs',
+        'Consumption'           => 'Consumption',
+        'CostsWork'             => 'Costs (usage)',
+        'CostsBase'             => 'Costs (base price)',
+        'ConsumptionHT'         => 'Consumption (HT)',
+        'CostsHT'               => 'Costs (HT)',
+        'ConsumptionNT'         => 'Consumption (NT)',
+        'CostsNT'               => 'Costs (NT)',
+        'Energy'                => 'Energy (kWh)',
+        'ForecastCosts'         => 'Forecast costs',
+        'ForecastConsumption'   => 'Forecast consumption',
+        'Balance'               => 'Balance',
+        'AvgPerDay'             => 'Average costs per day',
+        'LastYearConsumption'   => 'Consumption in the previous year',
+        'ConsumptionVsLastYear' => 'Consumption compared to the previous year (%)',
+        'PeakDayDate'           => 'Most expensive day',
+        'PeakDayCosts'          => 'Costs of the most expensive day'
+    ];
+
+    /** Variablen zum aktuellen Tarif (nicht an einen Zeitraum gebunden): Ident => Bezeichnung */
+    private const TARIFF_VARIABLES = [
+        'CurrentTariff_PriceHT'    => 'Current tariff: price (HT, ct)',
+        'CurrentTariff_PriceNT'    => 'Current tariff: price (NT, ct)',
+        'CurrentTariff_ValidUntil' => 'Current tariff: valid until',
+        'CurrentTariff_DaysLeft'   => 'Current tariff: days left'
     ];
 
     public function Create(): void
@@ -98,6 +117,8 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterPropertyBoolean('ShowForecast', false);
         $this->RegisterPropertyBoolean('ForecastLastYear', true);
         $this->RegisterPropertyBoolean('ShowBalance', false);
+        $this->RegisterPropertyBoolean('ShowExtras', false);
+        $this->RegisterPropertyInteger('TariffEndWarningDays', 0);
         $this->RegisterPropertyBoolean('LogClosedPeriods', false);
         $this->RegisterPropertyInteger('UpdateInterval', 10);
 
@@ -105,6 +126,7 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterAttributeString('Warnings', '[]');
         $this->RegisterAttributeString('ForecastShares', '{}');
         $this->RegisterAttributeString('Cache', '{}');
+        $this->RegisterAttributeString('Extras', '{}');
         $this->RegisterAttributeString('Idents', '[]');
         $this->RegisterAttributeString('TariffSig', '');
 
@@ -212,6 +234,7 @@ class Energierechner2 extends IPSModuleStrict
     {
         $this->WriteAttributeString('Cache', '{}');
         $this->WriteAttributeString('ForecastShares', '{}');
+        $this->WriteAttributeString('Extras', '{}');
         return $this->calculate();
     }
 
@@ -442,11 +465,22 @@ class Energierechner2 extends IPSModuleStrict
             $results['Total'] = ErCalculator::sum($tariffResults);
         }
 
+        // Zusatzwerte (Vorjahresvergleich, teuerster Tag) lesen das Archiv; nur nötig, wenn Variablen oder Kachel sie brauchen
+        $extras = [];
+        if ($this->ReadPropertyBoolean('ShowExtras') || $this->ReadPropertyBoolean('TileEnabled')) {
+            $extras = $this->calculateExtras($defs, $tariff, $unit['factor'], $gas, $includeBase, $archiveID, $variableID, $now);
+        }
+        foreach ($results as $key => $result) {
+            $results[$key] = ErExtras::apply($result, $extras[$key] ?? []);
+        }
+
         $wanted = array_flip(json_decode($this->ReadAttributeString('Idents'), true) ?: []);
         foreach ($results as $key => $result) {
             $this->writeResult($key, $result, $wanted);
         }
-        $this->publishWarnings($results, $defs);
+        $current = ErExtras::currentTariff($tariff, $now);
+        $this->writeTariffVariables($current, $wanted);
+        $this->publishWarnings($results, $defs, $this->tariffEndWarnings($current));
         $this->tileUpdate($results, $defs, $unit['suffix'], $now, $tariff); // KACHEL
         if (isset($wanted['LastCalculation'])) {
             $this->SetValue('LastCalculation', $now);
@@ -568,8 +602,9 @@ class Energierechner2 extends IPSModuleStrict
      *
      * @param array<string, array<string, mixed>> $results
      * @param array<int, array{key:string,label:string}> $defs
+     * @param string[] $extraCodes Warnungen ohne Zeitraum, z. B. "tariffEnding:41"
      */
-    private function publishWarnings(array $results, array $defs): void
+    private function publishWarnings(array $results, array $defs, array $extraCodes = []): void
     {
         $labels = [];
         foreach ($defs as $def) {
@@ -577,6 +612,9 @@ class Energierechner2 extends IPSModuleStrict
         }
 
         $byCode = [];
+        foreach ($extraCodes as $code) {
+            $byCode[$code] = [];
+        }
         foreach ($results as $key => $result) {
             foreach ($result['warnings'] ?? [] as $code) {
                 if ($key !== 'Total') {
@@ -605,6 +643,12 @@ class Energierechner2 extends IPSModuleStrict
 
     private function warningText(string $code): string
     {
+        if (strpos($code, 'tariffEnding:') === 0) {
+            $days = (int) substr($code, strlen('tariffEnding:'));
+            return $days === 0
+                ? $this->Translate('The current tariff period ends today.')
+                : sprintf($this->Translate('The current tariff period ends in %d days.'), $days);
+        }
         switch ($code) {
             case 'noTariff':
                 return $this->Translate('Part of the period lies before the first tariff period. Consumption without a tariff has no price.');
@@ -628,11 +672,118 @@ class Energierechner2 extends IPSModuleStrict
     {
         foreach (self::KINDS as $kind => $field) {
             $ident = ErPeriods::ident($key, $kind);
-            if (!isset($wanted[$ident]) || $result[$field] === null) {
+            if (!isset($wanted[$ident]) || ($result[$field] ?? null) === null) {
                 continue;
             }
-            $this->SetValue($ident, round((float) $result[$field], 4));
+            $this->SetValue($ident, $kind === 'PeakDayDate' ? (int) $result[$field] : round((float) $result[$field], 4));
         }
+    }
+
+    /**
+     * Schreibt die Variablen zum aktuellen Tarif (Preise in ct, Gültig-bis-Datum, Tage bis zum Ende).
+     * Bei offenem Ende steht das Datum auf 0 und die Tage auf -1.
+     *
+     * @param array<string, mixed>|null $current
+     * @param array<string, int> $wanted
+     */
+    private function writeTariffVariables(?array $current, array $wanted): void
+    {
+        if ($current === null) {
+            return;
+        }
+        $values = [
+            'CurrentTariff_PriceHT'    => (float) $current['ht'],
+            'CurrentTariff_PriceNT'    => (float) ($current['nt'] ?? $current['ht']),
+            'CurrentTariff_ValidUntil' => (int) ($current['until'] ?? 0),
+            'CurrentTariff_DaysLeft'   => (int) ($current['daysLeft'] ?? -1)
+        ];
+        foreach ($values as $ident => $value) {
+            if (isset($wanted[$ident])) {
+                $this->SetValue($ident, $value);
+            }
+        }
+    }
+
+    /**
+     * Warnung kurz vor dem Ende des aktuellen Tarifabschnitts (Einstellung "Vor Tarifende warnen").
+     *
+     * @param array<string, mixed>|null $current
+     * @return string[]
+     */
+    private function tariffEndWarnings(?array $current): array
+    {
+        $threshold = $this->ReadPropertyInteger('TariffEndWarningDays');
+        if ($threshold <= 0 || $current === null || $current['daysLeft'] === null || $current['daysLeft'] > $threshold) {
+            return [];
+        }
+        return ['tariffEnding:' . $current['daysLeft']];
+    }
+
+    /**
+     * Verbrauch des gleichen Zeitraums im Vorjahr und teuerster abgeschlossener Tag je Zeitraum.
+     * Beides ändert sich nur einmal am Tag, deshalb wird das Archiv höchstens einmal täglich gelesen.
+     *
+     * @param array<int, array{key:string,label:string,start:int,end:int}> $defs
+     * @return array<string, array{lastYearConsumption?:float,peakDay?:int,peakCosts?:float}>
+     */
+    private function calculateExtras(array $defs, ErTariff $tariff, float $unitFactor, bool $gas, bool $includeBase, int $archiveID, int $variableID, int $now): array
+    {
+        $today = ErTariff::startOfDay($now);
+        $wanted = array_values(array_filter(
+            $defs,
+            static fn (array $d): bool => $d['start'] < $today && (in_array($d['key'], ErExtras::LAST_YEAR, true) || in_array($d['key'], ErExtras::PEAK, true))
+        ));
+
+        $signature = md5(json_encode([$tariff->toArray(), $unitFactor, $gas, $variableID, $includeBase, date('Y-m-d', $now), array_column($wanted, 'start', 'key')]));
+        $cache = json_decode($this->ReadAttributeString('Extras'), true);
+        if (is_array($cache) && ($cache['sig'] ?? '') === $signature && isset($cache['map'])) {
+            return $cache['map'];
+        }
+
+        $map = [];
+        if ($wanted !== []) {
+            $fetch = static fn (int $a, int $f, int $t): array => (array) AC_GetAggregatedValues($archiveID, $variableID, $a, $f, $t, 0);
+
+            // Vorjahr: Tageswerte genügen
+            $lastYearDefs = array_values(array_filter($wanted, static fn (array $d): bool => in_array($d['key'], ErExtras::LAST_YEAR, true)));
+            if ($lastYearDefs !== []) {
+                $from = ErForecast::lastYear(min(array_column($lastYearDefs, 'start')));
+                $to = ErForecast::lastYear(min(max(array_column($lastYearDefs, 'end')), $now)) - 1;
+                if ($to > $from) {
+                    $daily = ErArchiveReader::read($fetch, ErArchiveReader::DAILY, $from, $to);
+                    foreach ($lastYearDefs as $def) {
+                        $value = ErForecast::lastYearConsumption($daily, $def['start'], $def['end'], $now);
+                        if ($value !== null) {
+                            $map[$def['key']]['lastYearConsumption'] = $value;
+                        }
+                    }
+                }
+            }
+
+            // Teuerster Tag: Kosten je Tag brauchen die Stundenwerte (HT/NT, dynamische Preise)
+            $peakDefs = array_values(array_filter($wanted, static fn (array $d): bool => in_array($d['key'], ErExtras::PEAK, true)));
+            if ($peakDefs !== []) {
+                $from = min(array_column($peakDefs, 'start'));
+                $to = min(max(array_column($peakDefs, 'end')), $today) - 1;
+                $intervals = ErArchiveReader::read($fetch, ErArchiveReader::aggregationFor($tariff), $from, $to);
+                $problems = [];
+                $prices = $this->loadPrices($tariff, $archiveID, $from, $to, $problems);
+                foreach ($peakDefs as $def) {
+                    $end = min($def['end'], $today);
+                    $slice = array_values(array_filter(
+                        $intervals,
+                        static fn (array $iv): bool => $iv['start'] >= $def['start'] && $iv['start'] < $end
+                    ));
+                    $peak = ErExtras::peakDay($slice, $tariff, $unitFactor, $gas, $def['start'], $end, $prices, $includeBase);
+                    if ($peak !== null) {
+                        $map[$def['key']]['peakDay'] = $peak['day'];
+                        $map[$def['key']]['peakCosts'] = $peak['costs'];
+                    }
+                }
+            }
+        }
+        $this->WriteAttributeString('Extras', json_encode(['sig' => $signature, 'map' => $map]));
+        return $map;
     }
 
     // ------------------------------------------------------------------ Zeiträume und Variablen
@@ -640,7 +791,7 @@ class Energierechner2 extends IPSModuleStrict
     /**
      * Alle aktivierten Zeiträume. Ohne Tarif fehlen die Tarifzeiträume.
      *
-     * @return array<int, array{key:string,label:string,start:int,end:int,forecast:bool,balance:bool}>
+     * @return array<int, array{key:string,label:string,start:int,end:int,forecast:bool,balance:bool,avg:bool,lastYear:bool,peak:bool}>
      */
     private function periodDefs(?ErTariff $tariff, int $now): array
     {
@@ -654,7 +805,10 @@ class Energierechner2 extends IPSModuleStrict
                     'start'    => $span['start'],
                     'end'      => $span['end'],
                     'forecast' => in_array($key, ErPeriods::FORECAST, true),
-                    'balance'  => in_array($key, ErPeriods::BALANCE, true)
+                    'balance'  => in_array($key, ErPeriods::BALANCE, true),
+                    'avg'      => strpos($key, 'Day_') !== 0,
+                    'lastYear' => in_array($key, ErExtras::LAST_YEAR, true),
+                    'peak'     => in_array($key, ErExtras::PEAK, true)
                 ];
             }
         }
@@ -669,7 +823,10 @@ class Energierechner2 extends IPSModuleStrict
                     'start'    => $segment->validFrom,
                     'end'      => $tariff->segmentEnd($i, $openEnd),
                     'forecast' => false,
-                    'balance'  => true
+                    'balance'  => true,
+                    'avg'      => true,
+                    'lastYear' => false,
+                    'peak'     => false
                 ];
             }
             $defs[] = [
@@ -678,7 +835,10 @@ class Energierechner2 extends IPSModuleStrict
                 'start'    => 0,
                 'end'      => 0,
                 'forecast' => false,
-                'balance'  => true
+                'balance'  => true,
+                'avg'      => true,
+                'lastYear' => false,
+                'peak'     => false
             ];
         }
 
@@ -694,7 +854,10 @@ class Energierechner2 extends IPSModuleStrict
                 'start'    => $span['start'],
                 'end'      => $span['end'],
                 'forecast' => false,
-                'balance'  => false
+                'balance'  => false,
+                'avg'      => true,
+                'lastYear' => false,
+                'peak'     => false
             ];
         }
         return $defs;
@@ -726,17 +889,56 @@ class Energierechner2 extends IPSModuleStrict
             if ($def['balance'] && $this->ReadPropertyBoolean('ShowBalance')) {
                 $kinds[] = 'Balance';
             }
+            if ($this->ReadPropertyBoolean('ShowExtras')) {
+                if ($def['avg']) {
+                    $kinds[] = 'AvgPerDay';
+                }
+                if ($def['lastYear']) {
+                    array_push($kinds, 'LastYearConsumption', 'ConsumptionVsLastYear');
+                }
+                if ($def['peak']) {
+                    array_push($kinds, 'PeakDayDate', 'PeakDayCosts');
+                }
+            }
 
             foreach ($kinds as $kind) {
-                $isCosts = strpos($kind, 'Costs') !== false || $kind === 'Balance';
+                $isCosts = strpos($kind, 'Costs') !== false || in_array($kind, ['Balance', 'AvgPerDay'], true);
                 $presentation = $isCosts ? $euro : ($kind === 'Energy' ? $kwh : $consumption);
+                $type = VARIABLETYPE_FLOAT;
+                if ($kind === 'ConsumptionVsLastYear') {
+                    $presentation = $this->presentation(' %', 1);
+                } elseif ($kind === 'PeakDayDate') {
+                    $presentation = '~UnixTimestampDate';
+                    $type = VARIABLETYPE_INTEGER;
+                }
                 $ident = ErPeriods::ident($def['key'], $kind);
-                $this->MaintainVariable($ident, $def['label'] . ' - ' . $this->Translate(self::KIND_LABELS[$kind]), VARIABLETYPE_FLOAT, $presentation, $position++, true);
+                $this->MaintainVariable($ident, $def['label'] . ' - ' . $this->Translate(self::KIND_LABELS[$kind]), $type, $presentation, $position++, true);
                 $wanted[] = $ident;
             }
         }
         $this->MaintainVariable('LastCalculation', $this->Translate('Last calculation'), VARIABLETYPE_INTEGER, '~UnixTimestamp', 1, true);
         $wanted[] = 'LastCalculation';
+
+        // Eckdaten des aktuellen Tarifs (Zusatzwerte)
+        if ($this->ReadPropertyBoolean('ShowExtras') && $tariff !== null) {
+            $tariffKinds = ['CurrentTariff_PriceHT'];
+            if ($tariff->hasNt()) {
+                $tariffKinds[] = 'CurrentTariff_PriceNT';
+            }
+            array_push($tariffKinds, 'CurrentTariff_ValidUntil', 'CurrentTariff_DaysLeft');
+            foreach ($tariffKinds as $ident) {
+                $type = VARIABLETYPE_INTEGER;
+                $presentation = '~UnixTimestampDate';
+                if (strpos($ident, 'Price') !== false) {
+                    $type = VARIABLETYPE_FLOAT;
+                    $presentation = $this->presentation(' ct', 2);
+                } elseif ($ident === 'CurrentTariff_DaysLeft') {
+                    $presentation = $this->presentation(' d', 0);
+                }
+                $this->MaintainVariable($ident, $this->Translate(self::TARIFF_VARIABLES[$ident]), $type, $presentation, $position++, true);
+                $wanted[] = $ident;
+            }
+        }
 
         // Variablen deaktivierter Zeiträume entfernen. Tarifzeiträume bleiben stehen, solange der Tarif nicht erreichbar ist,
         // damit ein verspäteter Start des Tarif-Moduls keine Variablen samt Archivdaten löscht.
@@ -746,10 +948,10 @@ class Energierechner2 extends IPSModuleStrict
             if ($object['ObjectType'] !== OBJECTTYPE_VARIABLE || in_array($ident, $wanted, true)) {
                 continue;
             }
-            if (!preg_match('/^(Day|Week|Month|Year|Tariff|Custom|Total)_/', $ident)) {
+            if (!preg_match('/^(Day|Week|Month|Year|Tariff|Custom|Total|CurrentTariff)_/', $ident)) {
                 continue;
             }
-            if ($tariff === null && preg_match('/^(Tariff|Total)_/', $ident)) {
+            if ($tariff === null && preg_match('/^(Tariff|Total|CurrentTariff)_/', $ident)) {
                 $wanted[] = $ident;
                 continue;
             }
