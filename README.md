@@ -33,10 +33,6 @@ Installation über den IP-Symcon Module Store.
 
 Als erstes wird die Geräteinstanz angelegt, dann die Instanz für die Tarife. Die weitere Dokumentation bitte den einzelnen Modulen entnehmen.
 
-## Tests
-
-Die Rechenlogik liegt in `libs/` und wird mit `php tests/run.php` geprüft. Auf einem Symcon-System laufen zusätzlich Integrationstests gegen das Archiv (siehe Kopf von `tests/run.php`).
-
 ## 5. Spenden
 
 Dieses Modul ist für die nicht kommerzielle Nutzung kostenlos, Schenkungen als Unterstützung für den Autor werden hier akzeptiert:    
