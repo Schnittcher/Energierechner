@@ -31,7 +31,8 @@ final class ErTile
      * @param array<int, array{key:string,label:string,start:int,end:int,forecast?:bool,balance?:bool}> $defs aktivierte Zeiträume.
      *        Prognose und Saldo übernimmt die Kachel nur für Zeiträume, bei denen das Modul sie auch als Variable führt.
      * @param array<string, array<string, mixed>> $results Rechenergebnisse je Zeitraum-Schlüssel
-     * @param array{title:string,unit:string,warnings:string[],flags:array<string,bool>,labels:array<string,string>} $options
+     * @param array{title:string,unit:string,warnings:string[],flags:array<string,bool>,labels:array<string,string>,lastYear?:array<string,float>} $options
+     *        lastYear: Verbrauch des Vorjahreszeitraums je Zeitraum-Schlüssel (für den Vorjahresvergleich)
      * @return array<string, mixed>
      */
     public static function build(array $defs, array $results, array $options, int $now): array
@@ -55,6 +56,9 @@ final class ErTile
                 if ($value !== null) {
                     $values[$name] = round((float) $value, 4);
                 }
+            }
+            if (isset($options['lastYear'][$key])) {
+                $values['lastYearConsumption'] = round((float) $options['lastYear'][$key], 4);
             }
             $span = $def['end'] - $def['start'];
             $open = $span > 0 && $def['end'] > $now && $def['start'] <= $now;

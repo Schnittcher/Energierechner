@@ -43,6 +43,7 @@ trait ErTileTrait
     {
         $this->RegisterPropertyBoolean('TileEnabled', true);
         $this->RegisterAttributeString('TileData', '{}');
+        $this->RegisterAttributeString('TileLastYear', '{}');
         $this->SetVisualizationType(1);
     }
 
@@ -74,11 +75,52 @@ trait ErTileTrait
                 'forecast' => $this->ReadPropertyBoolean('ShowForecast'),
                 'balance'  => $this->ReadPropertyBoolean('ShowBalance')
             ],
-            'labels'   => $this->tileLabels()
+            'labels'   => $this->tileLabels(),
+            'lastYear' => $this->tileLastYear($defs, $now)
         ], $now);
         $json = json_encode($data);
         $this->WriteAttributeString('TileData', $json);
         $this->UpdateVisualizationValue($json);
+    }
+
+    /**
+     * Verbrauch des gleichen Zeitraums im Vorjahr für den Vorjahresvergleich (Monat und Jahr, laufend und abgeschlossen).
+     * Das Vorjahr ändert sich nicht mehr, deshalb wird es nur einmal am Tag aus dem Archiv gelesen.
+     *
+     * @param array<int, array{key:string,label:string,start:int,end:int}> $defs
+     * @return array<string, float>
+     */
+    private function tileLastYear(array $defs, int $now): array
+    {
+        $cache = json_decode($this->ReadAttributeString('TileLastYear'), true);
+        $today = date('Y-m-d', $now);
+        if (is_array($cache) && ($cache['day'] ?? '') === $today && isset($cache['map']) && ($cache['starts'] ?? null) === array_column($defs, 'start', 'key')) {
+            return $cache['map'];
+        }
+
+        $wanted = array_values(array_filter(
+            $defs,
+            static fn (array $d): bool => in_array($d['key'], ['Month_Current', 'Month_Previous', 'Year_Current', 'Year_Previous'], true)
+        ));
+        $archiveID = $this->archiveID();
+        $variableID = $this->ReadPropertyInteger('ConsumptionVariableID');
+        $map = [];
+        if ($wanted !== [] && $archiveID !== 0 && IPS_VariableExists($variableID)) {
+            $from = ErForecast::lastYear(min(array_column($wanted, 'start')));
+            $to = ErForecast::lastYear(min(max(array_column($wanted, 'end')), $now)) - 1;
+            if ($to > $from) {
+                $fetch = static fn (int $a, int $f, int $t): array => (array) AC_GetAggregatedValues($archiveID, $variableID, $a, $f, $t, 0);
+                $daily = ErArchiveReader::read($fetch, ErArchiveReader::DAILY, $from, $to);
+                foreach ($wanted as $def) {
+                    $value = ErForecast::lastYearConsumption($daily, $def['start'], $def['end'], $now);
+                    if ($value !== null) {
+                        $map[$def['key']] = $value;
+                    }
+                }
+            }
+        }
+        $this->WriteAttributeString('TileLastYear', json_encode(['day' => $today, 'starts' => array_column($defs, 'start', 'key'), 'map' => $map]));
+        return $map;
     }
 
     /** Aktionen aus der Kachel. Gibt true zurück, wenn die Aktion zur Kachel gehört. */
@@ -117,6 +159,7 @@ trait ErTileTrait
             'updated'             => $this->Translate('Updated'),
             'tapDetails'          => $this->Translate('Tap for all values'),
             'back'                => $this->Translate('Tap for the overview'),
+            'vsLastYear'          => $this->Translate('vs. last year'),
             'noPeriods'           => $this->Translate('No periods enabled.')
         ];
     }

@@ -28,6 +28,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
 .hero{cursor:pointer;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .hero .n{font-size:clamp(26px,11cqw,44px);font-weight:300;line-height:1.1;letter-spacing:-.02em}
 .hero .u{font-size:14px;color:var(--sub)}
+.delta{font-size:12px;font-weight:600}
 .hint{font-size:11px;color:var(--hint)}
 .lab{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:4px}
 .track{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
@@ -71,6 +72,11 @@ function current(){
   sel={key:ps[0].key};return ps[0]}
 /* HT/NT nur zeigen, wenn die Instanz es eingeschaltet hat und der Tarif einen Niedertarif kennt */
 function showHtNt(){var F=DATA.flags||{};return !!F.htnt&&F.hasNt!==false}
+/* Verbrauch gegenueber dem gleichen Zeitraum im Vorjahr */
+function delta(v){
+  if(!(v.lastYearConsumption>0)||v.consumption==null)return '';
+  var d=Math.round((v.consumption/v.lastYearConsumption-1)*100),up=d>0;
+  return '<div class="delta" style="color:'+(up?'#e0734a':'var(--ac)')+'">'+(up?'▲ +':(d<0?'▼ ':'● '))+d+' % '+esc(L('consumption'))+' '+esc(L('vsLastYear'))+'</div>'}
 function row(l,v){return '<div class="r"><span>'+esc(l)+'</span><b>'+v+'</b></div>'}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
 
@@ -90,14 +96,14 @@ function render(){
     h+='<div class="hint" style="cursor:pointer" id="back">'+esc(L('back'))+'</div><div class="det"><div class="g">'+esc(L('costs'))+'</div>'+row(L('costs'),eur(v.costs||0));
     if(F.base&&v.costsWork!=null)h+=row(L('costsWork'),eur(v.costsWork))+row(L('costsBase'),eur(v.costsBase||0));
     if(v.consumption>0)h+=row(L('effective'),num((v.costs||0)/v.consumption*100,1)+' ct');
-    h+='<div class="g">'+esc(L('consumption'))+'</div>'+row(L('consumption'),kwh(v.consumption||0));
+    h+='<div class="g">'+esc(L('consumption'))+'</div>'+row(L('consumption'),kwh(v.consumption||0))+(v.lastYearConsumption>0?row(L('consumption')+' '+L('vsLastYear'),kwh(v.lastYearConsumption)):'');
     if(showHtNt()&&v.consumptionHt!=null)h+=row(L('ht'),kwh(v.consumptionHt)+' / '+eur(v.costsHt||0))+row(L('nt'),kwh(v.consumptionNt||0)+' / '+eur(v.costsNt||0));
     if(v.energy>0)h+=row(L('energy'),num(v.energy,0)+' kWh');
     if(F.forecast&&v.forecastCosts!=null)h+='<div class="g">'+esc(L('forecast'))+'</div>'+row(L('forecastCosts'),eur(v.forecastCosts))+row(L('forecastConsumption'),kwh(v.forecastConsumption||0));
     if(F.balance&&v.balance!=null)h+='<div class="g">'+esc(L('advance'))+'</div>'+row(L('balance'),eur(v.balance));
     h+='</div>';
   }else{
-    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div><div class="hint extra">'+esc(L('tapDetails'))+'</div>';
+    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div><div class="hint extra">'+esc(L('tapDetails'))+'</div>'+delta(v);
     if(F.forecast&&p.open&&v.forecastCosts>0)h+='<div class="extra"><div class="lab"><span>'+esc(L('forecastCosts'))+'</span><span>'+eur(v.forecastCosts)+'</span></div><div class="track"><i style="width:'+Math.min(100,pct(v.costs||0,v.forecastCosts))+'%"></i></div></div>';
     var t=(v.consumptionHt||0)+(v.consumptionNt||0);
     if(showHtNt()&&t>0){

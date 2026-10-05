@@ -61,6 +61,23 @@ final class ErForecast
     }
 
     /**
+     * Verbrauch im Vorjahr für den Zeitraum bis zum entsprechenden Zeitpunkt (bei abgeschlossenen Zeiträumen komplett),
+     * oder null, wenn es keine Vorjahresdaten gibt.
+     *
+     * @param array<int, array{start:int,end:int,value:float}> $dailyIntervals Tageswerte des Vorjahres
+     */
+    public static function lastYearConsumption(array $dailyIntervals, int $start, int $end, int $now): ?float
+    {
+        $from = self::lastYear($start);
+        $to = min(self::lastYear($end), self::lastYear($now));
+        if ($to <= $from || count($dailyIntervals) === 0) {
+            return null;
+        }
+        $sum = self::clippedSum($dailyIntervals, $from, $to);
+        return $sum > 0.0 ? $sum : null;
+    }
+
+    /**
      * Summe der Intervallwerte in [$from, $to); Intervalle, die den Bereich nur teilweise abdecken, zählen anteilig.
      *
      * @param array<int, array{start:int,end:int,value:float}> $intervals

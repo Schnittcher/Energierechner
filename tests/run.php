@@ -255,6 +255,9 @@ check('Prognose Vorjahr ist deutlich niedriger als linear (kein Winter auf das g
 $r = ErCalculator::calculate(daily(ts(2025, 1, 1), ts(2025, 4, 1), 3.0), new ErTariff([segment()]), 1.0, false, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1), true, [], null);
 check('Prognose ohne Vorjahresanteil bleibt linear', $r['forecastMethod'], 'linear');
 
+check('Vorjahresvergleich: Quartal bis zum Stichtag', ErForecast::lastYearConsumption($lastYearDaily, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1)), 273.0);
+check('Vorjahresvergleich: abgeschlossener Monat komplett', ErForecast::lastYearConsumption($lastYearDaily, ts(2025, 2, 1), ts(2025, 3, 1), ts(2025, 5, 1)), 29.0 * 3.0);
+check('Vorjahresvergleich: keine Daten', ErForecast::lastYearConsumption([], ts(2025, 2, 1), ts(2025, 3, 1), ts(2025, 5, 1)), null);
 check('Vorjahresanteil: keine Vorjahresdaten', ErForecast::seasonalShare([], ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1)), null);
 $zeros = array_map(static fn (array $iv): array => ['value' => 0.0] + $iv, $lastYearDaily);
 check('Vorjahresanteil: Vorjahr ohne Verbrauch', ErForecast::seasonalShare($zeros, ts(2025, 1, 1), ts(2026, 1, 1), ts(2025, 4, 1)), null);
