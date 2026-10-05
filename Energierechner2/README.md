@@ -185,6 +185,18 @@ Alle Variablen eines Zeitraums werden gemeinsam geschrieben. Abgeschlossene Zeit
 
 **Neu berechnen** ändert nichts an Einstellungen, Tarif, Variablen oder Archiv. Das Archiv schreibt Vergangenes nicht um: Ändert sich durch das Neuberechnen der Wert einer **geloggten** Ergebnisvariable, bleibt der alte Datenpunkt im Archiv, und der neue Wert kommt mit dem aktuellen Zeitstempel hinzu. Läuft gerade eine Berechnung, tut *Neu berechnen* nichts.
 
+### Kachel-Visualisierung (experimentell)
+
+Jede Instanz stellt eine Kachel für die Kachel-Visualisierung bereit (Einstellung „Kachel für die Kachel-Visualisierung bereitstellen", standardmäßig an). Die Kachel zeigt nur, was der Rechner berechnet hat, und rechnet nichts selbst.
+
+- **Zeiträume:** Chips für Tag, Woche, Monat und Jahr, soweit aktiviert, dazu das Menü „Mehr" für Tarifzeiträume, die Summe und eigene Zeiträume. Mit den Pfeilen wechselst du zwischen dem laufenden und dem letzten abgeschlossenen Zeitraum.
+- **Übersicht:** Kosten und Verbrauch groß, dazu je nach Größe die Prognose (bisherige Kosten im Verhältnis zur Prognose), das Verhältnis von Hoch- und Niedertarif und ein Warnband mit der Schaltfläche „Neu berechnen".
+- **Alle Werte:** Ein Tippen auf die Hauptzahl zeigt die Details (Arbeits- und Grundkosten, Effektivpreis, HT/NT, Energie bei Gas, Prognose, Saldo). Welche Werte erscheinen, hängt von den aktivierten Optionen ab.
+- Die Kachel übernimmt Farben und Schrift des Clients und passt sich der Größe an.
+- `ER2_GetTileData($InstanzID)` liefert die Kacheldaten als JSON, z. B. für eigene Skripte.
+
+Die Kachel ist neu und wurde noch nicht in einer echten Kachel-Visualisierung geprüft. Sie lässt sich abschalten (Einstellung ausschalten) oder samt Code entfernen: Die Dateien `libs/ErTile.php`, `libs/ErTileTrait.php` und `Energierechner2/tile.html` löschen, die mit `KACHEL` markierten Zeilen in `Energierechner2/module.php` entfernen und die Einstellung `TileEnabled` im Formular streichen.
+
 ### Debug-Ausgabe
 
 Die Debug-Ausgabe der Instanz zeigt, wie viele Archivwerte gelesen wurden, welche Aggregation gewählt wurde, Warnungen je Zeitraum und erkannte Archivänderungen. Sie hilft bei der Fehlersuche.

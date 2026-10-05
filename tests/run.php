@@ -464,6 +464,74 @@ check('Formular: Standard-Auflösung', $dynFromForm->segments()[1]->priceResolut
 check('Formular: fester Tarif ohne Preisvariable', (new ErTariff([segment()]))->hasDynamic(), false);
 check('Tarif: dynamische Felder im Transportformat', ErTariff::fromArray($dynFromForm->toArray())->toArray(), $dynFromForm->toArray());
 
+// ---------------------------------------------------------------- Kachel (Datenaufbereitung)
+require_once __DIR__ . '/../libs/ErTile.php';
+
+check('Kachel: Gruppe Monat aktuell', ErTile::group('Month_Current'), ['month', 'cur']);
+check('Kachel: Gruppe Jahr zuletzt', ErTile::group('Year_Previous'), ['year', 'prev']);
+check('Kachel: Gruppe Tag zuletzt', ErTile::group('Day_Previous'), ['day', 'prev']);
+check('Kachel: Gruppe Tarifzeitraum', ErTile::group('Tariff_ab12cd34'), ['tariff', 'cur']);
+check('Kachel: Gruppe eigener Zeitraum', ErTile::group('Custom_x1'), ['custom', 'cur']);
+check('Kachel: Gruppe Summe', ErTile::group('Total'), ['total', 'cur']);
+
+$tileNow = ts(2025, 3, 16, 12);
+$tileDefs = [
+    ['key' => 'Month_Current', 'label' => 'Aktueller Monat', 'start' => ts(2025, 3, 1), 'end' => ts(2025, 4, 1), 'forecast' => true, 'balance' => false],
+    ['key' => 'Month_Previous', 'label' => 'Vormonat', 'start' => ts(2025, 2, 1), 'end' => ts(2025, 3, 1), 'forecast' => false, 'balance' => true],
+    ['key' => 'Year_Current', 'label' => 'Aktuelles Jahr', 'start' => ts(2025, 1, 1), 'end' => ts(2026, 1, 1)]
+];
+$tileResults = [
+    'Month_Current'  => ['costs' => 12.3456789, 'consumption' => 40.0, 'forecastCosts' => 90.0, 'forecastConsumption' => 250.0, 'balance' => -3.0, 'warnings' => ['noTariff']],
+    'Month_Previous' => ['costs' => 20.0, 'consumption' => 70.0, 'forecastCosts' => 25.0, 'balance' => 4.5]
+];
+$tile = ErTile::build($tileDefs, $tileResults, ['title' => 'Haus', 'unit' => 'kWh', 'warnings' => ['Warnung A'], 'flags' => ['htnt' => true], 'labels' => ['costs' => 'Kosten']], $tileNow);
+check('Kachel: nur Zeiträume mit Ergebnis', array_column($tile['periods'], 'key'), ['Month_Current', 'Month_Previous']);
+check('Kachel: laufender Zeitraum ist offen', [$tile['periods'][0]['open'], $tile['periods'][1]['open']], [true, false]);
+check('Kachel: Fortschritt des laufenden Monats (auf die Sekunde, März hat 743 Stunden)', $tile['periods'][0]['progress'], ($tileNow - ts(2025, 3, 1)) / (ts(2025, 4, 1) - ts(2025, 3, 1)), 1e-4);
+check('Kachel: abgeschlossener Zeitraum hat Fortschritt 1', $tile['periods'][1]['progress'], 1.0);
+check('Kachel: Werte werden gerundet', $tile['periods'][0]['v']['costs'], 12.3457);
+check('Kachel: Prognose nur für Zeiträume mit Prognose-Variable', [isset($tile['periods'][0]['v']['forecastCosts']), isset($tile['periods'][1]['v']['forecastCosts'])], [true, false]);
+check('Kachel: Saldo nur für Zeiträume mit Saldo-Variable', [isset($tile['periods'][0]['v']['balance']), isset($tile['periods'][1]['v']['balance'])], [false, true]);
+$tileNull = ErTile::build([['key' => 'Month_Current', 'label' => 'M', 'start' => ts(2025, 3, 1), 'end' => ts(2025, 4, 1), 'forecast' => true, 'balance' => true]], ['Month_Current' => ['costs' => 1.0, 'forecastCosts' => null, 'balance' => null]], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], $tileNow);
+check('Kachel: fehlende Werte (null) fehlen in den Daten', [isset($tileNull['periods'][0]['v']['forecastCosts']), isset($tileNull['periods'][0]['v']['balance'])], [false, false]);
+check('Kachel: Rolle und Gruppe', [$tile['periods'][1]['group'], $tile['periods'][1]['role']], ['month', 'prev']);
+check('Kachel: Warnungen, Titel, Einheit und Flags werden durchgereicht', [$tile['warnings'], $tile['title'], $tile['unit'], $tile['flags']['htnt']], [['Warnung A'], 'Haus', 'kWh', true]);
+check('Kachel: Daten sind als JSON darstellbar', is_string(json_encode($tile)) && json_decode(json_encode($tile), true)['updated'] === $tileNow, true);
+check('Kachel: ohne Ergebnisse keine Zeiträume', ErTile::build($tileDefs, [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], $tileNow)['periods'], []);
+
+// Zusammenbau der Kachel-HTML aus Vorlage und Daten (mit einem Ersatz für IPSModuleStrict)
+require_once __DIR__ . '/../libs/ErTileTrait.php';
+if (!function_exists('IPS_GetName')) {
+    function IPS_GetName(int $id): string
+    {
+        return 'Test';
+    }
+}
+$tileHost = new class() {
+    use ErTileTrait;
+
+    public int $InstanceID = 0;
+    public string $attribute = '{}';
+
+    public function ReadAttributeString(string $n): string
+    {
+        return $this->attribute;
+    }
+
+    public function Translate(string $t): string
+    {
+        return $t;
+    }
+};
+$emptyHtml = $tileHost->GetVisualizationTile();
+check('Kachel-HTML: Platzhalter ersetzt (ohne Daten)', strpos($emptyHtml, '__TILE_DATA__') === false, true);
+check('Kachel-HTML: Vorlage enthält handleMessage', strpos($emptyHtml, 'function handleMessage') !== false, true);
+$tileHost->attribute = json_encode(['title' => 'A</script>B', 'periods' => []]);
+$html = $tileHost->GetVisualizationTile();
+check('Kachel-HTML: "</" in den Daten wird entschärft', substr_count($html, '</script>'), substr_count((string) file_get_contents(__DIR__ . '/../Energierechner2/tile.html'), '</script>'));
+check('Kachel-HTML: Daten stehen im Skript', strpos($html, 'A<\/script>B') !== false, true);
+check('GetTileData liefert die gespeicherten Daten', $tileHost->GetTileData(), $tileHost->attribute);
+
 // ---------------------------------------------------------------- Integration (nur auf einem Symcon-System)
 if (function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectIDByIdent')) {
     $cat = 41286;

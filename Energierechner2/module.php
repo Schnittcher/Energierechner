@@ -9,6 +9,7 @@ require_once __DIR__ . '/../libs/ErPeriods.php';
 require_once __DIR__ . '/../libs/ErPriceSeries.php';
 require_once __DIR__ . '/../libs/ErForecast.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
+require_once __DIR__ . '/../libs/ErTileTrait.php'; // KACHEL
 
 /**
  * Berechnet Verbrauch und Kosten eines geloggten Zählers für frei wählbare Zeiträume
@@ -18,6 +19,8 @@ require_once __DIR__ . '/../libs/ErLegacy.php';
  */
 class Energierechner2 extends IPSModuleStrict
 {
+    use ErTileTrait; // KACHEL
+
     private const TARIFF_MODULE = '{1765D09A-4E07-4B50-A6AC-B75B17D773EB}';
     private const LEGACY_MODULE = '{E02FA048-D39D-4B25-A241-9FAD43789764}';
     private const ARCHIVE_MODULE = '{43192F0B-135B-4CE7-A0A7-1475603F3060}';
@@ -75,6 +78,7 @@ class Energierechner2 extends IPSModuleStrict
     {
         //Never delete this line!
         parent::Create();
+        $this->tileCreate(); // KACHEL
 
         $this->RegisterPropertyBoolean('Active', false);
         $this->RegisterPropertyInteger('ConsumptionVariableID', 0);
@@ -111,6 +115,7 @@ class Energierechner2 extends IPSModuleStrict
     {
         //Never delete this line!
         parent::ApplyChanges();
+        $this->tileApply(); // KACHEL
 
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             $this->RegisterMessage(0, IPS_KERNELSTARTED);
@@ -175,6 +180,9 @@ class Energierechner2 extends IPSModuleStrict
 
     public function RequestAction(string $Ident, mixed $Value): void
     {
+        if ($this->tileAction($Ident)) { // KACHEL
+            return; // KACHEL
+        } // KACHEL
         if ($Ident === 'UnitChanged') {
             $this->UpdateFormField('ImpulsesPerKwh', 'visible', (string) $Value === 'Impulse');
             $this->UpdateFormField('GasConversion', 'visible', (string) $Value === 'm3');
@@ -439,6 +447,7 @@ class Energierechner2 extends IPSModuleStrict
             $this->writeResult($key, $result, $wanted);
         }
         $this->publishWarnings($results, $defs);
+        $this->tileUpdate($results, $defs, $unit['suffix'], $now); // KACHEL
         if (isset($wanted['LastCalculation'])) {
             $this->SetValue('LastCalculation', $now);
         }
