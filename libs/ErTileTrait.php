@@ -58,7 +58,7 @@ trait ErTileTrait
      * @param array<string, array<string, mixed>> $results
      * @param array<int, array{key:string,label:string,start:int,end:int}> $defs
      */
-    private function tileUpdate(array $results, array $defs, string $unitSuffix, int $now, bool $hasNt): void
+    private function tileUpdate(array $results, array $defs, string $unitSuffix, int $now, ErTariff $tariff): void
     {
         if (!$this->ReadPropertyBoolean('TileEnabled')) {
             return;
@@ -70,12 +70,13 @@ trait ErTileTrait
             'warnings' => is_array($warnings) ? $warnings : [],
             'flags'    => [
                 'htnt'     => $this->ReadPropertyBoolean('ShowHtNt'),
-                'hasNt'    => $hasNt,
+                'hasNt'    => $tariff->hasNt(),
                 'base'     => $this->ReadPropertyBoolean('ShowBaseCosts'),
                 'forecast' => $this->ReadPropertyBoolean('ShowForecast'),
                 'balance'  => $this->ReadPropertyBoolean('ShowBalance')
             ],
             'labels'   => $this->tileLabels(),
+            'tariff'   => ErTile::tariffInfo($tariff, $now),
             'lastYear' => $this->tileLastYear($defs, $now)
         ], $now);
         $json = json_encode($data);
@@ -159,6 +160,10 @@ trait ErTileTrait
             'updated'             => $this->Translate('Updated'),
             'tapDetails'          => $this->Translate('Tap for all values'),
             'back'                => $this->Translate('Tap for the overview'),
+            'avgPerDay'           => $this->Translate('Average per day'),
+            'tariff'              => $this->Translate('Tariff'),
+            'validUntil'          => $this->Translate('valid until'),
+            'dynamicPrice'        => $this->Translate('dynamic price'),
             'vsLastYear'          => $this->Translate('vs. last year'),
             'noPeriods'           => $this->Translate('No periods enabled.')
         ];

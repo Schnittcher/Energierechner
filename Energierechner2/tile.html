@@ -28,7 +28,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
 .hero{cursor:pointer;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .hero .n{font-size:clamp(26px,11cqw,44px);font-weight:300;line-height:1.1;letter-spacing:-.02em}
 .hero .u{font-size:14px;color:var(--sub)}
-.delta{font-size:12px;font-weight:600}
+.delta{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.delta b{font-weight:600}
 .hint{font-size:11px;color:var(--hint)}
 .lab{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:4px}
 .track{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
@@ -42,7 +42,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;touch-ac
 .det .g{font-size:11px;color:var(--hint);padding:8px 0 2px;text-transform:uppercase;letter-spacing:.5px}
 .det .r{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bd)}
 .det .r b{font-weight:500}
-.foot{margin-top:2px;font-size:11px;color:var(--hint)}
+.foot{margin-top:2px;font-size:11px;color:var(--hint);display:flex;justify-content:space-between;gap:10px}.foot span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.foot span:last-child{flex:none}
 .empty{color:var(--sub);font-size:14px;margin:auto;text-align:center}
 @container (max-width:300px){#wrap{padding:var(--pt,26px) var(--pr,32px) var(--pb,40px) 10px;gap:6px}.extra{display:none}.hero .n{font-size:clamp(24px,13cqw,34px)}.nav{font-size:12px}.chips .chip:not(.on){display:none}}
 </style>
@@ -76,7 +76,21 @@ function showHtNt(){var F=DATA.flags||{};return !!F.htnt&&F.hasNt!==false}
 function delta(v){
   if(!(v.lastYearConsumption>0)||v.consumption==null)return '';
   var d=Math.round((v.consumption/v.lastYearConsumption-1)*100),up=d>0;
-  return '<div class="delta" style="color:'+(up?'#e0734a':'var(--ac)')+'">'+(up?'▲ +':(d<0?'▼ ':'● '))+d+' % '+esc(L('consumption'))+' '+esc(L('vsLastYear'))+'</div>'}
+  return '<b style="color:'+(up?'#e0734a':'var(--ac)')+'">'+(up?'▲ +':(d<0?'▼ ':'● '))+d+' %</b> '+esc(L('consumption'))+' '+esc(L('vsLastYear'))}
+/* Durchschnittskosten je Tag (nicht fuer einzelne Tage) */
+function perDay(v){return v.days>1&&v.costs>0?v.costs/v.days:0}
+/* Der aktuelle Tarifabschnitt als Text */
+function ct(x){return num(x,x%1?1:0)}
+function tariffText(){
+  var t=DATA.tariff;if(!t)return '';
+  var u=esc(DATA.unit||''),s=[];
+  if(t.supplier)s.push(esc(t.supplier));
+  s.push(t.dynamic?esc(L('dynamicPrice')):(t.nt!=null&&t.nt!==t.ht?ct(t.ht)+' / '+ct(t.nt)+' ct/'+u:ct(t.ht)+' ct/'+u));
+  if(t.until)s.push(esc(L('validUntil'))+' '+new Date(t.until*1000).toLocaleDateString([], {day:'2-digit',month:'2-digit',year:'numeric'}));
+  return s.join(' · ')}
+function infoLine(v){
+  var a=[],d=delta(v);if(d)a.push(d);if(perDay(v)>0)a.push('Ø '+eur(perDay(v))+' / '+esc(L('day')));
+  return a.length?'<div class="delta hint">'+a.join(' · ')+'</div>':''}
 function row(l,v){return '<div class="r"><span>'+esc(l)+'</span><b>'+v+'</b></div>'}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
 
@@ -101,9 +115,11 @@ function render(){
     if(v.energy>0)h+=row(L('energy'),num(v.energy,0)+' kWh');
     if(F.forecast&&v.forecastCosts!=null)h+='<div class="g">'+esc(L('forecast'))+'</div>'+row(L('forecastCosts'),eur(v.forecastCosts))+row(L('forecastConsumption'),kwh(v.forecastConsumption||0));
     if(F.balance&&v.balance!=null)h+='<div class="g">'+esc(L('advance'))+'</div>'+row(L('balance'),eur(v.balance));
+    if(perDay(v)>0)h+=row(L('avgPerDay'),eur(perDay(v)));
+    if(DATA.tariff)h+='<div class="g">'+esc(L('tariff'))+'</div>'+row(DATA.tariff.name||L('tariff'),tariffText());
     h+='</div>';
   }else{
-    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div><div class="hint extra">'+esc(L('tapDetails'))+'</div>'+delta(v);
+    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div><div class="hint extra">'+esc(L('tapDetails'))+'</div>'+infoLine(v);
     if(F.forecast&&p.open&&v.forecastCosts>0)h+='<div class="extra"><div class="lab"><span>'+esc(L('forecastCosts'))+'</span><span>'+eur(v.forecastCosts)+'</span></div><div class="track"><i style="width:'+Math.min(100,pct(v.costs||0,v.forecastCosts))+'%"></i></div></div>';
     var t=(v.consumptionHt||0)+(v.consumptionNt||0);
     if(showHtNt()&&t>0){
@@ -113,7 +129,7 @@ function render(){
   }
   var ws=DATA.warnings||[];
   if(ws.length&&!detail)h+='<div class="warn extra"><span>⚠ '+esc(ws[0])+(ws.length>1?' (+'+(ws.length-1)+')':'')+'</span><button id="recalc">'+esc(L('recalculate'))+'</button></div>';
-  if(DATA.updated){var d=new Date(DATA.updated*1000);h+='<div class="foot extra">'+esc(L('updated'))+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</div>'}
+  if(DATA.updated){var d=new Date(DATA.updated*1000);h+='<div class="foot extra"><span>'+(!detail&&DATA.tariff?tariffText():'')+'</span><span>'+esc(L('updated'))+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span></div>'}
   w.innerHTML=h;
   bind(p);
 }

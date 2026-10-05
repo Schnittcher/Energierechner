@@ -447,7 +447,7 @@ class Energierechner2 extends IPSModuleStrict
             $this->writeResult($key, $result, $wanted);
         }
         $this->publishWarnings($results, $defs);
-        $this->tileUpdate($results, $defs, $unit['suffix'], $now, $tariff->hasNt()); // KACHEL
+        $this->tileUpdate($results, $defs, $unit['suffix'], $now, $tariff); // KACHEL
         if (isset($wanted['LastCalculation'])) {
             $this->SetValue('LastCalculation', $now);
         }

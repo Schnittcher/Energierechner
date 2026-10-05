@@ -24,7 +24,8 @@ final class ErTile
         'energy'              => 'energy',
         'forecastCosts'       => 'forecastCosts',
         'forecastConsumption' => 'forecastConsumption',
-        'balance'             => 'balance'
+        'balance'             => 'balance',
+        'days'                => 'days'
     ];
 
     /**
@@ -80,7 +81,32 @@ final class ErTile
             'warnings' => array_values($options['warnings']),
             'flags'    => $options['flags'],
             'labels'   => $options['labels'],
-            'periods'  => $periods
+            'periods'  => $periods,
+            'tariff'   => $options['tariff'] ?? null
+        ];
+    }
+
+    /**
+     * Der zum Zeitpunkt gültige Tarifabschnitt für die Anzeige, oder null ohne Tarif.
+     * Preise in ct je Einheit; "until" ist der letzte Tag der Gültigkeit (null bei offenem Ende).
+     *
+     * @return array{name:string,supplier:string,dynamic:bool,ht:float,nt:?float,until:?int}|null
+     */
+    public static function tariffInfo(ErTariff $tariff, int $now): ?array
+    {
+        $i = $tariff->indexAt($now);
+        if ($i < 0) {
+            return null;
+        }
+        $segment = $tariff->segments()[$i];
+        $end = $tariff->segmentEnd($i, 0);
+        return [
+            'name'     => $segment->name,
+            'supplier' => $segment->supplier,
+            'dynamic'  => $segment->isDynamic(),
+            'ht'       => round($segment->priceHt * 100, 2),
+            'nt'       => $segment->hasNt() ? round($segment->priceNt * 100, 2) : null,
+            'until'    => $end > 0 ? $end - 1 : null
         ];
     }
 

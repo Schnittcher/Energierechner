@@ -500,6 +500,13 @@ check('Kachel: fehlende Werte (null) fehlen in den Daten', [isset($tileNull['per
 check('Kachel: Rolle und Gruppe', [$tile['periods'][1]['group'], $tile['periods'][1]['role']], ['month', 'prev']);
 check('Kachel: Warnungen, Titel, Einheit und Flags werden durchgereicht', [$tile['warnings'], $tile['title'], $tile['unit'], $tile['flags']['htnt']], [['Warnung A'], 'Haus', 'kWh', true]);
 check('Kachel: Daten sind als JSON darstellbar', is_string(json_encode($tile)) && json_decode(json_encode($tile), true)['updated'] === $tileNow, true);
+$info = ErTile::tariffInfo(new ErTariff([segment(['supplier' => 'Stadtwerke', 'priceHt' => 0.324, 'priceNt' => 0.2, 'ntWeekend' => true]), segment(['id' => 'b', 'validFrom' => ts(2026, 1, 1)])]), ts(2025, 6, 1));
+check('Kachel: Tarifinfo Anbieter', $info['supplier'], 'Stadtwerke');
+check('Kachel: Tarifinfo Preise in ct', [$info['ht'], $info['nt']], [32.4, 20.0]);
+check('Kachel: Tarifinfo letzter Gültigkeitstag', date('Y-m-d', $info['until']), '2025-12-31');
+check('Kachel: Tarifinfo offenes Ende', ErTile::tariffInfo(new ErTariff([segment()]), ts(2025, 6, 1))['until'], null);
+check('Kachel: Tarifinfo ohne Niedertarif', ErTile::tariffInfo(new ErTariff([segment(['priceNt' => 0.3])]), ts(2025, 6, 1))['nt'], null);
+check('Kachel: Tarifinfo vor dem ersten Tarif', ErTile::tariffInfo(new ErTariff([segment()]), ts(2024, 6, 1)), null);
 check('Kachel: ohne Ergebnisse keine Zeiträume', ErTile::build($tileDefs, [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], $tileNow)['periods'], []);
 
 // Zusammenbau der Kachel-HTML aus Vorlage und Daten (mit einem Ersatz für IPSModuleStrict)
