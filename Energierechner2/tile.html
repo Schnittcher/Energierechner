@@ -21,11 +21,10 @@ html,body{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;ov
 .chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}
 .chips::-webkit-scrollbar{display:none}
 .chip{font-size:13px;line-height:1.2;color:var(--tx);padding:6px 10px;border-radius:999px;border:1px solid var(--bd);background:transparent;cursor:pointer;flex:none}
-/* Der Chip "Mehr" ist ein Beschriftungs-Chip mit unsichtbarer Auswahlliste darueber: Er ist nur so breit wie sein Text */
 .chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
-.chip.more{position:relative;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chip.more select{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
-.chip.more select option{color:#222}
+/* Der Chip "Mehr" ist eine echte Auswahlliste, deren Breite per Skript an den Text angepasst wird (sizeMore) */
+select.chip{appearance:none;-webkit-appearance:none;text-overflow:ellipsis;max-width:150px;font-family:inherit}
+select.chip option{color:#222}
 .nav{font-size:13px}
 .arrow{font-size:22px;font-weight:600;line-height:1;color:var(--ac);background:color-mix(in srgb,var(--ac) 16%,transparent);border:1px solid color-mix(in srgb,var(--ac) 55%,transparent);border-radius:999px;width:32px;height:28px;padding:0 0 3px;cursor:pointer;flex:none}
 .arrow:disabled{color:var(--hint);background:transparent;border-color:var(--bd);opacity:.5;cursor:default}
@@ -126,9 +125,7 @@ function render(){
   var v=p.v||{},F=DATA.flags||{},h='';
   var chips=groups().map(function(g){return '<button class="chip'+(sel.group===g?' on':'')+'" data-g="'+g+'">'+esc(L(g))+'</button>'}).join('');
   var oth=others();
-  if(oth.length){
-    var cur=oth.filter(function(o){return o.key===sel.key})[0];
-    chips+='<label class="chip more'+(sel.key?' on':'')+'">'+esc(cur?cur.label:L('more'))+'<select id="more"><option value="">'+esc(L('more'))+'</option>'+oth.map(function(o){return '<option value="'+esc(o.key)+'"'+(sel.key===o.key?' selected':'')+'>'+esc(o.label)+'</option>'}).join('')+'</select></label>'}
+  if(oth.length){chips+='<select class="chip more'+(sel.key?' on':'')+'" id="more"><option value="">'+esc(L('more'))+'</option>'+oth.map(function(o){return '<option value="'+esc(o.key)+'"'+(sel.key===o.key?' selected':'')+'>'+esc(o.label)+'</option>'}).join('')+'</select>'}
   if(!compact&&!DATA.fixed)h+='<div class="row"><div class="chips">'+chips+'</div></div>';
 
   var o=sel.group?byGroup(sel.group):{},canNav=!!(o.cur&&o.prev);
@@ -165,8 +162,17 @@ function render(){
   fitHeight();
 }
 
+/* Breite der Auswahl "Mehr" an den gewaehlten Text anpassen (ein Select ist sonst so breit wie sein laengster Eintrag) */
+function sizeMore(){
+  var m=document.getElementById('more');if(!m)return;
+  var t=document.createElement('span');
+  t.style.cssText='position:absolute;visibility:hidden;white-space:nowrap;font-size:13px;font-family:inherit';
+  t.textContent=m.options[m.selectedIndex].text;document.body.appendChild(t);
+  m.style.width=Math.min(150,Math.ceil(t.getBoundingClientRect().width)+24)+'px';
+  document.body.removeChild(t)}
 function bind(p){
   var q=function(s){return document.querySelector(s)};
+  sizeMore();
   Array.prototype.forEach.call(document.querySelectorAll('.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;render()}});
   var m=q('#more');if(m)m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;render()};
   var pv=q('#prev'),nx=q('#next');
@@ -214,7 +220,7 @@ function fit(){
   // Der Rahmen ist beim Start oft noch nicht fertig platziert: mehrfach messen
   measure();
   fitHeight();
-  [250,1000,3000].forEach(function(ms){setTimeout(function(){measure();fitHeight()},ms)});
+  [250,1000,3000].forEach(function(ms){setTimeout(function(){measure();sizeMore();fitHeight()},ms)});
 }
 
 /* Die Kachel soll sich nicht seitlich verschieben lassen (abgeschnittener Rand der App). Waagerechtes Wischen wird abgefangen,
