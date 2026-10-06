@@ -85,6 +85,10 @@ class Energierechner2 extends IPSModuleStrict
         'PeakDayCosts'          => 'Costs of the most expensive day'
     ];
 
+    /** Position der ersten Zeitraum-Variable und Größe des Positionsblocks je Zeitraum (mehr als die höchstmögliche Zahl Variablen je Zeitraum) */
+    private const FIRST_PERIOD_POSITION = 10;
+    private const PERIOD_BLOCK = 20;
+
     /** Variablen zum aktuellen Tarif (nicht an einen Zeitraum gebunden): Ident => Bezeichnung */
     private const TARIFF_VARIABLES = [
         'CurrentTariff_PriceHT'    => 'Current tariff: price (HT, ct)',
@@ -869,9 +873,11 @@ class Energierechner2 extends IPSModuleStrict
         $euro = $this->presentation(' €', 2);
         $kwh = $this->presentation(' kWh', 2);
 
+        // Positionen: Letzte Berechnung = 1, Tarif-Variablen ab 2, jeder Zeitraum bekommt einen eigenen Block von 20 ab 10.
+        // Die Blöcke bleiben stabil, wenn Optionen wechseln; die Positionen werden bei jedem Abgleich gesetzt (siehe maintain()).
         $wanted = [];
-        $position = 10;
-        foreach ($this->periodDefs($tariff, time()) as $def) {
+        foreach ($this->periodDefs($tariff, time()) as $periodIndex => $def) {
+            $position = self::FIRST_PERIOD_POSITION + $periodIndex * self::PERIOD_BLOCK;
             $kinds = ['Costs', 'Consumption'];
             if ($this->ReadPropertyBoolean('ShowBaseCosts')) {
                 array_push($kinds, 'CostsWork', 'CostsBase');
@@ -911,15 +917,16 @@ class Energierechner2 extends IPSModuleStrict
                     $type = VARIABLETYPE_INTEGER;
                 }
                 $ident = ErPeriods::ident($def['key'], $kind);
-                $this->MaintainVariable($ident, $def['label'] . ' - ' . $this->Translate(self::KIND_LABELS[$kind]), $type, $presentation, $position++, true);
+                $this->maintain($ident, $def['label'] . ' - ' . $this->Translate(self::KIND_LABELS[$kind]), $type, $presentation, $position++);
                 $wanted[] = $ident;
             }
         }
-        $this->MaintainVariable('LastCalculation', $this->Translate('Last calculation'), VARIABLETYPE_INTEGER, '~UnixTimestamp', 1, true);
+        $this->maintain('LastCalculation', $this->Translate('Last calculation'), VARIABLETYPE_INTEGER, '~UnixTimestamp', 1);
         $wanted[] = 'LastCalculation';
 
-        // Eckdaten des aktuellen Tarifs (Zusatzwerte)
+        // Eckdaten des aktuellen Tarifs (Zusatzwerte), direkt unter der letzten Berechnung
         if ($this->ReadPropertyBoolean('ShowExtras') && $tariff !== null) {
+            $tariffPosition = 2;
             $tariffKinds = ['CurrentTariff_PriceHT'];
             if ($tariff->hasNt()) {
                 $tariffKinds[] = 'CurrentTariff_PriceNT';
@@ -934,7 +941,7 @@ class Energierechner2 extends IPSModuleStrict
                 } elseif ($ident === 'CurrentTariff_DaysLeft') {
                     $presentation = $this->presentation(' d', 0);
                 }
-                $this->MaintainVariable($ident, $this->Translate(self::TARIFF_VARIABLES[$ident]), $type, $presentation, $position++, true);
+                $this->maintain($ident, $this->Translate(self::TARIFF_VARIABLES[$ident]), $type, $presentation, $tariffPosition++);
                 $wanted[] = $ident;
             }
         }
@@ -957,6 +964,21 @@ class Energierechner2 extends IPSModuleStrict
             IPS_DeleteVariable($childID);
         }
         $this->WriteAttributeString('Idents', json_encode($wanted));
+    }
+
+    /**
+     * Legt eine Variable an oder aktualisiert sie und setzt ihre Position. MaintainVariable setzt die Position nur beim Anlegen;
+     * ohne das Nachsetzen behielten bestehende Variablen alte Positionen, und neue kollidierten damit.
+     *
+     * @param array<string, mixed>|string $presentation
+     */
+    private function maintain(string $ident, string $name, int $type, array|string $presentation, int $position): void
+    {
+        $this->MaintainVariable($ident, $name, $type, $presentation, $position, true);
+        $id = $this->GetIDForIdent($ident);
+        if (IPS_GetObject($id)['ObjectPosition'] !== $position) {
+            IPS_SetPosition($id, $position);
+        }
     }
 
     /**

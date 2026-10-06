@@ -111,6 +111,8 @@ Die Warnung verschwindet nach der nächsten Berechnung, wenn die Ursache behoben
 
 Die Idents sind stabil und enthalten **kein Datum**. Ändert sich ein Datum im Tarif, bleiben die Variablen samt Archivdaten erhalten.
 
+**Reihenfolge:** `LastCalculation` steht ganz oben, darunter (mit der Option *Zusatzwerte*) die Variablen zum aktuellen Tarif, danach folgen die Zeiträume in der Reihenfolge Heute, Gestern, Woche, Vorwoche, Monat, Vormonat, Jahr, Vorjahr, Tarifzeiträume, Summe und eigene Zeiträume. Jeder Zeitraum hat einen eigenen Block von Positionen, die Variablen eines Zeitraums stehen also zusammen. Die Positionen werden bei jedem Übernehmen der Einstellungen neu gesetzt und sind eindeutig, auch wenn Optionen später ein- oder ausgeschaltet werden.
+
 Schema: `<Zeitraum>_<Art>`
 
 | Zeitraum | Ident-Präfix |
