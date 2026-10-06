@@ -35,5 +35,5 @@ ERK_GetTileData(int $InstanzID): string // die Kacheldaten als JSON
 - Die Anzeige sieht aus wie die Kachel des Energierechner 2, aber ohne Chips und Pfeile, weil der Zeitraum fest ist. Ein Tippen auf den Hauptwert öffnet in der Standard-Darstellung die Details. In der kompakten Darstellung gibt es keine Details.
 - Die Daten kommen von der Quelle und werden bei jeder Neuberechnung aktualisiert, spätestens nach einer Minute.
 - Vorjahresvergleich und teuerster Tag stehen nur dann in der Anzeige, wenn die Quelle sie berechnet. Das tut sie, wenn ihre Einstellung *Zusatzwerte* eingeschaltet ist.
-- Hat die Quelle noch nichts berechnet, stößt die Anzeige einmal eine Berechnung an.
+- Hat die Quelle noch nichts berechnet, stößt die Anzeige einmal eine Berechnung an. Rechnet die Quelle absichtlich nicht automatisch (Einstellung *Automatisch berechnen* aus), tut die Anzeige das nicht.
 - Die Instanz gehört zur Kachel und lässt sich mit ihr entfernen: den Ordner `EnergierechnerKachel` löschen (siehe [Energierechner 2](../Energierechner2/README.md#kachel-visualisierung-experimentell)).

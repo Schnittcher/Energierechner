@@ -110,8 +110,8 @@ class EnergierechnerKachel extends IPSModuleStrict
         if ($source > 0 && $this->isSource($source) && function_exists('ER2_GetTileData')) {
             $data = json_decode((string) ER2_GetTileData($source), true);
             if (!is_array($data) || ($data['periods'] ?? []) === []) {
-                // Die Quelle hat noch nichts gerechnet: einmal anstoßen
-                if (IPS_GetInstance($source)['InstanceStatus'] === IS_ACTIVE && function_exists('ER2_Recalculate')) {
+                // Die Quelle hat noch nichts gerechnet: einmal anstoßen, außer sie rechnet absichtlich nicht automatisch
+                if (IPS_GetInstance($source)['InstanceStatus'] === IS_ACTIVE && IPS_GetProperty($source, 'AutomaticCalculation') && function_exists('ER2_Recalculate')) {
                     @ER2_Recalculate($source);
                     $data = json_decode((string) ER2_GetTileData($source), true);
                 }

@@ -42,7 +42,8 @@ Voraussetzung: Symcon 8.1 oder neuer. Die Tarife liegen in einer eigenen Instanz
 | Saldo der Abschläge | Abschläge abzüglich Kosten, für das aktuelle Jahr, das Vorjahr, je Tarifzeitraum und als Summe. |
 | Zusatzwerte | Legt zusätzliche Variablen an: Durchschnittskosten je Tag, Vergleich des Verbrauchs mit dem Vorjahr, teuerster Tag und die Eckdaten des aktuellen Tarifs (Preise, Gültig-bis-Datum, Tage bis zum Ende). Siehe [Zusatzwerte](#zusatzwerte). |
 | Vor dem Ende des Tarifzeitraums warnen | Ab so vielen Tagen vor dem Ende des aktuellen Tarifzeitraums erscheint eine Warnung (Formular, Meldungsfenster, Kachel). 0 = aus. Der Tarifzeitraum endet, wenn in der Tariftabelle eine spätere Zeile folgt; ohne spätere Zeile gibt es kein Ende und keine Warnung. |
-| Aktualisierungsintervall | Wie oft die laufenden Zeiträume neu berechnet werden (Minuten). |
+| Automatisch berechnen | Standardmäßig an. Ist die Option aus, rechnet das Modul **nie von selbst**: kein Timer, keine Berechnung beim Übernehmen der Einstellungen oder beim Start. Die Werte ändern sich nur, wenn du eine Berechnung anstößt: Schaltfläche *Jetzt berechnen* oder *Neu berechnen* im Formular, `ER2_UpdateCalculation($id)` / `ER2_Recalculate($id)` aus einem Skript oder Ereignis, oder *Neu berechnen* in der Kachel. Sinnvoll, wenn du die Berechnung selbst steuern willst, etwa einmal pro Stunde oder nach dem Eintreffen neuer Archivdaten. |
+| Aktualisierungsintervall | Wie oft die laufenden Zeiträume neu berechnet werden (Minuten). Nur wirksam, wenn *Automatisch berechnen* an ist. |
 
 ### Statusmeldungen
 
@@ -192,7 +193,7 @@ Der **Anteil** sagt, welcher Teil des Zeitraums schon erreicht ist. Er wird auf 
 
 ### Wann wird was neu berechnet
 
-Ein Durchlauf startet alle *Aktualisierungsintervall* Minuten, nach jedem Übernehmen der Instanzeinstellungen, sobald sich der verbundene Tarif ändert und per *Neu berechnen* oder `ER2_UpdateCalculation` / `ER2_Recalculate`.
+Bei eingeschaltetem *Automatisch berechnen* startet ein Durchlauf alle *Aktualisierungsintervall* Minuten, nach jedem Übernehmen der Instanzeinstellungen und sobald sich der verbundene Tarif ändert. Von Hand geht es jederzeit per *Jetzt berechnen*, *Neu berechnen* oder `ER2_UpdateCalculation` / `ER2_Recalculate`, auch bei ausgeschalteter Automatik.
 
 | Variablen | Neu berechnet |
 |---|---|

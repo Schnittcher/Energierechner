@@ -124,6 +124,7 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterPropertyBoolean('ShowExtras', false);
         $this->RegisterPropertyInteger('TariffEndWarningDays', 0);
         $this->RegisterPropertyBoolean('LogClosedPeriods', false);
+        $this->RegisterPropertyBoolean('AutomaticCalculation', true);
         $this->RegisterPropertyInteger('UpdateInterval', 10);
 
         $this->RegisterAttributeString('AutoLogged', '[]');
@@ -179,8 +180,13 @@ class Energierechner2 extends IPSModuleStrict
         $this->SetStatus($status);
 
         if ($status === IS_ACTIVE) {
-            $this->SetTimerInterval('UpdateCalculation', max(1, $this->ReadPropertyInteger('UpdateInterval')) * 60 * 1000);
-            $this->RegisterOnceTimer('Calculate', 'ER2_UpdateCalculation($_IPS[\'TARGET\']);');
+            // Ohne automatische Berechnung läuft weder der Timer noch eine Berechnung beim Übernehmen; dann rechnet nur ER2_UpdateCalculation
+            if ($this->ReadPropertyBoolean('AutomaticCalculation')) {
+                $this->SetTimerInterval('UpdateCalculation', max(1, $this->ReadPropertyInteger('UpdateInterval')) * 60 * 1000);
+                $this->RegisterOnceTimer('Calculate', 'ER2_UpdateCalculation($_IPS[\'TARGET\']);');
+            } else {
+                $this->SetTimerInterval('UpdateCalculation', 0);
+            }
         } else {
             $this->SetTimerInterval('UpdateCalculation', 0);
         }
@@ -208,6 +214,10 @@ class Energierechner2 extends IPSModuleStrict
         if ($this->tileAction($Ident)) { // KACHEL
             return; // KACHEL
         } // KACHEL
+        if ($Ident === 'AutomaticChanged') {
+            $this->UpdateFormField('UpdateInterval', 'enabled', (bool) $Value);
+            return;
+        }
         if ($Ident === 'UnitChanged') {
             $this->UpdateFormField('ImpulsesPerKwh', 'visible', (string) $Value === 'Impulse');
             $this->UpdateFormField('GasConversion', 'visible', (string) $Value === 'm3');
@@ -309,6 +319,9 @@ class Energierechner2 extends IPSModuleStrict
                 }
                 if (($element['name'] ?? '') === 'GasConversion') {
                     $element['visible'] = $unit === 'm3';
+                }
+                if (($element['name'] ?? '') === 'UpdateInterval') {
+                    $element['enabled'] = $this->ReadPropertyBoolean('AutomaticCalculation');
                 }
                 if (($element['name'] ?? '') === 'CustomPeriods') {
                     foreach ($element['columns'] as &$column) {

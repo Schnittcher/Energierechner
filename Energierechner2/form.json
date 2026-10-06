@@ -243,6 +243,12 @@
             "caption": "Expert settings",
             "items": [
                 {
+                    "type": "CheckBox",
+                    "name": "AutomaticCalculation",
+                    "caption": "Calculate automatically",
+                    "onChange": "IPS_RequestAction($id, 'AutomaticChanged', $AutomaticCalculation);"
+                },
+                {
                     "type": "NumberSpinner",
                     "name": "UpdateInterval",
                     "caption": "Update interval",
@@ -276,6 +282,11 @@
         }
     ],
     "actions": [
+        {
+            "type": "Button",
+            "caption": "Calculate now",
+            "onClick": "ER2_UpdateCalculation($id); echo 'OK';"
+        },
         {
             "type": "Button",
             "caption": "Recalculate",

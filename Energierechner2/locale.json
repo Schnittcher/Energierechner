@@ -33,6 +33,8 @@
             "Log completed periods in the archive (yesterday, previous week, month and year; costs and consumption)": "Abgeschlossene Zeiträume im Archiv loggen (Gestern, Vorwoche, Vormonat und Vorjahr; Kosten und Verbrauch)",
             "Balance of advance payments (current and previous year, tariff periods and total)": "Saldo der Abschläge (aktuelles Jahr, Vorjahr, Tarifzeiträume und Summe)",
             "Expert settings": "Experteneinstellungen",
+            "Calculate automatically": "Automatisch berechnen",
+            "Calculate now": "Jetzt berechnen",
             "Update interval": "Aktualisierungsintervall",
             "minutes": "Minuten",
             "Take over from the old Energierechner": "Aus dem alten Energierechner übernehmen",
