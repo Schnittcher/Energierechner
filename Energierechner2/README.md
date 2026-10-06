@@ -98,7 +98,7 @@ Stellt das Modul bei der Berechnung ein Problem fest, steht oben im Konfiguratio
 
 **Wie die Änderung erkannt wird:** Beim Zwischenspeichern eines abgeschlossenen Zeitraums merkt sich das Modul die Summe der Tageswerte aus dem Archiv, bei dynamischen Tarifen auch die der Preisvariablen. Bei jedem Durchlauf vergleicht es diese Summen mit dem aktuellen Stand. Das sind wenige Datensätze und kostet kaum Zeit. Eine Änderung, die die Summe über den ganzen Zeitraum nicht verändert (z. B. Verbrauch von einer Stunde in eine andere verschoben, was bei Niedertarif oder dynamischen Preisen die Kosten ändern würde), wird nicht erkannt.
 
-Die Warnung verschwindet nach der nächsten Berechnung, wenn die Ursache behoben ist.
+Die Warnung verschwindet nach der nächsten Berechnung, wenn die Ursache behoben ist. Ins Meldungsfenster geht jede Warnung nur beim ersten Auftreten; die Warnung vor dem Tarifende ändert täglich die Tageszahl im Text, wird aber nur einmal gemeldet.
 
 ### Namen der Variablen
 

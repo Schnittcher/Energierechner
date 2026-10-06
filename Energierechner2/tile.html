@@ -121,8 +121,13 @@ function balanceLine(v){
 function row(l,v){return '<div class="r"><span>'+esc(l)+'</span><b>'+v+'</b></div>'}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
 
+/* Neue Daten zeichnen die Kachel neu. Damit das nicht stoert, merkt sich render() die Scrollposition der Detailliste (gleiche
+   Ansicht vorausgesetzt), und solange die Auswahl "Mehr" offen ist, wird erst nach dem Schliessen neu gezeichnet. */
+var lastView='',pendingRender=false;
 function render(){
+  pendingRender=false;
   var w=document.getElementById('wrap'),p=current();
+  var oldDet=document.querySelector('.det'),oldTop=oldDet?oldDet.scrollTop:0;
   if(!p){w.innerHTML='<div class="empty">'+esc(L('noPeriods'))+'</div>';return}
   setCompact();
   if(compact)detail=false;
@@ -164,6 +169,9 @@ function render(){
   w.innerHTML=h;
   bind(p);
   fitHeight();
+  var view=p.key+'|'+(detail?'d':'o'),newDet=document.querySelector('.det');
+  if(newDet&&view===lastView)newDet.scrollTop=oldTop;
+  lastView=view;
 }
 
 /* Wechselt zwischen laufendem und letztem Zeitraum der gewaehlten Gruppe (Pfeile und Wischen) */
@@ -183,7 +191,10 @@ function bind(p){
   var q=function(s){return document.querySelector(s)};
   sizeMore();
   Array.prototype.forEach.call(document.querySelectorAll('button.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;render()}});
-  var m=q('#more');if(m)m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;render()};
+  var m=q('#more');if(m){
+    m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;render()};
+    m.onblur=function(){if(pendingRender)render()};
+  }
   var pv=q('#prev'),nx=q('#next');
   if(pv)pv.onclick=function(){stepPeriod('prev')};
   if(nx)nx.onclick=function(){stepPeriod('cur')};
@@ -251,7 +262,12 @@ function fit(){
 })();
 
 function handleMessage(data){
-  try{DATA=(typeof data==='string')?JSON.parse(data):data;render()}catch(e){}
+  try{
+    DATA=(typeof data==='string')?JSON.parse(data):data;
+    var a=document.activeElement;
+    if(a&&a.id==='more'){pendingRender=true;return} // Auswahl ist offen: nicht stoeren
+    render();
+  }catch(e){}
 }
 render();
 fit();

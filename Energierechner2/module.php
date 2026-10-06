@@ -129,6 +129,7 @@ class Energierechner2 extends IPSModuleStrict
 
         $this->RegisterAttributeString('AutoLogged', '[]');
         $this->RegisterAttributeString('Warnings', '[]');
+        $this->RegisterAttributeString('WarningKeys', '[]');
         $this->RegisterAttributeString('ForecastShares', '{}');
         $this->RegisterAttributeString('Cache', '{}');
         $this->RegisterAttributeString('Extras', '{}');
@@ -641,20 +642,40 @@ class Energierechner2 extends IPSModuleStrict
             }
         }
 
+        // Ins Meldungsfenster geht eine Warnung nur beim ersten Auftreten. Verglichen wird der Schlüssel ohne Zahl,
+        // sonst gäbe die Tarifende-Warnung ("endet in 59 Tagen", "... 58 Tagen") jeden Tag einen neuen Eintrag.
         $messages = [];
+        $keys = [];
         foreach ($byCode as $code => $periods) {
             $text = $this->warningText((string) $code);
-            $messages[] = $periods === [] ? $text : $text . ' (' . implode(', ', array_unique($periods)) . ')';
+            $message = $periods === [] ? $text : $text . ' (' . implode(', ', array_unique($periods)) . ')';
+            $messages[] = $message;
+            $keys[$this->warningKey((string) $code, $message)] = $message;
         }
 
-        $previous = json_decode($this->ReadAttributeString('Warnings'), true);
-        $previous = is_array($previous) ? $previous : [];
-        foreach (array_diff($messages, $previous) as $message) {
-            $this->LogMessage($message, KL_WARNING);
+        $previousKeys = json_decode($this->ReadAttributeString('WarningKeys'), true);
+        $previousKeys = is_array($previousKeys) ? $previousKeys : [];
+        foreach ($keys as $key => $message) {
+            if (!in_array($key, $previousKeys, true)) {
+                $this->LogMessage($message, KL_WARNING);
+            }
         }
-        if ($messages !== $previous) {
+        if (array_keys($keys) !== $previousKeys) {
+            $this->WriteAttributeString('WarningKeys', json_encode(array_keys($keys)));
+        }
+        $previous = json_decode($this->ReadAttributeString('Warnings'), true);
+        if ($messages !== (is_array($previous) ? $previous : [])) {
             $this->WriteAttributeString('Warnings', json_encode($messages));
         }
+    }
+
+    /** Schlüssel einer Warnung für die Meldungsfenster-Prüfung: Code ohne angehängte Zahl, mit den betroffenen Zeiträumen. */
+    private function warningKey(string $code, string $message): string
+    {
+        if (strpos($code, 'tariffEnding:') === 0) {
+            return 'tariffEnding';
+        }
+        return $message;
     }
 
     private function warningText(string $code): string

@@ -108,17 +108,12 @@ class EnergierechnerKachel extends IPSModuleStrict
         $source = $this->ReadPropertyInteger('SourceID');
         $data = [];
         if ($source > 0 && $this->isSource($source) && function_exists('ER2_GetTileData')) {
+            // Die Anzeige rechnet nie selbst und stößt auch keine Berechnung der Quelle an: Ein verschachtelter Aufruf
+            // stört deren Abfrage des Tarifs und kann die Quelle auf Status 205 setzen.
             $data = json_decode((string) ER2_GetTileData($source), true);
-            if (!is_array($data) || ($data['periods'] ?? []) === []) {
-                // Die Quelle hat noch nichts gerechnet: einmal anstoßen, außer sie rechnet absichtlich nicht automatisch
-                if (IPS_GetInstance($source)['InstanceStatus'] === IS_ACTIVE && IPS_GetProperty($source, 'AutomaticCalculation') && function_exists('ER2_Recalculate')) {
-                    @ER2_Recalculate($source);
-                    $data = json_decode((string) ER2_GetTileData($source), true);
-                }
-            }
         }
         $data = is_array($data) ? $data : [];
-        $data += ['title' => IPS_GetName($this->InstanceID), 'unit' => '', 'updated' => 0, 'warnings' => [], 'flags' => [], 'labels' => [], 'periods' => []];
+        $data += ['title' => IPS_GetName($this->InstanceID), 'unit' => '', 'updated' => 0, 'warnings' => [], 'flags' => [], 'labels' => ['noPeriods' => $this->Translate('The Energierechner 2 has not calculated yet.')], 'periods' => []];
 
         return (string) json_encode(ErTile::fixed($data, $this->ReadPropertyString('Period'), $this->ReadPropertyString('Display'), trim($this->ReadPropertyString('Title'))));
     }

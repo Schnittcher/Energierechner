@@ -18,6 +18,7 @@
             "Title (empty = name of the Energierechner 2)": "Titel (leer = Name des Energierechner 2)",
             "The period must be enabled in the Energierechner 2. The tile only shows its values and calculates nothing itself.": "Der Zeitraum muss im Energierechner 2 aktiviert sein. Die Kachel zeigt nur dessen Werte und rechnet nichts selbst.",
             "Refresh": "Aktualisieren",
+            "The Energierechner 2 has not calculated yet.": "Der Energierechner 2 hat noch nicht gerechnet.",
             "Instance is active": "Instanz ist aktiv",
             "Please select an Energierechner 2": "Bitte einen Energierechner 2 auswählen",
             "The selected instance is not an Energierechner 2": "Die gewählte Instanz ist kein Energierechner 2"
