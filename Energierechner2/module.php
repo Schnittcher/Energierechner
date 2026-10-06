@@ -9,6 +9,7 @@ require_once __DIR__ . '/../libs/ErPeriods.php';
 require_once __DIR__ . '/../libs/ErPriceSeries.php';
 require_once __DIR__ . '/../libs/ErForecast.php';
 require_once __DIR__ . '/../libs/ErExtras.php';
+require_once __DIR__ . '/../libs/ErPriceLookup.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
 require_once __DIR__ . '/../libs/ErTileTrait.php'; // KACHEL
 
@@ -250,6 +251,28 @@ class Energierechner2 extends IPSModuleStrict
         $this->WriteAttributeString('ForecastShares', '{}');
         $this->WriteAttributeString('Extras', '{}');
         return $this->calculate();
+    }
+
+    /**
+     * Der Preis, der zum Zeitpunkt gilt (ohne Angabe: jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs.
+     * Der Preis gilt je Einheit des Zählers, bei Gas mit Umrechnung je kWh. Ersatz für ER_getPrice des alten Moduls.
+     *
+     * Rückgabe: price (Preis), type ("HT", "NT", "dynamic" oder "" ohne gültigen Tarif), dynamic, fallback (dynamischer Tarif ohne Preis:
+     * fester Preis), tariff (Name), supplier, validFrom und validUntil (letzter Gültigkeitstag, null = unbefristet).
+     *
+     * @return array{price:float,type:string,dynamic:bool,fallback:bool,tariff:string,supplier:string,validFrom:int,validUntil:?int}
+     */
+    public function GetPrice(int $Timestamp = 0): array
+    {
+        $now = time();
+        $timestamp = $Timestamp > 0 ? $Timestamp : $now;
+        $tariff = $this->fetchTariff() ?? new ErTariff([]);
+        $archiveID = $this->archiveID();
+        return ErPriceLookup::at(
+            $tariff,
+            $timestamp,
+            static fn (ErTariffSegment $segment, int $ts): ?float => ErPriceLookup::dynamicValue($segment, $ts, $archiveID, $now)
+        );
     }
 
     /**

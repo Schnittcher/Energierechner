@@ -67,4 +67,9 @@ ER2T_GetTariff(int $InstanceID): string
 ```
 Liefert die Tarifabschnitte als JSON, aufsteigend nach Gültigkeitsbeginn.
 
+```php
+ER2T_GetPrice(int $InstanceID, int $Timestamp): array
+```
+Gibt den Preis zurück, der zum Zeitpunkt gilt (`0` = jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs, mit `price`, `type`, `dynamic`, `fallback`, `tariff`, `supplier`, `validFrom` und `validUntil`. Ausführliche Beschreibung bei [ER2_GetPrice](../Energierechner2/README.md#7-funktionen). Ersatz für `ER_getPrice` des alten Moduls.
+
 Ändert sich ein Tarif, rechnen die verbundenen Energierechner automatisch neu.

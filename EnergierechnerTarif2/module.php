@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/ErTariff.php';
 require_once __DIR__ . '/../libs/ErPeriods.php';
+require_once __DIR__ . '/../libs/ErPriceLookup.php';
 
 /**
  * Hält die Tarifabschnitte (Preise, Grundpreis, Nachttarif, Abschlag, Gasumrechnung).
@@ -12,6 +13,7 @@ require_once __DIR__ . '/../libs/ErPeriods.php';
 class EnergierechnerTarif2 extends IPSModuleStrict
 {
     private const DATAFLOW_TO_CHILDREN = '{EC6EE5AC-D081-4AB4-9F2C-5F4232781DD9}';
+    private const ARCHIVE_MODULE = '{43192F0B-135B-4CE7-A0A7-1475603F3060}';
 
     private const STATUS_NO_PERIODS = 201;
 
@@ -70,6 +72,28 @@ class EnergierechnerTarif2 extends IPSModuleStrict
         $rows = json_decode($this->ReadPropertyString('Periods'), true);
         [$tariff] = ErTariff::fromFormRows(is_array($rows) ? $rows : []);
         return json_encode($tariff->toArray());
+    }
+
+    /**
+     * Der Preis, der zum Zeitpunkt gilt (ohne Angabe: jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs.
+     * Ersatz für ER_getPrice des alten Moduls. Rückgabe wie ER2_GetPrice: price, type, dynamic, fallback, tariff, supplier,
+     * validFrom und validUntil.
+     *
+     * @return array{price:float,type:string,dynamic:bool,fallback:bool,tariff:string,supplier:string,validFrom:int,validUntil:?int}
+     */
+    public function GetPrice(int $Timestamp = 0): array
+    {
+        $now = time();
+        $timestamp = $Timestamp > 0 ? $Timestamp : $now;
+        $rows = json_decode($this->ReadPropertyString('Periods'), true);
+        [$tariff] = ErTariff::fromFormRows(is_array($rows) ? $rows : []);
+        $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_MODULE);
+        $archiveID = (int) ($archives[0] ?? 0);
+        return ErPriceLookup::at(
+            $tariff,
+            $timestamp,
+            static fn (ErTariffSegment $segment, int $ts): ?float => ErPriceLookup::dynamicValue($segment, $ts, $archiveID, $now)
+        );
     }
 
     public function GetConfigurationForm(): string

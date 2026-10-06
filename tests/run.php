@@ -17,6 +17,7 @@ require_once __DIR__ . '/../libs/ErCalculator.php';
 require_once __DIR__ . '/../libs/ErArchiveReader.php';
 require_once __DIR__ . '/../libs/ErPeriods.php';
 require_once __DIR__ . '/../libs/ErExtras.php';
+require_once __DIR__ . '/../libs/ErPriceLookup.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
 
 $GLOBALS['er_pass'] = 0;
@@ -537,6 +538,26 @@ check('Zusatzwerte: offenes Tarifende', ErExtras::currentTariff($ending, ts(2026
 check('Zusatzwerte: Tage über die Zeitumstellung', ErExtras::currentTariff($ending, ts(2025, 10, 20))['daysLeft'], 72);
 $tileEx = ErTile::build([['key' => 'Month_Current', 'label' => 'M', 'start' => ts(2025, 3, 1), 'end' => ts(2025, 4, 1)]], ['Month_Current' => $ex + ['costs' => 30.0]], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], ts(2025, 3, 11));
 check('Kachel übernimmt Zusatzwerte aus dem Ergebnis', [$tileEx['periods'][0]['v']['avgPerDay'], (int) $tileEx['periods'][0]['v']['peakDay']], [3.0, ts(2025, 3, 3)]);
+$noDynamic = static fn (): ?float => null;
+$twoTariffs = new ErTariff([segment(['supplier' => 'Stadtwerke', 'priceHt' => 0.30, 'priceNt' => 0.20, 'ntWindows' => [[22 * 60, 6 * 60]]]), segment(['id' => 'b', 'validFrom' => ts(2026, 1, 1), 'priceHt' => 0.35, 'priceNt' => 0.22])]);
+$p = ErPriceLookup::at($twoTariffs, ts(2025, 6, 4) + 12 * 3600, $noDynamic);
+check('Preis tagsüber ist HT', [$p['price'], $p['type']], [0.30, 'HT']);
+check('Preis Tarifinfo', [$p['supplier'], $p['dynamic'], $p['fallback']], ['Stadtwerke', false, false]);
+check('Preis Gültigkeit endet am Vortag des nächsten Tarifs', date('Y-m-d', $p['validUntil']), '2025-12-31');
+$p = ErPriceLookup::at($twoTariffs, ts(2025, 6, 4) + 23 * 3600, $noDynamic);
+check('Preis nachts ist NT', [$p['price'], $p['type']], [0.20, 'NT']);
+check('Preis nach Mitternacht im Nachtfenster ist NT', ErPriceLookup::at($twoTariffs, ts(2025, 6, 5) + 3 * 3600, $noDynamic)['type'], 'NT');
+check('Preis um 06:00 ist wieder HT (Fenster endet exklusiv)', ErPriceLookup::at($twoTariffs, ts(2025, 6, 5) + 6 * 3600, $noDynamic)['type'], 'HT');
+$p = ErPriceLookup::at($twoTariffs, ts(2026, 3, 1) + 12 * 3600, $noDynamic);
+check('Preis im späteren Tarif, offenes Ende', [$p['price'], $p['validUntil']], [0.35, null]);
+$p = ErPriceLookup::at($twoTariffs, ts(2024, 6, 1), $noDynamic);
+check('Preis vor dem ersten Tarif: 0 und kein Typ', [$p['price'], $p['type']], [0.0, '']);
+check('Preis ohne Tarif', ErPriceLookup::at(new ErTariff([]), ts(2025, 6, 1), $noDynamic)['price'], 0.0);
+$dyn = new ErTariff([segment(['priceHt' => 0.30, 'priceVariableId' => 123, 'priceFactor' => 0.01, 'surcharge' => 0.05])]);
+$p = ErPriceLookup::at($dyn, ts(2025, 6, 4) + 12 * 3600, static fn (): ?float => 8.5);
+check('Dynamischer Preis aus Variablenwert, Faktor und Aufschlag', [round($p['price'], 4), $p['type'], $p['dynamic']], [0.135, 'dynamic', true]);
+$p = ErPriceLookup::at($dyn, ts(2025, 6, 4) + 12 * 3600, $noDynamic);
+check('Dynamischer Tarif ohne Preis: fester Preis als Ausweichwert', [$p['price'], $p['type'], $p['fallback']], [0.30, 'HT', true]);
 check('Kachel: ohne Ergebnisse keine Zeiträume', ErTile::build($tileDefs, [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], $tileNow)['periods'], []);
 
 // Zusammenbau der Kachel-HTML aus Vorlage und Daten (mit einem Ersatz für IPSModuleStrict)

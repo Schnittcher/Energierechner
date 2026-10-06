@@ -272,7 +272,7 @@ Weitere Unterschiede zum alten Modul:
 - Die Schalter für Monats-, Wochen- und Jahresaggregation und „Durch Parameteränderung aktualisieren" entfallen. Die Aggregation wird automatisch gewählt, und bei Änderungen wird immer neu gerechnet.
 - Bei Gas bleibt der Verbrauch in m³, die kWh stehen in der Variable `…_Energy`.
 - Das Aktualisierungsintervall ist in Minuten (früher Sekunden).
-- Die Funktionen heißen `ER2_…`. Die alten Hilfsfunktionen `ER_calculate`, `ER_getPrice` und `ER_getGasCalculationValues` gibt es nicht mehr.
+- Die Funktionen heißen `ER2_…`. Der Ersatz für `ER_getPrice` ist `ER2_GetPrice` (und `ER2T_GetPrice` im Tarif); `type` heißt jetzt `HT` oder `NT` statt `day` oder `night`. Die alten Hilfsfunktionen `ER_calculate` und `ER_getGasCalculationValues` gibt es nicht mehr.
 - Die Variablen haben **keine Archivhistorie** der alten Variablen. Sie beginnt neu.
 
 Umbenennung der Variablen:
@@ -300,6 +300,29 @@ Berechnet alle aktivierten Zeiträume. Abgeschlossene Zeiträume kommen aus dem 
 ER2_Recalculate(int $InstanceID): bool
 ```
 Verwirft den Zwischenspeicher und berechnet alles neu.
+
+```php
+ER2_GetPrice(int $InstanceID, int $Timestamp): array
+```
+Gibt den Preis zurück, der zum Zeitpunkt gilt. **`$Timestamp` ist Pflicht, `0` bedeutet jetzt** (Symcon kennt bei Modulfunktionen keine optionalen Parameter). Der Preis gilt je Einheit des Zählers, bei Gas mit Umrechnung je kWh.
+
+| Feld | Inhalt |
+|---|---|
+| `price` | Preis in Euro je Einheit; bei einem dynamischen Tarif der aktuelle Preis (Wert der Preisvariable × Faktor + Aufschlag) |
+| `type` | `HT`, `NT`, `dynamic` oder leer, wenn zu dem Zeitpunkt kein Tarif gilt |
+| `dynamic` | `true` bei einem dynamischen Preis |
+| `fallback` | `true`, wenn der Tarif dynamisch ist, aber zu dem Zeitpunkt kein Preis vorliegt (z. B. in der Zukunft): Dann gilt der feste Preis (HT oder NT) |
+| `tariff`, `supplier` | Name und Anbieter des Tarifzeitraums |
+| `validFrom`, `validUntil` | Beginn und letzter Gültigkeitstag des Tarifzeitraums (`validUntil` ist `null`, wenn er unbefristet ist) |
+
+Bei einem dynamischen Tarif kommt der Preis für "jetzt" (bis eine Stunde zurück) aus der Preisvariable, für frühere Zeitpunkte aus dem Archiv (Stunde oder Viertelstunde). Beispiel:
+
+```php
+$p = ER2_GetPrice(12345, 0);
+echo $p['type'] . ': ' . round($p['price'] * 100, 2) . ' ct';   // z. B. NT: 22 ct
+```
+
+Ersatz für `ER_getPrice` des alten Moduls, das `price` und `type` (`day` oder `night`) lieferte.
 
 ```php
 ER2_ImportLegacy(int $InstanceID, int $LegacyInstanceID): string
