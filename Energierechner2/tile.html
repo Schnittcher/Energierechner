@@ -96,10 +96,11 @@ function delta(v){
 /* Durchschnittskosten je Tag (nicht fuer einzelne Tage) */
 function perDay(v){return v.avgPerDay>0?v.avgPerDay:0}
 /* Der aktuelle Tarifabschnitt als Text */
-function ct(x){return num(x,x%1?1:0)}
+/* Preise in ct mit so vielen Nachkommastellen wie noetig (bis 4), z. B. 35 oder 11,934 */
+function ct(x){var s=Number(x).toFixed(4).replace(/0+$/,'').replace(/\.$/,''),i=s.indexOf('.');return num(x,i<0?0:s.length-i-1)}
 function tariffText(){
   var t=DATA.tariff;if(!t)return '';
-  var u=esc(DATA.unit||''),s=[];
+  var u=esc(DATA.priceUnit||DATA.unit||''),s=[];
   if(t.supplier)s.push(esc(t.supplier));
   s.push(t.dynamic?esc(L('dynamicPrice')):(t.nt!=null&&t.nt!==t.ht?ct(t.ht)+' / '+ct(t.nt)+' ct/'+u:ct(t.ht)+' ct/'+u));
   if(t.until)s.push(esc(L('validUntil'))+' '+new Date(t.until*1000).toLocaleDateString([], {day:'2-digit',month:'2-digit',year:'numeric'}));
@@ -145,17 +146,19 @@ function render(){
     h+='<div class="hint" style="cursor:pointer" id="back">'+esc(L('back'))+'</div><div class="det"><div class="g">'+esc(L('costs'))+'</div>'+row(L('costs'),eur(v.costs||0));
     if(F.base&&v.costsWork!=null)h+=row(L('costsWork'),eur(v.costsWork))+row(L('costsBase'),eur(v.costsBase||0));
     if(v.peakDay)h+=row(L('peakDay'),new Date(v.peakDay*1000).toLocaleDateString([], {day:'2-digit',month:'2-digit'})+' · '+eur(v.peakCosts||0));
-    if(v.consumption>0)h+=row(L('effective'),num((v.costs||0)/v.consumption*100,1)+' ct');
+    // Effektivpreis je kWh: bei Gas aus den kWh, sonst aus dem Verbrauch
+    var perKwh=v.energy>0?v.energy:v.consumption;
+    if(perKwh>0)h+=row(L('effective'),num((v.costs||0)/perKwh*100,2)+' ct');
     h+='<div class="g">'+esc(L('consumption'))+'</div>'+row(L('consumption'),kwh(v.consumption||0))+(v.lastYearConsumption>0?row(L('consumption')+' '+L('vsLastYear'),kwh(v.lastYearConsumption)):'');
     if(showHtNt()&&v.consumptionHt!=null)h+=row(L('ht'),kwh(v.consumptionHt)+' / '+eur(v.costsHt||0))+row(L('nt'),kwh(v.consumptionNt||0)+' / '+eur(v.costsNt||0));
-    if(v.energy>0)h+=row(L('energy'),num(v.energy,0)+' kWh');
+    if(v.energy>0)h+=row(L('energy'),num(v.energy,v.energy<100?1:0)+' kWh');
     if(F.forecast&&v.forecastCosts!=null)h+='<div class="g">'+esc(L('forecast'))+'</div>'+row(L('forecastCosts'),eur(v.forecastCosts))+row(L('forecastConsumption'),kwh(v.forecastConsumption||0));
     if(F.balance&&v.balance!=null)h+='<div class="g">'+esc(L('advance'))+'</div>'+row(L('balance'),eur(v.balance));
     if(perDay(v)>0)h+=row(L('avgPerDay'),eur(perDay(v)));
     if(DATA.tariff)h+='<div class="g">'+esc(L('tariff'))+'</div>'+row(DATA.tariff.name||L('tariff'),tariffText());
     h+='</div>';
   }else{
-    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+'</span></div>'+(balanceLine(v)?'':'<div class="hint extra opt" data-drop="3">'+esc(L('tapDetails'))+'</div>')+balanceLine(v)+infoLine(v);
+    h+='<div class="hero" id="hero"><span class="n">'+eur(v.costs||0)+'</span><span class="u">'+kwh(v.consumption||0)+(v.energy>0?' · '+num(v.energy,v.energy<100?1:0)+' kWh':'')+'</span></div>'+(balanceLine(v)?'':'<div class="hint extra opt" data-drop="3">'+esc(L('tapDetails'))+'</div>')+balanceLine(v)+infoLine(v);
     if(F.forecast&&p.open&&v.forecastCosts>0)h+='<div class="extra opt" data-drop="2"><div class="lab"><span>'+esc(L('forecastCosts'))+'</span><span>'+eur(v.forecastCosts)+'</span></div><div class="track"><i style="width:'+Math.min(100,pct(v.costs||0,v.forecastCosts))+'%"></i></div></div>';
     var t=(v.consumptionHt||0)+(v.consumptionNt||0);
     if(showHtNt()&&t>0){

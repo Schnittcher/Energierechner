@@ -222,6 +222,7 @@ Jede Instanz stellt eine Kachel für die Kachel-Visualisierung bereit. Die Kache
   - ein Warnband mit der Schaltfläche „Neu berechnen".
 - **Alle Werte:** Ein Tippen auf die Hauptzahl zeigt die Details (Arbeits- und Grundkosten, Effektivpreis, HT/NT, Energie bei Gas, Prognose, Saldo, Durchschnitt je Tag, Tarif, bei Woche, Monat und Jahr der **teuerste abgeschlossene Tag** mit seinen Kosten). Welche Werte erscheinen, hängt von den aktivierten Optionen ab. Der Vorjahresvergleich und der teuerste Tag erscheinen, wenn die Option *Zusatzwerte* eingeschaltet ist. Der teuerste Tag wird einmal am Tag aus dem Archiv berechnet; der heutige Tag zählt nicht mit.
 - **Kompakt:** Ist die Kachel schmal (bis 300 Pixel) oder niedrig (bis 220 Pixel), zeigt sie nur Zeitraum, Hauptwert, Guthaben/Nachzahlung und Vorjahresabweichung. Ein Tippen auf den Wert wechselt dann zwischen Tag, Woche, Monat und Jahr.
+- **Gas:** Bei Gas mit Umrechnung zeigt die Kachel Verbrauch in m³ **und** die umgerechneten kWh (z. B. „3,5 m³ · 38,2 kWh"), der Preis steht je kWh (nicht je m³), und der Effektivpreis rechnet mit den kWh. Preise erscheinen mit so vielen Nachkommastellen wie nötig (bis zu vier, z. B. 11,934 ct/kWh).
 - Die Kachel übernimmt Farben und Schrift des Clients und passt sich der Größe an. Seitliches Wischen auf der Kachel ist gesperrt, damit sie nicht aus dem Rahmen rutscht; senkrechtes Wischen geht an die Seite der App.
 - `ER2_GetTileData($InstanzID)` liefert die Kacheldaten als JSON, z. B. für eigene Skripte.
 
@@ -270,7 +271,7 @@ Weitere Unterschiede zum alten Modul:
 
 - Aus „Tag" und „Nacht" wird **Hochtarif (HT)** und **Niedertarif (NT)**, wie auf der Stromrechnung. Die Schalter „Verbrauch Tag" und „Verbrauch Nacht" sind zu **Hoch- und Niedertarif getrennt** zusammengefasst. Der NT-Preis wirkt immer, sobald im Tarif eine NT-Zeit steht. Das Nachtfenster des alten Moduls wird zum ersten NT-Zeitfenster. Beim Übernehmen entsteht nur dann ein NT-Fenster, wenn das alte Modul den Nachttarif benutzt hat, damit die Kosten gleich bleiben.
 - Die Schalter für Monats-, Wochen- und Jahresaggregation und „Durch Parameteränderung aktualisieren" entfallen. Die Aggregation wird automatisch gewählt, und bei Änderungen wird immer neu gerechnet.
-- Bei Gas bleibt der Verbrauch in m³, die kWh stehen in der Variable `…_Energy`.
+- **Gas:** Das alte Modul rechnete bei „Gaspreis berechnen" den Zählerwert (m³) selbst in kWh um und zeigte kWh an. Im neuen Modul stellt man dafür die **Zählereinheit auf m³** und schaltet die Umrechnung ein. Die Übernahme macht beides automatisch. Der Verbrauch bleibt dann in m³, die kWh stehen in der Variable `…_Energy`, und die Kosten kommen aus den kWh. Faktor, Zustandszahl und Brennwert stehen im Tarif.
 - Das Aktualisierungsintervall ist in Minuten (früher Sekunden).
 - Die Funktionen heißen `ER2_…`. Der Ersatz für `ER_getPrice` ist `ER2_GetPrice` (und `ER2T_GetPrice` im Tarif); `type` heißt jetzt `HT` oder `NT` statt `day` oder `night`. Die alten Hilfsfunktionen `ER_calculate` und `ER_getGasCalculationValues` gibt es nicht mehr.
 - Die Variablen haben **keine Archivhistorie** der alten Variablen. Sie beginnt neu.

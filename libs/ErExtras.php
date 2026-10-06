@@ -95,8 +95,8 @@ final class ErExtras
             'name'     => $segment->name,
             'supplier' => $segment->supplier,
             'dynamic'  => $segment->isDynamic(),
-            'ht'       => round($segment->priceHt * 100, 2),
-            'nt'       => $segment->hasNt() ? round($segment->priceNt * 100, 2) : null,
+            'ht'       => round($segment->priceHt * 100, 4),
+            'nt'       => $segment->hasNt() ? round($segment->priceNt * 100, 4) : null,
             'until'    => $until,
             'daysLeft' => $daysLeft
         ];

@@ -370,6 +370,14 @@ $custom = json_decode($settings['CustomPeriods'], true);
 check('Migration: eigener Zeitraum', [count($custom), json_decode($custom[0]['To'], true)['day']], [1, 15]);
 $imp = ErLegacy::convertSettings(['ProfileType' => '~Electricity', 'Impulse_kWhBool' => true, 'Impulse_kWh' => 800]);
 check('Migration: Impulszähler', [$imp['Unit'], $imp['ImpulsesPerKwh']], ['Impulse', 800]);
+$gasKwh = ErLegacy::convertSettings(['ProfileType' => '~Electricity', 'GasPriceCalculationActive' => true]);
+check('Migration Gas: Umrechnung im alten Modul (Profil kWh) -> Zählereinheit m³ und Umrechnung an', [$gasKwh['Unit'], $gasKwh['GasConversion']], ['m3', true]);
+$gasM3 = ErLegacy::convertSettings(['ProfileType' => '~Gas', 'GasPriceCalculationActive' => true]);
+check('Migration Gas: Profil m³ mit Umrechnung', [$gasM3['Unit'], $gasM3['GasConversion']], ['m3', true]);
+$gasPlain = ErLegacy::convertSettings(['ProfileType' => '~Gas']);
+check('Migration Gas: m³ ohne Umrechnung bleibt m³ ohne Umrechnung', [$gasPlain['Unit'], $gasPlain['GasConversion']], ['m3', false]);
+$elec = ErLegacy::convertSettings(['ProfileType' => '~Electricity']);
+check('Migration: Strom in kWh bleibt kWh', [$elec['Unit'], $elec['GasConversion']], ['kWh', false]);
 
 $old = [['StartDate' => '{"year":2024,"month":1,"day":1}', 'DayPrice' => 0.3, 'NightPrice' => 0.2, 'NightTimeStart' => '{"hour":20,"minute":0,"second":0}', 'NightTimeEnd' => '{"hour":6,"minute":0,"second":0}', 'BasePrice' => 120.0, 'AdvancePayment' => 80.0, 'DeductionsPerYear' => 12]];
 $with = ErLegacy::convertTariffRows($old, true);

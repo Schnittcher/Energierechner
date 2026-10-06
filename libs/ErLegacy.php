@@ -46,6 +46,11 @@ final class ErLegacy
             'ShowHtNt'              => (bool) ($old['DailyConsumption'] ?? false) || (bool) ($old['NightlyConsumption'] ?? false),
             'UpdateInterval'        => max(1, intdiv((int) ($old['UpdateInterval'] ?? 600), 60))
         ];
+        // Das alte Modul rechnete bei "Gaspreis berechnen" den Zählerwert (m³) selbst in kWh um und zeigte kWh an (Profil kWh).
+        // Im neuen Modul muss dafür die Zählereinheit m³ gesetzt sein, sonst greift die Umrechnung nicht und m³ werden wie kWh bepreist.
+        if (!empty($old['GasPriceCalculationActive'])) {
+            $new['Unit'] = 'm3';
+        }
         if (!empty($old['Impulse_kWhBool'])) {
             $new['Unit'] = 'Impulse';
         }

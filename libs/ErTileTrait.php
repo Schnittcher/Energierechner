@@ -58,8 +58,10 @@ trait ErTileTrait
         $data = ErTile::build($defs, $results, [
             'title'    => IPS_GetName($this->InstanceID),
             'unit'     => trim($unitSuffix),
-            'warnings' => is_array($warnings) ? $warnings : [],
-            'flags'    => [
+            // Der Preis gilt bei Gas mit Umrechnung je kWh, nicht je m³
+            'priceUnit' => $this->gasConversion() ? 'kWh' : trim($unitSuffix),
+            'warnings'  => is_array($warnings) ? $warnings : [],
+            'flags'     => [
                 'htnt'     => $this->ReadPropertyBoolean('ShowHtNt'),
                 'hasNt'    => $tariff->hasNt(),
                 'base'     => $this->ReadPropertyBoolean('ShowBaseCosts'),

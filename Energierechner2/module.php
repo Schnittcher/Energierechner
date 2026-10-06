@@ -297,6 +297,9 @@ class Energierechner2 extends IPSModuleStrict
         }
 
         $messages = [$this->Translate('Settings imported.')];
+        if (!empty($settings['GasConversion'])) {
+            $messages[] = $this->Translate('Gas: The meter unit was set to m³ with conversion to kWh, as in the old module. The consumption variables show m³, the converted kWh are in the variables ending in _Energy. Please check factor, Z-number and calorific value in the tariff.');
+        }
         if (($settings['Unit'] ?? '') === 'Wh') {
             $messages[] = $this->Translate('Meter unit Wh: prices in the tariff must now be per kWh. If you entered a price per Wh in the old module, multiply it by 1000.');
         }
@@ -994,7 +997,7 @@ class Energierechner2 extends IPSModuleStrict
                 $presentation = '~UnixTimestampDate';
                 if (strpos($ident, 'Price') !== false) {
                     $type = VARIABLETYPE_FLOAT;
-                    $presentation = $this->presentation(' ct', 2);
+                    $presentation = $this->presentation(' ct', 4);
                 } elseif ($ident === 'CurrentTariff_DaysLeft') {
                     $presentation = $this->presentation(' d', 0);
                 }
