@@ -6,7 +6,7 @@ Lies zuerst das zentrale Regelwerk `E:\IP-Symcon\KI\AGENTS.md` und die für die 
 
 - Zweck: Verbrauch und Kosten eines im Archiv geloggten Zählers über beliebige Zeiträume, mit Tarifwechseln, Hoch- und Niedertarif, dynamischen Preisen, Grundpreis, Prognose und Saldo der Abschläge.
 - Relevante Module: `Energierechner2` (Rechner), `EnergierechnerTarif2` (Tarif-Instanz), `EnergierechnerKachel` (Anzeige-Instanz für die Kachel-Visualisierung). Die alten Module `Energierechner` und `EnergierechnerTarif` bleiben erhalten.
-- Zusätzliche Einstiegspunkte: `libs/` (Rechenklassen ohne Symcon-Bezug), `tests/run.php` (Prüfungen), `CHANGELOG.md`.
+- Zusätzliche Einstiegspunkte: `libs/` (Rechenklassen ohne Symcon-Bezug), `tests/run.php` (Prüfungen), `docs/CHANGELOG.md`.
 
 ## Ergänzungen oder Abweichungen
 
