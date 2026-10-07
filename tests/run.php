@@ -7,6 +7,7 @@ declare(strict_types=1);
  *
  * Ausführung:
  *   php tests/run.php                       (reine Unit-Tests)
+ *   phpunit --bootstrap tests/bootstrap.php tests   (dieselben Prüfungen über RechnerTest.php, so läuft die CI)
  *   Auf einem Symcon-System: Skript mit  require '<Modulordner>/tests/run.php';
  *   Dort laufen zusätzlich die Integrationstests gegen das Archiv (Testdaten in Kategorie "Energierechner Demodaten").
  */
@@ -602,8 +603,17 @@ check('Kachel-HTML: Daten stehen im Skript', strpos($html, 'A<\/script>B') !== f
 check('GetTileData liefert die gespeicherten Daten', $tileHost->GetTileData(), $tileHost->attribute);
 
 // ---------------------------------------------------------------- Integration (nur auf einem Symcon-System)
-if (function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectIDByIdent')) {
-    $cat = 41286;
+// Die Testdaten liegen in einer Kategorie "Energierechner Demodaten". Ihre ObjectID ist installationsabhängig und wird deshalb gesucht.
+$cat = 0;
+if (function_exists('IPS_GetCategoryList')) {
+    foreach (IPS_GetCategoryList() as $categoryID) {
+        if (IPS_GetName($categoryID) === 'Energierechner Demodaten') {
+            $cat = $categoryID;
+            break;
+        }
+    }
+}
+if ($cat > 0 && function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectIDByIdent')) {
     $ac = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}')[0];
     $var = static fn (string $ident): int => IPS_GetObjectIDByIdent($ident, $cat);
     $read = static function (string $ident, int $agg, int $from, int $to) use ($ac, $var): array
@@ -667,6 +677,7 @@ if (function_exists('AC_GetAggregatedValues') && function_exists('IPS_GetObjectI
 }
 
 echo "\nBestanden: " . $GLOBALS['er_pass'] . ', fehlgeschlagen: ' . $GLOBALS['er_fail'] . "\n";
-if (PHP_SAPI === 'cli') {
+// Beenden mit Exitcode nur beim direkten Aufruf (php tests/run.php), nicht beim Einbinden durch PHPUnit
+if (PHP_SAPI === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     exit($GLOBALS['er_fail'] > 0 ? 1 : 0);
 }

@@ -4,15 +4,5 @@ on: [push, pull_request]
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout module
-      uses: actions/checkout@v4
-    - name: Set up PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.3'
-    - name: Syntax check
-      run: find libs Energierechner2 EnergierechnerTarif2 tests -name '*.php' -not -path 'libs/vendor/*' -print0 | xargs -0 -n1 php -l
-    - name: Unit tests
-      run: php tests/run.php
+    # Zentrale Testausführung aus dem Repository Symcon_CI. v1 wird dort bewusst weitergeschoben.
+    uses: Schnittcher/Symcon_CI/.github/workflows/tests.yml@v1
