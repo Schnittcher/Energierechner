@@ -973,7 +973,7 @@ class Energierechner2 extends IPSModuleStrict
                 if ($kind === 'ConsumptionVsLastYear') {
                     $presentation = $this->presentation(' %', 1);
                 } elseif ($kind === 'PeakDayDate') {
-                    $presentation = '~UnixTimestampDate';
+                    $presentation = $this->dateTimePresentation(false);
                     $type = VARIABLETYPE_INTEGER;
                 }
                 $ident = ErPeriods::ident($def['key'], $kind);
@@ -981,7 +981,7 @@ class Energierechner2 extends IPSModuleStrict
                 $wanted[] = $ident;
             }
         }
-        $this->maintain('LastCalculation', $this->Translate('Last calculation'), VARIABLETYPE_INTEGER, '~UnixTimestamp', 1);
+        $this->maintain('LastCalculation', $this->Translate('Last calculation'), VARIABLETYPE_INTEGER, $this->dateTimePresentation(true), 1);
         $wanted[] = 'LastCalculation';
 
         // Eckdaten des aktuellen Tarifs (Zusatzwerte), direkt unter der letzten Berechnung
@@ -994,7 +994,7 @@ class Energierechner2 extends IPSModuleStrict
             array_push($tariffKinds, 'CurrentTariff_ValidUntil', 'CurrentTariff_DaysLeft');
             foreach ($tariffKinds as $ident) {
                 $type = VARIABLETYPE_INTEGER;
-                $presentation = '~UnixTimestampDate';
+                $presentation = $this->dateTimePresentation(false);
                 if (strpos($ident, 'Price') !== false) {
                     $type = VARIABLETYPE_FLOAT;
                     $presentation = $this->presentation(' ct', 4);
@@ -1093,6 +1093,16 @@ class Energierechner2 extends IPSModuleStrict
         if ($changed) {
             IPS_ApplyChanges($archiveID);
         }
+    }
+
+    /**
+     * Native Darstellung "Datum/Uhrzeit" für Unix-Zeitstempel: Jahr, Monat und Tag, optional mit Stunden, Minuten und Sekunden.
+     *
+     * @return array<string, mixed>
+     */
+    private function dateTimePresentation(bool $withTime): array
+    {
+        return ['PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME, 'DATE' => 1, 'MONTH_TEXT' => false, 'DAY_OF_THE_WEEK' => false, 'TIME' => $withTime ? 2 : 0];
     }
 
     /** @return array<string, mixed> */
