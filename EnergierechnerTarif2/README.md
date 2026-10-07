@@ -1,8 +1,17 @@
 # Energierechner Tarif 2
-
 Hält die Tarifabschnitte für einen oder mehrere [Energierechner 2](../Energierechner2/README.md). Ein Tarifabschnitt gilt ab seinem Datum bis zum nächsten Eintrag.
 
-## Wie Tarifzeilen gelten
+## Inhaltsverzeichnis
+- [Energierechner Tarif 2](#energierechner-tarif-2)
+  - [Inhaltsverzeichnis](#inhaltsverzeichnis)
+  - [1. Konfiguration](#1-konfiguration)
+  - [2. Funktionen](#2-funktionen)
+  - [3. Spenden](#3-spenden)
+  - [4. Lizenz](#4-lizenz)
+
+## 1. Konfiguration
+
+### 1.1 Wie Tarifzeilen gelten
 
 - Eine Zeile gilt **ab ihrem Datum bis zum Beginn der nächsten Zeile**. Dieser Tag gehört schon zum neuen Tarif.
 - Die **letzte Zeile** hat kein Ende und gilt für alle späteren Tage weiter, auch in der Zukunft. Soll ein Tarif enden, trägst du die Zeile des Folgetarifs ein. Ein Enddatum gibt es nicht, also auch keine Lücken zwischen Tarifen.
@@ -12,23 +21,16 @@ Hält die Tarifabschnitte für einen oder mehrere [Energierechner 2](../Energier
 - Preis, Grundpreis, Niedertarif-Zeiten, Abschlag und Gaswerte wechseln **gemeinsam** mit der Zeile.
 - Mehrere Energierechner können sich einen Tarif teilen. Ändert sich der Tarif, rechnen alle neu.
 
-### Statusmeldungen
+### 1.2 Einstellungen
 
-| Status | Bedeutung |
-|---|---|
-| Aktiv | Mindestens eine Zeile ist eingetragen. |
-| Keine Tarifzeiträume angelegt (201) | Die Liste ist leer. Ein verbundener Energierechner zeigt dann seinerseits „kein Tarif". |
-
-## Einstellungen
-
-| Spalte | Beschreibung |
+| Feld | Beschreibung |
 |---|---|
 | Name | Frei wählbar, erscheint im Namen der Variablen (leer = Datum). |
 | Anbieter | Frei wählbar, nur zur Anzeige. Wird aus dem Feld „Stromanbieter" des alten Tarifs übernommen. |
 | Gültig ab | Beginn des Tarifs. |
 | Preis (HT) | Arbeitspreis je Einheit des Zählers (kWh, m³ oder Liter) im Hochtarif. Gibt es keinen Niedertarif, ist das der einzige Preis. |
 | Preis (NT) | Arbeitspreis im Niedertarif. 0 verwendet den Preis (HT). |
-| Preisvariable (dynamisch) | Optional. Eine Variable mit dem aktuellen Preis, z. B. aus Tibber oder aWATTar. Sie muss im Archiv mit dem Aggregationstyp *Standard* geloggt werden. Siehe [Dynamische Preise](#dynamische-preise). |
+| Preisvariable (dynamisch) | Optional. Eine Variable mit dem aktuellen Preis, z. B. aus Tibber oder aWATTar. Sie muss im Archiv mit dem Aggregationstyp *Standard* geloggt werden. Siehe [Dynamische Preise](#13-dynamische-preise). |
 | Einheit der Preisvariable | €/kWh (bzw. €/m³, €/L), ct/kWh oder €/MWh. Rechnet den Wert der Variable in Euro je Einheit um. |
 | Aufschlag je Einheit | Fester Betrag, der auf den dynamischen Preis aufgeschlagen wird (z. B. Netzentgelte, Steuern, Marge des Anbieters). |
 | Preisauflösung | 1 Stunde oder 15 Minuten, je nachdem, in welchem Takt der Preis wechselt. |
@@ -38,7 +40,7 @@ Hält die Tarifabschnitte für einen oder mehrere [Energierechner 2](../Energier
 | Abschlag / Zahlungen pro Jahr | Grundlage für den Saldo. |
 | Gas-Umrechnungsfaktor / Zustandszahl / Brennwert | Rechnen m³ in kWh um. Das Produkt der drei Werte ergibt die kWh je m³. |
 
-## Dynamische Preise
+### 1.3 Dynamische Preise
 
 Ist bei einer Tarifzeile eine **Preisvariable** gewählt, kommt der Arbeitspreis nicht aus der Spalte „Preis (HT)", sondern aus dem Archiv dieser Variable:
 
@@ -54,22 +56,32 @@ Preis = Wert der Preisvariable × Einheitenfaktor + Aufschlag
 - Die Preisvariable muss **geloggt** sein, und das Archiv sollte die Preise **nicht verdichten oder löschen**, solange du Zeiträume daraus berechnen willst.
 - Man kann feste und dynamische Tarife mischen: Jede Zeile entscheidet selbst, ob sie eine Preisvariable hat.
 
-## Namen und Ids
+### 1.4 Statusmeldungen
+
+| Status | Bedeutung |
+|---|---|
+| Aktiv | Mindestens eine Zeile ist eingetragen. |
+| Keine Tarifzeiträume angelegt (201) | Die Liste ist leer. Ein verbundener Energierechner zeigt dann seinerseits „kein Tarif". |
+
+### 1.5 Namen und Ids
 
 Jede Zeile bekommt automatisch eine stabile, versteckte **Id**. Sie ist Teil der Idents der Variablen im Energierechner und bleibt gleich, wenn du Datum oder Preise änderst.
 
 Der **Name** der Zeile geht in den Namen der Variablen im Energierechner ein, aber **nur beim Anlegen** der Variable. Benennst du eine Zeile später um, behalten die vorhandenen Variablen ihren Namen. Wird eine Zeile gelöscht, werden ihre Variablen im Energierechner gelöscht. Eine gelöschte und neu angelegte Zeile bekommt eine neue Id. Ändere deshalb besser die bestehende Zeile (Details im README des Energierechners).
 
-## Funktionen
+## 2. Funktionen
 
-```php
-ER2T_GetTariff(int $InstanceID): string
-```
-Liefert die Tarifabschnitte als JSON, aufsteigend nach Gültigkeitsbeginn.
+`string ER2T_GetTariff(integer $InstanzID);`
+Liefert die Tarifabschnitte als JSON, aufsteigend nach Gültigkeitsbeginn. Ändert sich ein Tarif, rechnen die verbundenen Energierechner automatisch neu.
 
-```php
-ER2T_GetPrice(int $InstanceID, int $Timestamp): array
-```
-Gibt den Preis zurück, der zum Zeitpunkt gilt (`0` = jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs, mit `price`, `type`, `dynamic`, `fallback`, `tariff`, `supplier`, `validFrom` und `validUntil`. Ausführliche Beschreibung bei [ER2_GetPrice](../Energierechner2/README.md#7-funktionen). Ersatz für `ER_getPrice` des alten Moduls.
+`array ER2T_GetPrice(integer $InstanzID, integer $Timestamp);`
+Gibt den Preis zurück, der zum Zeitpunkt gilt (`0` = jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs, mit `price`, `type`, `dynamic`, `fallback`, `tariff`, `supplier`, `validFrom` und `validUntil`. Die Felder sind bei [ER2_GetPrice](../Energierechner2/README.md#3-funktionen) beschrieben. Ersatz für `ER_getPrice` des alten Moduls.
 
-Ändert sich ein Tarif, rechnen die verbundenen Energierechner automatisch neu.
+## 3. Spenden
+Dieses Modul ist für die nicht kommerzielle Nutzung kostenlos, Schenkungen als Unterstützung für den Autor werden hier akzeptiert:
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EK4JRP87XLSHW" target="_blank"><img src="https://www.paypalobjects.com/de_DE/DE/i/btn/btn_donate_LG.gif" border="0" /></a> <a href="https://www.amazon.de/hz/wishlist/ls/3JVWED9SZMDPK?ref_=wl_share" target="_blank">Amazon Wunschzettel</a>
+
+## 4. Lizenz
+
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
