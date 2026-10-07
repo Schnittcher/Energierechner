@@ -19,5 +19,6 @@
 - Achtung: Bei Gas setzt die Übernahme die Zählereinheit m³ mit Umrechnung in kWh, bereits übernommene Instanzen müssen einmal von Hand auf m³ umgestellt werden.
 
 ## Fixes
+- Die Kachel nennt beim Effektivpreis die Einheit des Zählers (zum Beispiel je m³ bei Wasser) statt immer kWh.
 - Der Grundpreis wird taggenau gerechnet, auch in Schaltjahren und bei Tarifwechseln mitten im Zeitraum.
 - Zeiträume über Mitternacht und mit mehreren Tarifwechseln werden bei Nachttarif korrekt gerechnet.

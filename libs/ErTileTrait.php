@@ -98,7 +98,7 @@ trait ErTileTrait
             'costs'               => $this->Translate('Costs'),
             'costsWork'           => $this->Translate('Costs (usage)'),
             'costsBase'           => $this->Translate('Costs (base price)'),
-            'effective'           => $this->Translate('Effective price per kWh'),
+            'effective'           => $this->Translate('Effective price per'),
             'consumption'         => $this->Translate('Consumption'),
             'ht'                  => $this->Translate('HT'),
             'nt'                  => $this->Translate('NT'),

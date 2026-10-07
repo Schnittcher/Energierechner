@@ -146,9 +146,9 @@ function render(){
     h+='<div class="hint" style="cursor:pointer" id="back">'+esc(L('back'))+'</div><div class="det"><div class="g">'+esc(L('costs'))+'</div>'+row(L('costs'),eur(v.costs||0));
     if(F.base&&v.costsWork!=null)h+=row(L('costsWork'),eur(v.costsWork))+row(L('costsBase'),eur(v.costsBase||0));
     if(v.peakDay)h+=row(L('peakDay'),new Date(v.peakDay*1000).toLocaleDateString([], {day:'2-digit',month:'2-digit'})+' · '+eur(v.peakCosts||0));
-    // Effektivpreis je kWh: bei Gas aus den kWh, sonst aus dem Verbrauch
-    var perKwh=v.energy>0?v.energy:v.consumption;
-    if(perKwh>0)h+=row(L('effective'),num((v.costs||0)/perKwh*100,2)+' ct');
+    // Effektivpreis je Einheit: bei Gas mit Umrechnung je kWh (aus den kWh), sonst je Einheit des Zaehlers (kWh, m3, L)
+    var perAmount=v.energy>0?v.energy:v.consumption,perUnit=v.energy>0?'kWh':(DATA.unit||'kWh');
+    if(perAmount>0)h+=row(L('effective')+' '+esc(perUnit),num((v.costs||0)/perAmount*100,2)+' ct');
     h+='<div class="g">'+esc(L('consumption'))+'</div>'+row(L('consumption'),kwh(v.consumption||0))+(v.lastYearConsumption>0?row(L('consumption')+' '+L('vsLastYear'),kwh(v.lastYearConsumption)):'');
     if(showHtNt()&&v.consumptionHt!=null)h+=row(L('ht'),kwh(v.consumptionHt)+' / '+eur(v.costsHt||0))+row(L('nt'),kwh(v.consumptionNt||0)+' / '+eur(v.costsNt||0));
     if(v.energy>0)h+=row(L('energy'),num(v.energy,v.energy<100?1:0)+' kWh');
