@@ -67,6 +67,7 @@
             "Additional values (average per day, comparison with the previous year, most expensive day, current tariff)": "Zusatzwerte (Durchschnitt je Tag, Vergleich mit dem Vorjahr, teuerster Tag, aktueller Tarif)",
             "Warn before the end of the tariff period (days, 0 = off)": "Vor dem Ende des Tarifzeitraums warnen (Tage, 0 = aus)",
             "Average costs per day": "Durchschnittskosten je Tag",
+            "Average consumption per day": "Durchschnittsverbrauch je Tag",
             "Consumption in the previous year": "Verbrauch im Vorjahr",
             "Consumption compared to the previous year (%)": "Verbrauch gegenüber dem Vorjahr (%)",
             "Costs of the most expensive day": "Kosten des teuersten Tages",

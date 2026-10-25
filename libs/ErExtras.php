@@ -28,11 +28,13 @@ final class ErExtras
     {
         $days = (int) ($result['days'] ?? 0);
         $costs = (float) ($result['costs'] ?? 0.0);
+        $consumption = (float) ($result['consumption'] ?? 0.0);
         $result['avgPerDay'] = $days > 1 && $costs > 0.0 ? $costs / $days : 0.0;
+        $result['avgConsumptionPerDay'] = $days > 1 && $consumption > 0.0 ? $consumption / $days : 0.0;
 
         $lastYear = (float) ($extra['lastYearConsumption'] ?? 0.0);
         $result['lastYearConsumption'] = $lastYear;
-        $result['vsLastYear'] = $lastYear > 0.0 ? ((float) ($result['consumption'] ?? 0.0) / $lastYear - 1.0) * 100.0 : 0.0;
+        $result['vsLastYear'] = $lastYear > 0.0 ? ($consumption / $lastYear - 1.0) * 100.0 : 0.0;
 
         $result['peakDay'] = (int) ($extra['peakDay'] ?? 0);
         $result['peakCosts'] = (float) ($extra['peakCosts'] ?? 0.0);

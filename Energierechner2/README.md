@@ -44,7 +44,7 @@ Voraussetzung: Symcon 9.0 oder neuer. Die Instanz wird in Symcon als Geräteinst
 | Prognose mit Vorjahresverlauf | Für Monat und Jahr den Verlauf des Vorjahres nutzen, damit Winter- und Sommerverbrauch die Prognose nicht verzerren. Ohne Vorjahresdaten rechnet das Modul linear. Standardmäßig an. |
 | Abgeschlossene Zeiträume loggen | Schaltet das Archiv-Logging für Kosten und Verbrauch von Gestern, Vorwoche, Vormonat und Vorjahr ein (nur für aktivierte Zeiträume). Diese Werte ändern sich nur einmal je Zeitraum und ergeben saubere Verlaufsdiagramme. Beim Ausschalten der Option wird nur das wieder abgeschaltet, was das Modul selbst eingeschaltet hat. Von Hand geloggte Variablen bleiben unberührt, und bereits archivierte Werte bleiben erhalten. |
 | Saldo der Abschläge | Abschläge abzüglich Kosten, für das aktuelle Jahr, das Vorjahr, je Tarifzeitraum und als Summe. |
-| Zusatzwerte | Legt zusätzliche Variablen an: Durchschnittskosten je Tag, Vergleich des Verbrauchs mit dem Vorjahr, teuerster Tag und die Eckdaten des aktuellen Tarifs (Preise, Gültig-bis-Datum, Tage bis zum Ende). Siehe [Zusatzwerte](#21-zusatzwerte). |
+| Zusatzwerte | Legt zusätzliche Variablen an: Durchschnittskosten und Durchschnittsverbrauch je Tag, Vergleich des Verbrauchs mit dem Vorjahr, teuerster Tag und die Eckdaten des aktuellen Tarifs (Preise, Gültig-bis-Datum, Tage bis zum Ende). Siehe [Zusatzwerte](#21-zusatzwerte). |
 | Vor dem Ende des Tarifzeitraums warnen | Ab so vielen Tagen vor dem Ende des aktuellen Tarifzeitraums erscheint eine Warnung (Formular, Meldungsfenster, Kachel). 0 = aus. Der Tarifzeitraum endet, wenn in der Tariftabelle eine spätere Zeile folgt; ohne spätere Zeile gibt es kein Ende und keine Warnung. |
 | Automatisch berechnen | Standardmäßig an. Ist die Option aus, rechnet das Modul **nie von selbst**: kein Timer, keine Berechnung beim Übernehmen der Einstellungen oder beim Start. Die Werte ändern sich nur, wenn du eine Berechnung anstößt: Schaltfläche *Jetzt berechnen* oder *Neu berechnen* im Formular, `ER2_UpdateCalculation($id)` / `ER2_Recalculate($id)` aus einem Skript oder Ereignis, oder *Neu berechnen* in der Kachel. Sinnvoll, wenn du die Berechnung selbst steuern willst, etwa einmal pro Stunde oder nach dem Eintreffen neuer Archivdaten. |
 | Aktualisierungsintervall | Wie oft die laufenden Zeiträume neu berechnet werden (Minuten). Nur wirksam, wenn *Automatisch berechnen* an ist. |
@@ -136,6 +136,7 @@ Energie (kWh) | `<Zeitraum>_Energy` | Kommazahl (kWh) | Umgerechnete kWh bei Gas
 Prognose Kosten, Prognose Verbrauch | `<Zeitraum>_ForecastCosts`, `_ForecastConsumption` | Kommazahl | Hochrechnung, nur für laufende Woche, Monat und Jahr.
 Saldo | `<Zeitraum>_Balance` | Kommazahl (€) | Saldo der Abschläge für aktuelles Jahr, Vorjahr, Tarifzeiträume und Summe; positiv = Guthaben.
 Durchschnittskosten je Tag | `<Zeitraum>_AvgPerDay` | Kommazahl (€) | Mit der Option „Zusatzwerte", alle Zeiträume außer Heute und Gestern.
+Durchschnittsverbrauch je Tag | `<Zeitraum>_AvgConsumptionPerDay` | Kommazahl (Einheit des Zählers) | Mit der Option „Zusatzwerte", alle Zeiträume außer Heute und Gestern.
 Verbrauch im Vorjahr | `<Zeitraum>_LastYearConsumption` | Kommazahl (Einheit des Zählers) | Mit der Option „Zusatzwerte", Monat und Jahr (laufend und abgeschlossen).
 Verbrauch gegenüber dem Vorjahr (%) | `<Zeitraum>_ConsumptionVsLastYear` | Kommazahl (%) | Abweichung vom Vorjahr, negativ = weniger Verbrauch. Zeiträume wie oben.
 Teuerster Tag | `<Zeitraum>_PeakDayDate` | Datum | Mit der Option „Zusatzwerte", Woche, Monat und Jahr (laufend und abgeschlossen).
@@ -265,7 +266,7 @@ Jede Instanz stellt eine Kachel für die Kachel-Visualisierung bereit. Die Kache
 - **Übersicht:** Kosten und Verbrauch groß, dazu je nach Größe und Einstellungen (die Zusatzwerte sind dieselben wie die Variablen der Option *Zusatzwerte*):
   - **Guthaben oder Nachzahlung** gegenüber den bisher aufgelaufenen Abschlägen (bei Zeiträumen mit Saldo),
   - **Vorjahresvergleich** des Verbrauchs für Monat und Jahr (laufend bis zum gleichen Stichtag, abgeschlossen komplett), nur wenn das Archiv Vorjahreswerte hat; Kosten werden nicht verglichen, weil der Vorjahrestarif ein anderer gewesen sein kann,
-  - **Durchschnittskosten je Tag** (nicht für einzelne Tage),
+  - **Durchschnittskosten und Durchschnittsverbrauch je Tag** (nicht für einzelne Tage),
   - die Prognose (bisherige Kosten im Verhältnis zur Prognose) und das Verhältnis von Hoch- und Niedertarif,
   - in der Fußzeile der **aktuelle Tarif** mit Anbieter, Preis und letztem Gültigkeitstag (bei dynamischen Preisen „dynamischer Preis") und der Stand,
   - ein Warnband mit der Schaltfläche „Neu berechnen".

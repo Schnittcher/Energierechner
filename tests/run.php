@@ -535,11 +535,11 @@ check('Anzeige-Instanz: unbekannte Darstellung wird auto', ErTile::fixed($fixedS
 check('Anzeige-Instanz: nicht aktivierter Zeitraum ergibt keine Zeiträume', ErTile::fixed($fixedSource, 'Day_Current', 'auto', '')['periods'], []);
 check('Anzeige-Instanz: leere Quelle', ErTile::fixed([], 'Month_Current', 'auto', '')['periods'], []);
 $ex = ErExtras::apply(['costs' => 30.0, 'days' => 10, 'consumption' => 90.0], ['lastYearConsumption' => 100.0, 'peakDay' => ts(2025, 3, 3), 'peakCosts' => 4.5]);
-check('Zusatzwerte: Durchschnitt je Tag', $ex['avgPerDay'], 3.0);
+check('Zusatzwerte: Durchschnitt je Tag', [$ex['avgPerDay'], $ex['avgConsumptionPerDay']], [3.0, 9.0]);
 check('Zusatzwerte: Vorjahresabweichung in Prozent', round($ex['vsLastYear'], 6), -10.0);
 check('Zusatzwerte: teuerster Tag wird übernommen', [$ex['peakDay'], $ex['peakCosts']], [ts(2025, 3, 3), 4.5]);
 $none = ErExtras::apply(['costs' => 5.0, 'days' => 1, 'consumption' => 3.0], []);
-check('Zusatzwerte: ohne Daten alles 0', [$none['avgPerDay'], $none['lastYearConsumption'], $none['vsLastYear'], $none['peakDay'], $none['peakCosts']], [0.0, 0.0, 0.0, 0, 0.0]);
+check('Zusatzwerte: ohne Daten alles 0', [$none['avgPerDay'], $none['avgConsumptionPerDay'], $none['lastYearConsumption'], $none['vsLastYear'], $none['peakDay'], $none['peakCosts']], [0.0, 0.0, 0.0, 0.0, 0, 0.0]);
 $ending = new ErTariff([segment(), segment(['id' => 'b', 'validFrom' => ts(2026, 1, 1)])]);
 check('Zusatzwerte: Tage bis Tarifende', ErExtras::currentTariff($ending, ts(2025, 12, 20) + 3600)['daysLeft'], 11);
 check('Zusatzwerte: letzter Tag des Tarifs ist 0 Tage', ErExtras::currentTariff($ending, ts(2025, 12, 31) + 3600)['daysLeft'], 0);
