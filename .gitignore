@@ -4,3 +4,6 @@ libs/composer.*
 libs/phpunit.*
 .vscode/*
 docs/adr/
+docs/IDEEN.md
+docs/FORUM_POST.md
+docs/FORUM_CHANGELOG.md
