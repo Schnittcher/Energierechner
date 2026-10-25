@@ -89,14 +89,15 @@ trait ErTileTrait
     /** @return array<string, string> */
     private function tileLabels(): array
     {
+        $revenue = $this->ReadPropertyBoolean('RevenueMode');
         return [
             'day'                  => $this->Translate('Day'),
             'week'                 => $this->Translate('Week'),
             'month'                => $this->Translate('Month'),
             'year'                 => $this->Translate('Year'),
             'more'                 => $this->Translate('More'),
-            'costs'                => $this->Translate('Costs'),
-            'costsWork'            => $this->Translate('Costs (usage)'),
+            'costs'                => $this->Translate($revenue ? 'Revenue' : 'Costs'),
+            'costsWork'            => $this->Translate($revenue ? 'Revenue (energy)' : 'Costs (usage)'),
             'costsBase'            => $this->Translate('Costs (base price)'),
             'effective'            => $this->Translate('Effective price per'),
             'consumption'          => $this->Translate('Consumption'),
@@ -104,7 +105,7 @@ trait ErTileTrait
             'nt'                   => $this->Translate('NT'),
             'energy'               => $this->Translate('Energy (kWh)'),
             'forecast'             => $this->Translate('Forecast'),
-            'forecastCosts'        => $this->Translate('Forecast costs'),
+            'forecastCosts'        => $this->Translate($revenue ? 'Forecast revenue' : 'Forecast costs'),
             'forecastConsumption'  => $this->Translate('Forecast consumption'),
             'advance'              => $this->Translate('Advance payments'),
             'balance'              => $this->Translate('Balance'),
@@ -117,7 +118,7 @@ trait ErTileTrait
             'tariff'               => $this->Translate('Tariff'),
             'validUntil'           => $this->Translate('valid until'),
             'dynamicPrice'         => $this->Translate('dynamic price'),
-            'peakDay'              => $this->Translate('Most expensive day'),
+            'peakDay'              => $this->Translate($revenue ? 'Best day' : 'Most expensive day'),
             'credit'               => $this->Translate('Credit'),
             'additionalPayment'    => $this->Translate('Additional payment'),
             'vsLastYear'           => $this->Translate('vs. last year'),

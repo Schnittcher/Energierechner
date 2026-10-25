@@ -34,6 +34,7 @@ Voraussetzung: Symcon 9.0 oder neuer. Die Instanz wird in Symcon als Geräteinst
 | Zählereinheit | kWh, Wh, Impulse, m³ oder Liter. Wh und Impulse werden in kWh umgerechnet, damit der Preis je kWh passt. |
 | Impulse pro kWh | Erscheint nur, wenn als Zählereinheit „Impulse" gewählt ist. |
 | Gas: m³ in kWh umrechnen | Erscheint nur, wenn als Zählereinheit „m³" gewählt ist. Siehe [Gas](#15-gas-m³-in-kwh). |
+| Ertrag statt Kosten | Für Einspeisung, zum Beispiel einer PV-Anlage: Die Variablen und die Kachel heißen dann Ertrag statt Kosten. Die Idents bleiben gleich. Einrichtung siehe [Ertrag statt Kosten](#17-ertrag-statt-kosten-pv-einspeisung). |
 | Zeiträume | Heute, Gestern, aktuelle Woche und Vorwoche, aktueller Monat und Vormonat, aktuelles Jahr und Vorjahr. |
 | Je Tarifzeitraum | Ein Satz Werte pro Tarifabschnitt, dazu die Summe aller Tarifabschnitte. |
 | Eigene Zeiträume | Beliebige Zeiträume mit Name, Start- und Enddatum (Enddatum inklusive). |
@@ -102,11 +103,24 @@ Stellt das Modul bei der Berechnung ein Problem fest, steht oben im Konfiguratio
 
 Die Warnung verschwindet nach der nächsten Berechnung, wenn die Ursache behoben ist. Ins Meldungsfenster geht jede Warnung nur beim ersten Auftreten; die Warnung vor dem Tarifende ändert täglich die Tageszahl im Text, wird aber nur einmal gemeldet.
 
-### 1.7 Namen der Variablen
+### 1.7 Ertrag statt Kosten (PV-Einspeisung)
 
-- Die **Idents** der Variablen sind fest (siehe unten). Die **Namen** vergibt das Modul nur beim **Anlegen** der Variable.
+Der Energierechner rechnet Verbrauch mal Preis. Das gilt genauso für Energie, die du einspeist (zum Beispiel mit einer PV-Anlage): Der Zähler ist dann der Einspeisezähler, der Preis die Einspeisevergütung, und das Ergebnis ist dein Ertrag.
+
+1. Lege für die Einspeisung einen **eigenen Energierechner 2** an, mit dem Einspeisezähler als Verbrauchsvariable (Zähler, im Archiv mit Aggregationstyp *Zähler* geloggt).
+2. Lege dafür einen **eigenen Tarif** an (Energierechner Tarif 2) und trage die Einspeisevergütung als Preis ein, in € je kWh. Bei mehreren Vergütungssätzen (zum Beispiel nach Inbetriebnahme oder Anlagengröße) je Satz eine Tarifzeile mit Gültig-ab-Datum. Für Bezug und Einspeisung brauchst du zwei Tarife, weil die Preise verschieden sind.
+3. Lass den **Grundpreis auf 0**. Bei einer Einspeisung gibt es keinen.
+4. Schalte im Energierechner die Option **Ertrag statt Kosten** ein.
+
+Die Option ändert nur die Bezeichnungen: Die Variablen heißen dann *Ertrag*, *Ertrag (Arbeitspreis)*, *Prognose Ertrag*, *Durchschnittsertrag je Tag* und *Ertrag des besten Tages* (bei den Zusatzwerten *Bester Tag*), und die Kachel zeigt dieselben Begriffe. Gerechnet wird wie sonst, die **Idents bleiben gleich** (zum Beispiel `Month_Current_Costs`). Die Namen stellt das Modul beim Umschalten um, sofern du sie nicht selbst geändert hast.
+
+Nicht für Einspeisung gedacht sind der **Saldo der Abschläge** (die Option bleibt aus), und im Tarif die Felder Grundpreis und Abschlag. Die Tarif-Instanz kennt die Option nicht und spricht weiter von Preisen.
+
+### 1.8 Namen der Variablen
+
+- Die **Idents** der Variablen sind fest (siehe unten). Die **Namen** vergibt das Modul beim **Anlegen** der Variable und beim Umschalten von *Ertrag statt Kosten* (nur wenn der Name noch der vom Modul vergebene ist).
 - Benennst du später einen Tarifzeitraum oder einen eigenen Zeitraum um, **ändern sich die Namen der bereits vorhandenen Variablen nicht**. Neue Variablen bekommen den neuen Namen.
-- Du kannst Variablen jederzeit selbst umbenennen. Das Modul überschreibt Namen nicht.
+- Du kannst Variablen jederzeit selbst umbenennen. Das Modul überschreibt eigene Namen nicht.
 - Wird ein **Tarifzeitraum, eine Zeile bei den eigenen Zeiträumen oder ein ganzer Zeitraum abgewählt**, werden die zugehörigen Variablen **gelöscht**. Verknüpfungen, Skripte oder Kacheln, die darauf zeigen, laufen ins Leere.
 - Eine gelöschte und neu angelegte Zeile bekommt eine **neue Id** und damit neue Variablen. Wer Datum oder Preise ändern will, ändert deshalb besser die bestehende Zeile, statt sie zu löschen.
 

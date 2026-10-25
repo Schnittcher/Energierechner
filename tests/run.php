@@ -582,10 +582,16 @@ $tileHost = new class() {
 
     public int $InstanceID = 0;
     public string $attribute = '{}';
+    public bool $revenue = false;
 
     public function ReadAttributeString(string $n): string
     {
         return $this->attribute;
+    }
+
+    public function ReadPropertyBoolean(string $n): bool
+    {
+        return $n === 'RevenueMode' && $this->revenue;
     }
 
     public function Translate(string $t): string
@@ -594,6 +600,10 @@ $tileHost = new class() {
     }
 };
 $emptyHtml = $tileHost->GetVisualizationTile();
+$tileHost->revenue = true;
+$revenueHtml = $tileHost->GetVisualizationTile();
+$tileHost->revenue = false;
+check('Kachel: Beschriftung Kosten, mit der Option Ertrag', [strpos($emptyHtml, '"costs":"Costs"') !== false, strpos($revenueHtml, '"costs":"Revenue"') !== false, strpos($revenueHtml, '"peakDay":"Best day"') !== false], [true, true, true]);
 check('Kachel-HTML: Platzhalter ersetzt (ohne Daten)', strpos($emptyHtml, '__TILE_DATA__') === false, true);
 check('Kachel-HTML: Vorlage enthält handleMessage', strpos($emptyHtml, 'function handleMessage') !== false, true);
 $tileHost->attribute = json_encode(['title' => 'A</script>B', 'periods' => []]);

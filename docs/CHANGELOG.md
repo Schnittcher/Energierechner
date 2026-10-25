@@ -1,5 +1,10 @@
 # Changelog
 
+## 25.10.2026 - Version 3.0.2
+
+### Neu
+- Neue Option "Ertrag statt Kosten" für Einspeisung, zum Beispiel einer PV-Anlage: Variablen und Kachel heißen dann Ertrag statt Kosten.
+
 ## 25.10.2026 - Version 3.0.1
 
 ### Neu
