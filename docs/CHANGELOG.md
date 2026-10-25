@@ -1,5 +1,13 @@
-# 07.10.2026 - Version 3.0
-## Neu
+# Changelog
+
+## 25.10.2026 - Version 3.0.1
+
+### Neu
+- Neue Variable "Durchschnittsverbrauch je Tag" bei den Zusatzwerten, auch in der Kachel.
+
+## 07.10.2026 - Version 3.0
+
+### Neu
 - Neues Modul Energierechner 2 mit eigener Tarif-Instanz (Energierechner Tarif 2): Tarifwechsel, Hoch- und Niedertarif mit bis zu zwei Zeitfenstern und Wochenende, taggenauer Grundpreis, Abschläge und Saldo.
 - Dynamische Preise (zum Beispiel Börsenstrom) aus einer geloggten Preisvariable.
 - Prognose für Woche, Monat und Jahr, für Monat und Jahr mit dem Verlauf des Vorjahres.
@@ -18,7 +26,7 @@
 - Achtung: Bei laufenden Zeiträumen zählt der Grundpreis nur bis heute, der Saldo nutzt den bis heute aufgelaufenen Abschlag, und das Aktualisierungsintervall steht in Minuten.
 - Achtung: Bei Gas setzt die Übernahme die Zählereinheit m³ mit Umrechnung in kWh, bereits übernommene Instanzen müssen einmal von Hand auf m³ umgestellt werden.
 
-## Fixes
+### Fixes
 - Die Kachel nennt beim Effektivpreis die Einheit des Zählers (zum Beispiel je m³ bei Wasser) statt immer kWh.
 - Der Grundpreis wird taggenau gerechnet, auch in Schaltjahren und bei Tarifwechseln mitten im Zeitraum.
 - Zeiträume über Mitternacht und mit mehreren Tarifwechseln werden bei Nachttarif korrekt gerechnet.

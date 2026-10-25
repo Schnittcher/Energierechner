@@ -155,6 +155,7 @@ function render(){
     if(F.forecast&&v.forecastCosts!=null)h+='<div class="g">'+esc(L('forecast'))+'</div>'+row(L('forecastCosts'),eur(v.forecastCosts))+row(L('forecastConsumption'),kwh(v.forecastConsumption||0));
     if(F.balance&&v.balance!=null)h+='<div class="g">'+esc(L('advance'))+'</div>'+row(L('balance'),eur(v.balance));
     if(perDay(v)>0)h+=row(L('avgPerDay'),eur(perDay(v)));
+    if(v.avgConsumptionPerDay>0)h+=row(L('avgConsumptionPerDay'),kwh(v.avgConsumptionPerDay));
     if(DATA.tariff)h+='<div class="g">'+esc(L('tariff'))+'</div>'+row(DATA.tariff.name||L('tariff'),tariffText());
     h+='</div>';
   }else{

@@ -60,6 +60,7 @@ class Energierechner2 extends IPSModuleStrict
         'ForecastConsumption'   => 'forecastConsumption',
         'Balance'               => 'balance',
         'AvgPerDay'             => 'avgPerDay',
+        'AvgConsumptionPerDay'  => 'avgConsumptionPerDay',
         'LastYearConsumption'   => 'lastYearConsumption',
         'ConsumptionVsLastYear' => 'vsLastYear',
         'PeakDayDate'           => 'peakDay',
@@ -80,6 +81,7 @@ class Energierechner2 extends IPSModuleStrict
         'ForecastConsumption'   => 'Forecast consumption',
         'Balance'               => 'Balance',
         'AvgPerDay'             => 'Average costs per day',
+        'AvgConsumptionPerDay'  => 'Average consumption per day',
         'LastYearConsumption'   => 'Consumption in the previous year',
         'ConsumptionVsLastYear' => 'Consumption compared to the previous year (%)',
         'PeakDayDate'           => 'Most expensive day',
@@ -956,7 +958,7 @@ class Energierechner2 extends IPSModuleStrict
             }
             if ($this->ReadPropertyBoolean('ShowExtras')) {
                 if ($def['avg']) {
-                    $kinds[] = 'AvgPerDay';
+                    array_push($kinds, 'AvgPerDay', 'AvgConsumptionPerDay');
                 }
                 if ($def['lastYear']) {
                     array_push($kinds, 'LastYearConsumption', 'ConsumptionVsLastYear');

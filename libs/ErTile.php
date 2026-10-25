@@ -13,24 +13,25 @@ final class ErTile
 {
     /** Ergebnisfelder, die die Kachel anzeigen kann (Feldname im Rechenergebnis => Name in den Kacheldaten). */
     private const FIELDS = [
-        'costs'               => 'costs',
-        'consumption'         => 'consumption',
-        'costsWork'           => 'costsWork',
-        'costsBase'           => 'costsBase',
-        'costsHt'             => 'costsHt',
-        'costsNt'             => 'costsNt',
-        'consumptionHt'       => 'consumptionHt',
-        'consumptionNt'       => 'consumptionNt',
-        'energy'              => 'energy',
-        'forecastCosts'       => 'forecastCosts',
-        'forecastConsumption' => 'forecastConsumption',
-        'balance'             => 'balance',
-        'days'                => 'days',
-        'avgPerDay'           => 'avgPerDay',
-        'lastYearConsumption' => 'lastYearConsumption',
-        'vsLastYear'          => 'vsLastYear',
-        'peakDay'             => 'peakDay',
-        'peakCosts'           => 'peakCosts'
+        'costs'                => 'costs',
+        'consumption'          => 'consumption',
+        'costsWork'            => 'costsWork',
+        'costsBase'            => 'costsBase',
+        'costsHt'              => 'costsHt',
+        'costsNt'              => 'costsNt',
+        'consumptionHt'        => 'consumptionHt',
+        'consumptionNt'        => 'consumptionNt',
+        'energy'               => 'energy',
+        'forecastCosts'        => 'forecastCosts',
+        'forecastConsumption'  => 'forecastConsumption',
+        'balance'              => 'balance',
+        'days'                 => 'days',
+        'avgPerDay'            => 'avgPerDay',
+        'avgConsumptionPerDay' => 'avgConsumptionPerDay',
+        'lastYearConsumption'  => 'lastYearConsumption',
+        'vsLastYear'           => 'vsLastYear',
+        'peakDay'              => 'peakDay',
+        'peakCosts'            => 'peakCosts'
     ];
 
     /**
