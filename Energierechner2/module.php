@@ -88,6 +88,18 @@ class Energierechner2 extends IPSModuleStrict
         'PeakDayCosts'          => 'Costs of the most expensive day'
     ];
 
+    /** Bezeichnungen mit der Option "Ertrag statt Kosten" (zum Beispiel PV-Einspeisung), sonst gelten KIND_LABELS */
+    private const REVENUE_LABELS = [
+        'Costs'         => 'Revenue',
+        'CostsWork'     => 'Revenue (energy)',
+        'CostsHT'       => 'Revenue (HT)',
+        'CostsNT'       => 'Revenue (NT)',
+        'ForecastCosts' => 'Forecast revenue',
+        'AvgPerDay'     => 'Average revenue per day',
+        'PeakDayDate'   => 'Best day',
+        'PeakDayCosts'  => 'Revenue of the best day'
+    ];
+
     /** Position der ersten Zeitraum-Variable und Größe des Positionsblocks je Zeitraum (mehr als die höchstmögliche Zahl Variablen je Zeitraum) */
     private const FIRST_PERIOD_POSITION = 10;
     private const PERIOD_BLOCK = 20;
@@ -125,6 +137,7 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterPropertyBoolean('ForecastLastYear', true);
         $this->RegisterPropertyBoolean('ShowBalance', false);
         $this->RegisterPropertyBoolean('ShowExtras', false);
+        $this->RegisterPropertyBoolean('RevenueMode', false);
         $this->RegisterPropertyInteger('TariffEndWarningDays', 0);
         $this->RegisterPropertyBoolean('LogClosedPeriods', false);
         $this->RegisterPropertyBoolean('AutomaticCalculation', true);
@@ -968,6 +981,7 @@ class Energierechner2 extends IPSModuleStrict
                 }
             }
 
+            $revenue = $this->ReadPropertyBoolean('RevenueMode');
             foreach ($kinds as $kind) {
                 $isCosts = strpos($kind, 'Costs') !== false || in_array($kind, ['Balance', 'AvgPerDay'], true);
                 $presentation = $isCosts ? $euro : ($kind === 'Energy' ? $kwh : $consumption);
@@ -979,7 +993,9 @@ class Energierechner2 extends IPSModuleStrict
                     $type = VARIABLETYPE_INTEGER;
                 }
                 $ident = ErPeriods::ident($def['key'], $kind);
-                $this->maintain($ident, $def['label'] . ' - ' . $this->Translate(self::KIND_LABELS[$kind]), $type, $presentation, $position++);
+                $costLabel = $def['label'] . ' - ' . $this->Translate(self::KIND_LABELS[$kind]);
+                $revenueLabel = $def['label'] . ' - ' . $this->Translate(self::REVENUE_LABELS[$kind] ?? self::KIND_LABELS[$kind]);
+                $this->maintain($ident, $revenue ? $revenueLabel : $costLabel, $type, $presentation, $position++, $revenue ? $costLabel : $revenueLabel);
                 $wanted[] = $ident;
             }
         }
@@ -1034,10 +1050,14 @@ class Energierechner2 extends IPSModuleStrict
      *
      * @param array<string, mixed>|string $presentation
      */
-    private function maintain(string $ident, string $name, int $type, array|string $presentation, int $position): void
+    private function maintain(string $ident, string $name, int $type, array|string $presentation, int $position, string $otherName = ''): void
     {
         $this->MaintainVariable($ident, $name, $type, $presentation, $position, true);
         $id = $this->GetIDForIdent($ident);
+        // MaintainVariable benennt nur beim Anlegen. Beim Umschalten Kosten/Ertrag den bisherigen Standardnamen nachziehen, eigene Namen bleiben.
+        if ($otherName !== '' && IPS_GetName($id) === $otherName) {
+            IPS_SetName($id, $name);
+        }
         if (IPS_GetObject($id)['ObjectPosition'] !== $position) {
             IPS_SetPosition($id, $position);
         }

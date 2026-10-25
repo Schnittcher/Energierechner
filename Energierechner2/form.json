@@ -56,6 +56,11 @@
         },
         {
             "type": "CheckBox",
+            "name": "RevenueMode",
+            "caption": "Revenue instead of costs (for example feed-in of a PV system)"
+        },
+        {
+            "type": "CheckBox",
             "name": "GasConversion",
             "caption": "Gas: convert m³ to kWh with the values of the tariff (meter unit m³ only)"
         },
