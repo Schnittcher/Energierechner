@@ -112,6 +112,37 @@ final class ErTile
     }
 
     /**
+     * Auswahlliste für den Zeitraum der Anzeige-Instanz: die acht Standardzeiträume (Namen übersetzt übergeben),
+     * danach die weiteren Zeiträume der Quelle (Tarifzeiträume, eigene Zeiträume, Summe) mit ihrem Namen.
+     * Ein gespeicherter Schlüssel, den die Quelle nicht (mehr) kennt, bleibt als nicht verfügbare Option stehen,
+     * damit die Auswahl ihn nicht still ersetzt.
+     *
+     * @param array<string, mixed> $data Kacheldaten der Quelle (leer, solange sie nicht gerechnet hat)
+     * @param array<string, string> $standard Schlüssel => Name der Standardzeiträume
+     * @return array<int, array{caption:string,value:string}>
+     */
+    public static function periodOptions(array $data, array $standard, string $current, string $unavailable): array
+    {
+        $options = [];
+        foreach ($standard as $key => $caption) {
+            $options[] = ['caption' => $caption, 'value' => $key];
+        }
+        $known = $standard;
+        foreach ((array) ($data['periods'] ?? []) as $period) {
+            $key = (string) ($period['key'] ?? '');
+            if ($key === '' || isset($known[$key])) {
+                continue;
+            }
+            $known[$key] = (string) ($period['label'] ?? $key);
+            $options[] = ['caption' => $known[$key], 'value' => $key];
+        }
+        if ($current !== '' && !isset($known[$current])) {
+            $options[] = ['caption' => $current . ' (' . $unavailable . ')', 'value' => $current];
+        }
+        return $options;
+    }
+
+    /**
      * Ordnet einen Zeitraum-Schlüssel einer Gruppe und Rolle zu.
      *
      * @return array{0:string,1:string} Gruppe (day, week, month, year, tariff, custom, total) und Rolle (cur, prev)

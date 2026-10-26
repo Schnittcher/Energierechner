@@ -1,5 +1,10 @@
 # Changelog
 
+## 26.10.2026 - Version 3.0.3
+
+### Neu
+- Die Energierechner Kachel kann auch Tarifzeiträume, die Summe und eigene Zeiträume anzeigen: Die Zeitraum-Auswahl listet alle Zeiträume des gewählten Energierechners.
+
 ## 25.10.2026 - Version 3.0.2
 
 ### Neu

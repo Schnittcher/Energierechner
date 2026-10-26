@@ -534,6 +534,14 @@ check('Anzeige-Instanz: eigener Titel', ErTile::fixed($fixedSource, 'Month_Curre
 check('Anzeige-Instanz: unbekannte Darstellung wird auto', ErTile::fixed($fixedSource, 'Month_Current', 'xyz', '')['mode'], 'auto');
 check('Anzeige-Instanz: nicht aktivierter Zeitraum ergibt keine Zeiträume', ErTile::fixed($fixedSource, 'Day_Current', 'auto', '')['periods'], []);
 check('Anzeige-Instanz: leere Quelle', ErTile::fixed([], 'Month_Current', 'auto', '')['periods'], []);
+$stdPeriods = ['Day_Current' => 'Heute', 'Month_Current' => 'Monat'];
+$srcData = ['periods' => [['key' => 'Month_Current', 'label' => 'X'], ['key' => 'Custom_ab12', 'label' => 'Heizperiode'], ['key' => 'Total', 'label' => 'Summe']]];
+check('Zeitraum-Auswahl: Standard und weitere Zeiträume', array_column(ErTile::periodOptions($srcData, $stdPeriods, 'Custom_ab12', 'n/a'), 'value'), ['Day_Current', 'Month_Current', 'Custom_ab12', 'Total']);
+check('Zeitraum-Auswahl: Name aus der Quelle', ErTile::periodOptions($srcData, $stdPeriods, 'Month_Current', 'n/a')[2]['caption'], 'Heizperiode');
+check('Zeitraum-Auswahl: Standardname bleibt', ErTile::periodOptions($srcData, $stdPeriods, 'Month_Current', 'n/a')[1]['caption'], 'Monat');
+check('Zeitraum-Auswahl: ohne Daten nur Standard', array_column(ErTile::periodOptions([], $stdPeriods, 'Month_Current', 'n/a'), 'value'), ['Day_Current', 'Month_Current']);
+check('Zeitraum-Auswahl: unbekannter Schlüssel bleibt stehen', ErTile::periodOptions($srcData, $stdPeriods, 'Custom_gone', 'n/a')[4], ['caption' => 'Custom_gone (n/a)', 'value' => 'Custom_gone']);
+check('Kachel: eigener Zeitraum wählbar', array_column(ErTile::fixed(['periods' => [['key' => 'Custom_ab12'], ['key' => 'Total']]], 'Custom_ab12', 'auto', '')['periods'], 'key'), ['Custom_ab12']);
 $ex = ErExtras::apply(['costs' => 30.0, 'days' => 10, 'consumption' => 90.0], ['lastYearConsumption' => 100.0, 'peakDay' => ts(2025, 3, 3), 'peakCosts' => 4.5]);
 check('Zusatzwerte: Durchschnitt je Tag', [$ex['avgPerDay'], $ex['avgConsumptionPerDay']], [3.0, 9.0]);
 check('Zusatzwerte: Vorjahresabweichung in Prozent', round($ex['vsLastYear'], 6), -10.0);
