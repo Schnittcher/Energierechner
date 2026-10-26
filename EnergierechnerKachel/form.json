@@ -4,6 +4,7 @@
             "type": "SelectInstance",
             "name": "SourceID",
             "caption": "Energierechner 2",
+            "onChange": "IPS_RequestAction($id, 'SourceChanged', $SourceID);",
             "validModules": [
                 "{4E7A6F79-8C7E-4D15-900E-1B97DD916FC4}"
             ]

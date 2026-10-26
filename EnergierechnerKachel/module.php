@@ -64,6 +64,31 @@ class EnergierechnerKachel extends IPSModuleStrict
         $this->Refresh();
     }
 
+    /** Setzt die Auswahlliste der Zeiträume aus den Zeiträumen der Quelle ein (die form.json hat nur die Standardzeiträume). */
+    public function GetConfigurationForm(): string
+    {
+        $form = json_decode((string) file_get_contents(__DIR__ . '/form.json'), true);
+        if (!is_array($form)) {
+            return '{}';
+        }
+        $options = $this->periodOptions($this->ReadPropertyInteger('SourceID'), $this->ReadPropertyString('Period'));
+        foreach ($form['elements'] as &$element) {
+            if (($element['name'] ?? '') === 'Period') {
+                $element['options'] = $options;
+            }
+        }
+        unset($element);
+        return (string) json_encode($form);
+    }
+
+    public function RequestAction(string $Ident, mixed $Value): void
+    {
+        // Quelle im Formular gewechselt: Auswahlliste mit den Zeiträumen der neuen Quelle füllen
+        if ($Ident === 'SourceChanged') {
+            $this->UpdateFormField('Period', 'options', json_encode($this->periodOptions((int) $Value, $this->ReadPropertyString('Period'))));
+        }
+    }
+
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
     {
         if ($Message === VM_UPDATE) {
@@ -103,16 +128,41 @@ class EnergierechnerKachel extends IPSModuleStrict
         return IPS_InstanceExists($id) && IPS_GetInstance($id)['ModuleInfo']['ModuleID'] === self::SOURCE_MODULE;
     }
 
-    private function buildData(): string
+    /**
+     * Die Kacheldaten der Quelle, leer wenn keine gültige Quelle gewählt ist.
+     *
+     * @return array<string, mixed>
+     */
+    private function sourceData(int $source): array
     {
-        $source = $this->ReadPropertyInteger('SourceID');
         $data = [];
         if ($source > 0 && $this->isSource($source) && function_exists('ER2_GetTileData')) {
             // Die Anzeige rechnet nie selbst und stößt auch keine Berechnung der Quelle an: Ein verschachtelter Aufruf
             // stört deren Abfrage des Tarifs und kann die Quelle auf Status 205 setzen.
             $data = json_decode((string) ER2_GetTileData($source), true);
         }
-        $data = is_array($data) ? $data : [];
+        return is_array($data) ? $data : [];
+    }
+
+    /** @return array<int, array{caption:string,value:string}> */
+    private function periodOptions(int $source, string $current): array
+    {
+        $standard = [
+            'Day_Current'    => $this->Translate('Today'),
+            'Day_Previous'   => $this->Translate('Yesterday'),
+            'Week_Current'   => $this->Translate('This week'),
+            'Week_Previous'  => $this->Translate('Last week'),
+            'Month_Current'  => $this->Translate('This month'),
+            'Month_Previous' => $this->Translate('Last month'),
+            'Year_Current'   => $this->Translate('This year'),
+            'Year_Previous'  => $this->Translate('Last year')
+        ];
+        return ErTile::periodOptions($this->sourceData($source), $standard, $current, $this->Translate('not available'));
+    }
+
+    private function buildData(): string
+    {
+        $data = $this->sourceData($this->ReadPropertyInteger('SourceID'));
         $data += ['title' => IPS_GetName($this->InstanceID), 'unit' => '', 'updated' => 0, 'warnings' => [], 'flags' => [], 'labels' => ['noPeriods' => $this->Translate('The Energierechner 2 has not calculated yet.')], 'periods' => []];
 
         return (string) json_encode(ErTile::fixed($data, $this->ReadPropertyString('Period'), $this->ReadPropertyString('Display'), trim($this->ReadPropertyString('Title'))));

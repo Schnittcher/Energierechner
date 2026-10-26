@@ -17,7 +17,7 @@ Voraussetzung ist eine Instanz *Energierechner 2*, in der der gewünschte Zeitra
 Feld | Beschreibung
 ------------ | ----------------
 Energierechner 2 | Die Instanz, deren Werte angezeigt werden.
-Zeitraum | Heute, Gestern, Diese Woche, Letzte Woche, Dieser Monat, Letzter Monat, Dieses Jahr oder Letztes Jahr. Der Zeitraum muss im Energierechner 2 aktiviert sein, sonst zeigt die Kachel „Keine Zeiträume aktiviert".
+Zeitraum | Heute, Gestern, Diese Woche, Letzte Woche, Dieser Monat, Letzter Monat, Dieses Jahr oder Letztes Jahr, danach die weiteren Zeiträume des Energierechners 2 (Tarifzeiträume, Summe und eigene Zeiträume mit ihrem Namen). Die Liste wird beim Wählen des Energierechners 2 und beim Öffnen des Formulars aufgebaut; hat der Energierechner noch nicht gerechnet, enthält sie nur die acht Standardzeiträume. Der Zeitraum muss im Energierechner 2 aktiviert sein, sonst zeigt die Kachel „Keine Zeiträume aktiviert". Ein Zeitraum, den der Energierechner nicht mehr kennt (zum Beispiel eine gelöschte Zeile bei den eigenen Zeiträumen), steht weiter in der Liste, mit dem Zusatz „nicht verfügbar".
 Darstellung | *Automatisch* (kompakt bei kleinen Kacheln, sonst Standard), *Immer kompakt* oder *Immer Standard*.
 Titel | Eigener Titel. Leer: der Name des Energierechner 2.
 
