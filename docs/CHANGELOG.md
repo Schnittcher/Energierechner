@@ -5,6 +5,9 @@
 ### Neu
 - Die Energierechner Kachel kann auch Tarifzeiträume, die Summe und eigene Zeiträume anzeigen: Die Zeitraum-Auswahl listet alle Zeiträume des gewählten Energierechners.
 
+### Fixes
+- Der Dokumentationslink der Instanzen führt jetzt zur Dokumentation auf deinsmarthome.info.
+
 ## 25.10.2026 - Version 3.0.2
 
 ### Neu
