@@ -9,6 +9,7 @@
 
 ### Fixes
 - Der Energierechner gleicht seine Variablen nach einer Änderung im Tarif ab, ohne dass die Instanz neu übernommen werden muss.
+- Beim Minimieren der Kachel, zum Beispiel in der App, zeigt sie wieder die Übersicht statt der Details.
 
 ## 26.10.2026 - Version 3.0.3
 

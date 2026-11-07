@@ -301,7 +301,15 @@ function handleMessage(data){
 }
 render();
 fit();
-window.addEventListener('resize',function(){document.getElementById('wrap').style.width='';var left=isSmall()&&leaveMaximized();if(setCompact()||left)render();fit()});
+/* Wird die Kachel deutlich kleiner (zum Beispiel beim Minimieren in der App), zeigt sie wieder die Uebersicht. Kleine Aenderungen
+   (Adressleiste, Tastatur) lassen die Ansicht stehen. */
+var lastArea=window.innerWidth*window.innerHeight;
+window.addEventListener('resize',function(){
+  document.getElementById('wrap').style.width='';
+  var area=window.innerWidth*window.innerHeight,shrunk=area<lastArea*0.8;lastArea=area;
+  var left=isSmall()&&leaveMaximized();
+  if(shrunk&&(detail||maxWanted)){detail=false;maxWanted=false;left=true}
+  if(setCompact()||left)render();fit()});
 </script>
 </body>
 </html>
