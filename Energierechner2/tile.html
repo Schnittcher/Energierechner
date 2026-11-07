@@ -85,8 +85,18 @@ function isSmall(){return window.innerHeight<560||window.innerWidth<420}
 /* Wird die maximierte Ansicht geschlossen (Kachel wieder klein oder ausgeblendet), zeigt die Kachel wieder die Uebersicht */
 function leaveMaximized(){if(maxWanted&&wasBig){maxWanted=false;detail=false;return true}return false}
 document.addEventListener('visibilitychange',function(){if(document.hidden&&leaveMaximized())render()});
-(function(){try{var m=JSON.parse(localStorage.getItem(MAX_KEY));if(m&&typeof m==='object'&&m.t&&Date.now()-m.t<5000){maxWanted=true;detail=true;if(m.sel)sel=m.sel}}catch(e){}})();
-function openMaximized(){try{localStorage.setItem(MAX_KEY,JSON.stringify({t:Date.now(),sel:sel}))}catch(e){}openObject(DATA.objectId)}
+/* Den Marker nimmt nur eine Kachel an, die deutlich groesser ist als die oeffnende (sonst wuerde die kleine Kachel, die beim Schliessen
+   neu laedt, ihn finden). Wer ihn annimmt, loescht ihn. Die App aendert die Groesse beim Oeffnen mehrfach: kurz nach dem Annehmen
+   gilt eine Verkleinerung deshalb nicht als Schliessen. */
+var acceptedAt=0;
+function area(){return window.innerWidth*window.innerHeight}
+function acceptMarker(){
+  try{var m=JSON.parse(localStorage.getItem(MAX_KEY));
+    if(m&&typeof m==='object'&&m.t&&Date.now()-m.t<10000&&area()>=(m.area||0)*1.2){
+      localStorage.removeItem(MAX_KEY);maxWanted=true;detail=true;acceptedAt=Date.now();if(m.sel)sel=m.sel;return true}}catch(e){}
+  return false}
+acceptMarker();
+function openMaximized(){try{localStorage.setItem(MAX_KEY,JSON.stringify({t:Date.now(),area:area(),sel:sel}))}catch(e){}openObject(DATA.objectId)}
 
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function L(k){return (DATA.labels && DATA.labels[k]) || k}
@@ -151,7 +161,7 @@ function render(){
   if(!p){w.innerHTML='<div class="empty">'+esc(L('noPeriods'))+'</div>';return}
   setCompact();
   /* Steht die maximierte Ansicht, ist der Marker verbraucht: eine andere (zum Beispiel die kleine) Kachel soll ihn nicht mehr finden */
-  if(!isSmall()){wasBig=true;if(maxWanted){try{localStorage.removeItem(MAX_KEY)}catch(e){}}}
+  if(!isSmall())wasBig=true;
   if(compact)detail=false;else if(maxWanted)detail=true;
   var v=p.v||{},F=DATA.flags||{},h='';
   var chips=groups().map(function(g){return '<button class="chip'+(sel.group===g?' on':'')+'" data-g="'+g+'">'+esc(L(g))+'</button>'}).join('');
@@ -306,9 +316,10 @@ fit();
 var lastArea=window.innerWidth*window.innerHeight;
 window.addEventListener('resize',function(){
   document.getElementById('wrap').style.width='';
-  var area=window.innerWidth*window.innerHeight,shrunk=area<lastArea*0.8;lastArea=area;
-  var left=isSmall()&&leaveMaximized();
-  if(shrunk&&(detail||maxWanted)){detail=false;maxWanted=false;left=true}
+  var now=area(),shrunk=now<lastArea*0.8;lastArea=now;
+  var left=!maxWanted&&acceptMarker();
+  if(isSmall()&&Date.now()-acceptedAt>1500&&leaveMaximized())left=true;
+  if(shrunk&&(detail||maxWanted)&&Date.now()-acceptedAt>1500){detail=false;maxWanted=false;left=true}
   if(setCompact()||left)render();fit()});
 </script>
 </body>
