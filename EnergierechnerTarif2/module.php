@@ -33,6 +33,11 @@ class EnergierechnerTarif2 extends IPSModuleStrict
         $rows = is_array($rows) ? $rows : [];
 
         // Jede Zeile braucht eine stabile, eindeutige Id (sie ist Teil der Variablen-Idents im Energierechner).
+        // Store-Richtlinie (Eigenschaften gehören dem Nutzer): IPS_SetProperty ist hier die einzige Ausnahme und aus diesem Grund nötig:
+        // Die Id der Zeile steckt im Ident der Tarifzeitraum-Variablen (Tariff_<Id>_Costs). Fehlt sie oder kommt sie doppelt vor
+        // (Zeile aus einem Skript, kopierte Zeile), muss sie dauerhaft in der Eigenschaft stehen. Sonst bekäme die Zeile bei jedem
+        // Übernehmen eine neue Id, und der Energierechner würde die Variablen löschen und neu anlegen (Verknüpfungen, Skripte und
+        // Archivdaten gingen verloren). Geändert wird nur das Feld "Id", und nur wenn es fehlt oder doppelt ist.
         [$rows, $changed] = $this->normalizeIds($rows);
         if ($changed) {
             IPS_SetProperty($this->InstanceID, 'Periods', json_encode($rows));
