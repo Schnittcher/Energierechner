@@ -7,6 +7,9 @@
 - Die Kachel merkt sich den gewählten Zeitraum im Browser, auch nach dem Neuladen.
 - Neue Kacheln nutzen ab Symcon 9.1 den Vollbildtyp.
 
+### Fixes
+- Der Energierechner gleicht seine Variablen nach einer Änderung im Tarif ab, ohne dass die Instanz neu übernommen werden muss.
+
 ## 26.10.2026 - Version 3.0.3
 
 ### Neu
