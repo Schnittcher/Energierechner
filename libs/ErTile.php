@@ -85,6 +85,7 @@ final class ErTile
             'flags'     => $options['flags'],
             'labels'    => $options['labels'],
             'periods'   => $periods,
+            'objectId'  => (int) ($options['objectId'] ?? 0),
             'tariff'    => $options['tariff'] ?? null
         ];
     }

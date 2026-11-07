@@ -27,6 +27,7 @@ trait ErTileTrait
                 'warnings' => [],
                 'flags'    => [],
                 'labels'   => $this->tileLabels(),
+                'objectId' => $this->InstanceID,
                 'periods'  => []
             ]);
         }
@@ -43,7 +44,8 @@ trait ErTileTrait
     private function tileCreate(): void
     {
         $this->RegisterAttributeString('TileData', '{}');
-        $this->SetVisualizationType(1);
+        // Vollbildtyp ab Symcon 9.1, davor die normale HTML-Kachel
+        $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML_FULLSCREEN') ? INSTANCE_VISUALIZATION_TYPE_HTML_FULLSCREEN : 1);
     }
 
     /**
@@ -69,6 +71,7 @@ trait ErTileTrait
                 'balance'  => $this->ReadPropertyBoolean('ShowBalance')
             ],
             'labels'   => $this->tileLabels(),
+            'objectId' => $this->InstanceID,
             'tariff'   => ErExtras::currentTariff($tariff, $now)
         ], $now);
         $json = json_encode($data);

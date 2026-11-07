@@ -29,7 +29,8 @@ class EnergierechnerKachel extends IPSModuleStrict
         $this->RegisterPropertyString('Title', '');
         $this->RegisterAttributeString('Last', '');
         $this->RegisterTimer('Refresh', 0, 'ERK_Refresh($_IPS[\'TARGET\']);');
-        $this->SetVisualizationType(1);
+        // Vollbildtyp ab Symcon 9.1, davor die normale HTML-Kachel
+        $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML_FULLSCREEN') ? INSTANCE_VISUALIZATION_TYPE_HTML_FULLSCREEN : 1);
     }
 
     public function ApplyChanges(): void
@@ -163,6 +164,8 @@ class EnergierechnerKachel extends IPSModuleStrict
     private function buildData(): string
     {
         $data = $this->sourceData($this->ReadPropertyInteger('SourceID'));
+        // Die Kachel öffnet sich selbst maximiert, nicht die Quelle
+        $data['objectId'] = $this->InstanceID;
         $data += ['title' => IPS_GetName($this->InstanceID), 'unit' => '', 'updated' => 0, 'warnings' => [], 'flags' => [], 'labels' => ['noPeriods' => $this->Translate('The Energierechner 2 has not calculated yet.')], 'periods' => []];
 
         return (string) json_encode(ErTile::fixed($data, $this->ReadPropertyString('Period'), $this->ReadPropertyString('Display'), trim($this->ReadPropertyString('Title'))));
