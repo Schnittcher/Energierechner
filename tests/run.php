@@ -542,6 +542,7 @@ check('Zeitraum-Auswahl: Standardname bleibt', ErTile::periodOptions($srcData, $
 check('Zeitraum-Auswahl: ohne Daten nur Standard', array_column(ErTile::periodOptions([], $stdPeriods, 'Month_Current', 'n/a'), 'value'), ['Day_Current', 'Month_Current']);
 check('Zeitraum-Auswahl: unbekannter Schlüssel bleibt stehen', ErTile::periodOptions($srcData, $stdPeriods, 'Custom_gone', 'n/a')[4], ['caption' => 'Custom_gone (n/a)', 'value' => 'Custom_gone']);
 check('Kachel: eigener Zeitraum wählbar', array_column(ErTile::fixed(['periods' => [['key' => 'Custom_ab12'], ['key' => 'Total']]], 'Custom_ab12', 'auto', '')['periods'], 'key'), ['Custom_ab12']);
+check('Kachel: Objekt-ID für die maximierte Ansicht', [ErTile::build([], [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => [], 'objectId' => 4711], 0)['objectId'], ErTile::build([], [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], 0)['objectId']], [4711, 0]);
 $ex = ErExtras::apply(['costs' => 30.0, 'days' => 10, 'consumption' => 90.0], ['lastYearConsumption' => 100.0, 'peakDay' => ts(2025, 3, 3), 'peakCosts' => 4.5]);
 check('Zusatzwerte: Durchschnitt je Tag', [$ex['avgPerDay'], $ex['avgConsumptionPerDay']], [3.0, 9.0]);
 check('Zusatzwerte: Vorjahresabweichung in Prozent', round($ex['vsLastYear'], 6), -10.0);

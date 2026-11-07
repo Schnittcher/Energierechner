@@ -1,5 +1,12 @@
 # Changelog
 
+## 07.11.2026 - Version 3.0.4
+
+### Neu
+- Ein Tippen auf den Wert einer kleinen Kachel öffnet sie maximiert mit allen Werten, beim Schließen steht sie wieder in der Übersicht.
+- Die Kachel merkt sich den gewählten Zeitraum im Browser, auch nach dem Neuladen.
+- Neue Kacheln nutzen ab Symcon 9.1 den Vollbildtyp.
+
 ## 26.10.2026 - Version 3.0.3
 
 ### Neu

@@ -68,6 +68,25 @@ select.chip option{color:#222}
 var DATA = __TILE_DATA__;
 var sel = null;
 var detail = false;
+/* Maximierte Ansicht: Ein Tippen auf einen Wert oeffnet die Instanz mit openObject (Symcon ab 8.2) als maximierte Kachel. Weil die
+   Doku keinen Hinweis fuer die geoeffnete Kachel vorsieht, merkt sich die oeffnende Kachel das kurz im Browser-Speicher; die
+   maximierte Kachel zeigt dann gleich alle Werte. Ohne openObject oder Speicher zeigt die Kachel die Werte in sich selbst. */
+var MAX_KEY='er2max';
+function canOpen(){return typeof openObject==='function'&&DATA.objectId>0}
+/* maxWanted bleibt gesetzt, auch wenn die Kachel beim Oeffnen kurz klein ist (kompakt) oder neu geladen wird; der Marker bleibt
+   dafuer bis zum Ablauf der 5 Sekunden stehen */
+/* Die gewaehlte Ansicht bleibt je Kachel im Browser erhalten, falls die Kachel neu geladen wird (zum Beispiel nach dem Schliessen der
+   maximierten Ansicht). Die Anzeige-Instanz mit festem Zeitraum braucht das nicht. Der Browser-Speicher kann fehlen: dann gilt der Standard. */
+function selKey(){return 'er2sel'+(DATA.objectId||0)}
+function saveSel(){try{if(!DATA.fixed&&sel&&DATA.objectId>0)localStorage.setItem(selKey(),JSON.stringify(sel))}catch(e){}}
+(function(){try{if(!DATA.fixed&&DATA.objectId>0){var s=JSON.parse(localStorage.getItem(selKey()));if(s&&typeof s==='object')sel=s}}catch(e){}})();
+var maxWanted=false,wasBig=false;
+function isSmall(){return window.innerHeight<560||window.innerWidth<420}
+/* Wird die maximierte Ansicht geschlossen (Kachel wieder klein oder ausgeblendet), zeigt die Kachel wieder die Uebersicht */
+function leaveMaximized(){if(maxWanted&&wasBig){maxWanted=false;detail=false;return true}return false}
+document.addEventListener('visibilitychange',function(){if(document.hidden&&leaveMaximized())render()});
+(function(){try{var m=JSON.parse(localStorage.getItem(MAX_KEY));if(m&&typeof m==='object'&&m.t&&Date.now()-m.t<5000){maxWanted=true;detail=true;if(m.sel)sel=m.sel}}catch(e){}})();
+function openMaximized(){try{localStorage.setItem(MAX_KEY,JSON.stringify({t:Date.now(),sel:sel}))}catch(e){}openObject(DATA.objectId)}
 
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function L(k){return (DATA.labels && DATA.labels[k]) || k}
@@ -131,7 +150,9 @@ function render(){
   var oldDet=document.querySelector('.det'),oldTop=oldDet?oldDet.scrollTop:0;
   if(!p){w.innerHTML='<div class="empty">'+esc(L('noPeriods'))+'</div>';return}
   setCompact();
-  if(compact)detail=false;
+  /* Steht die maximierte Ansicht, ist der Marker verbraucht: eine andere (zum Beispiel die kleine) Kachel soll ihn nicht mehr finden */
+  if(!isSmall()){wasBig=true;if(maxWanted){try{localStorage.removeItem(MAX_KEY)}catch(e){}}}
+  if(compact)detail=false;else if(maxWanted)detail=true;
   var v=p.v||{},F=DATA.flags||{},h='';
   var chips=groups().map(function(g){return '<button class="chip'+(sel.group===g?' on':'')+'" data-g="'+g+'">'+esc(L(g))+'</button>'}).join('');
   var oth=others();
@@ -176,6 +197,7 @@ function render(){
   var view=p.key+'|'+(detail?'d':'o'),newDet=document.querySelector('.det');
   if(newDet&&view===lastView)newDet.scrollTop=oldTop;
   lastView=view;
+  saveSel();
 }
 
 /* Wechselt zwischen laufendem und letztem Zeitraum der gewaehlten Gruppe (Pfeile und Wischen) */
@@ -194,18 +216,22 @@ function sizeMore(){
 function bind(p){
   var q=function(s){return document.querySelector(s)};
   sizeMore();
-  Array.prototype.forEach.call(document.querySelectorAll('button.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;render()}});
+  Array.prototype.forEach.call(document.querySelectorAll('button.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;maxWanted=false;render()}});
   var m=q('#more');if(m){
-    m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;render()};
+    m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;maxWanted=false;render()};
     m.onblur=function(){if(pendingRender)render()};
   }
   var pv=q('#prev'),nx=q('#next');
   if(pv)pv.onclick=function(){stepPeriod('prev')};
   if(nx)nx.onclick=function(){stepPeriod('cur')};
   var hero=q('#hero');if(hero)hero.onclick=function(){
-    if(compact){var gs=DATA.fixed?[]:groups();if(gs.length>1){var i=gs.indexOf(sel.group);sel={group:gs[(i+1)%gs.length],role:'cur'}}render()}
+    if(compact){
+      /* Feste Anzeige (Energierechner Kachel) hat keinen Zeitraumwechsel: das Tippen oeffnet alle Werte maximiert */
+      if(DATA.fixed&&canOpen()){openMaximized();return}
+      var gs=DATA.fixed?[]:groups();if(gs.length>1){var i=gs.indexOf(sel.group);sel={group:gs[(i+1)%gs.length],role:'cur'}}render()}
+    else if(!detail&&canOpen()&&isSmall())openMaximized();
     else{detail=true;render()}};
-  var back=q('#back');if(back)back.onclick=function(){detail=false;render()};
+  var back=q('#back');if(back)back.onclick=function(){detail=false;maxWanted=false;render()};
   var rc=q('#recalc');if(rc)rc.onclick=function(){rc.textContent='…';if(typeof requestAction==='function'){requestAction('TileRecalculate',true)}};
 }
 
@@ -275,7 +301,7 @@ function handleMessage(data){
 }
 render();
 fit();
-window.addEventListener('resize',function(){document.getElementById('wrap').style.width='';if(setCompact())render();fit()});
+window.addEventListener('resize',function(){document.getElementById('wrap').style.width='';var left=isSmall()&&leaveMaximized();if(setCompact()||left)render();fit()});
 </script>
 </body>
 </html>

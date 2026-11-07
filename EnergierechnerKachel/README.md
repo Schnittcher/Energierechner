@@ -31,7 +31,7 @@ Liefert die Kacheldaten als JSON.
 
 ## 3. Hinweise
 
-- Die Anzeige sieht aus wie die Kachel des Energierechner 2, aber ohne Chips und Pfeile, weil der Zeitraum fest ist. Ein Tippen auf den Hauptwert öffnet in der Standard-Darstellung die Details. In der kompakten Darstellung gibt es keine Details.
+- Die Anzeige sieht aus wie die Kachel des Energierechner 2, aber ohne Chips und Pfeile, weil der Zeitraum fest ist. Ein Tippen auf den Hauptwert öffnet bei einer kleinen Kachel (auch in der kompakten Darstellung) die Kachel maximiert mit allen Werten, bei einer großen Kachel zeigt sie die Details in sich selbst. Beim Schließen steht sie wieder in der Übersicht. Das Maximieren braucht Symcon 8.2 oder neuer.
 - Vorjahresvergleich und teuerster Tag stehen nur dann in der Anzeige, wenn die Quelle sie berechnet. Das tut sie, wenn ihre Einstellung *Zusatzwerte* eingeschaltet ist.
 - Die Anzeige rechnet nie selbst und stößt auch keine Berechnung der Quelle an. Hat die Quelle noch nichts berechnet oder ist der gewählte Zeitraum dort nicht aktiviert, zeigt die Kachel einen Hinweis. Dann in der Quelle den Zeitraum aktivieren oder eine Berechnung starten.
 
