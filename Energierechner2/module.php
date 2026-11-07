@@ -165,7 +165,12 @@ class Energierechner2 extends IPSModuleStrict
             return;
         }
 
-        // Eigene Zeiträume brauchen stabile, eindeutige Ids (Teil der Variablen-Idents)
+        // Eigene Zeiträume brauchen stabile, eindeutige Ids (Teil der Variablen-Idents).
+        // Store-Richtlinie (Eigenschaften gehören dem Nutzer): IPS_SetProperty ist hier die einzige Ausnahme und aus diesem Grund nötig:
+        // Die Id steckt im Ident jeder Zeitraum-Variable (Custom_<Id>_Costs). Fehlt sie oder kommt sie doppelt vor (Zeile aus einem Skript,
+        // kopierte Zeile), muss sie dauerhaft in der Eigenschaft stehen. Sonst bekäme die Zeile bei jedem Übernehmen eine neue Id, und
+        // das Modul würde die Variablen löschen und neu anlegen (Verknüpfungen, Skripte und Archivdaten gingen verloren).
+        // Geändert wird nur das Feld "Id", und nur wenn es fehlt oder doppelt ist; Werte des Nutzers bleiben unberührt.
         $custom = json_decode($this->ReadPropertyString('CustomPeriods'), true);
         [$custom, $changed] = $this->normalizeIds(is_array($custom) ? $custom : []);
         if ($changed) {
@@ -174,39 +179,19 @@ class Energierechner2 extends IPSModuleStrict
             return;
         }
 
-        $tariff = $this->fetchTariff();
-        $this->maintainVariables($tariff);
-        $this->syncArchiveLogging();
-        if ($tariff !== null) {
-            $this->WriteAttributeString('TariffSig', $this->tariffSignature($tariff));
-        }
+        $this->applyState();
+    }
 
-        // Referenz auf die Zählervariable, damit sie nicht unbemerkt gelöscht wird
-        foreach ($this->GetReferenceList() ?: [] as $referenceID) {
-            $this->UnregisterReference($referenceID);
+    /**
+     * Gleicht Variablen, Archiv-Logging, Referenz und Status mit dem Tarif und den Einstellungen ab und rechnet danach neu.
+     * Der Tarif ruft sie über den Datenfluss auf, wenn sich seine Zeilen ändern (statt die Instanz noch einmal zu übernehmen).
+     */
+    public function Resync(): void
+    {
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
         }
-        $variableID = $this->ReadPropertyInteger('ConsumptionVariableID');
-        if ($variableID > 0 && IPS_VariableExists($variableID)) {
-            $this->RegisterReference($variableID);
-            $this->SetSummary(IPS_GetName($variableID));
-        } else {
-            $this->SetSummary('');
-        }
-
-        $status = $this->validate($tariff);
-        $this->SetStatus($status);
-
-        if ($status === IS_ACTIVE) {
-            // Ohne automatische Berechnung läuft weder der Timer noch eine Berechnung beim Übernehmen; dann rechnet nur ER2_UpdateCalculation
-            if ($this->ReadPropertyBoolean('AutomaticCalculation')) {
-                $this->SetTimerInterval('UpdateCalculation', max(1, $this->ReadPropertyInteger('UpdateInterval')) * 60 * 1000);
-                $this->RegisterOnceTimer('Calculate', 'ER2_UpdateCalculation($_IPS[\'TARGET\']);');
-            } else {
-                $this->SetTimerInterval('UpdateCalculation', 0);
-            }
-        } else {
-            $this->SetTimerInterval('UpdateCalculation', 0);
-        }
+        $this->applyState();
     }
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
@@ -220,8 +205,9 @@ class Energierechner2 extends IPSModuleStrict
     {
         $data = json_decode($JSONString, true);
         if (($data['Event'] ?? '') === 'TariffChanged') {
-            // Tarifzeiträume können sich geändert haben: Variablen neu abgleichen und neu rechnen
-            $this->RegisterOnceTimer('ApplyChanges', 'IPS_ApplyChanges($_IPS[\'TARGET\']);');
+            // Tarifzeiträume können sich geändert haben: Variablen neu abgleichen und neu rechnen.
+            // Über einen Einmal-Timer, denn ein verschachtelter Aufruf im Datenfluss stört die Abfrage des Tarifs.
+            $this->RegisterOnceTimer('Resync', 'ER2_Resync($_IPS[\'TARGET\']);');
         }
         return '';
     }
@@ -307,6 +293,9 @@ class Energierechner2 extends IPSModuleStrict
         $old = json_decode(IPS_GetConfiguration($LegacyInstanceID), true);
         $settings = ErLegacy::convertSettings(is_array($old) ? $old : []);
         $settings['Active'] = false;
+        // Die Übernahme läuft nur auf Klick des Nutzers (Schaltfläche "Einstellungen übernehmen") und ist die ausdrückliche Bestätigung.
+        // Deshalb darf sie die Eigenschaften dieser Instanz, die Tarif-Instanz und deren Zeilen setzen: Es gibt keinen anderen Weg,
+        // Werte aus der Konfiguration einer anderen Instanz in diese zu übertragen. Die neue Instanz bleibt inaktiv, bis der Nutzer sie prüft.
         foreach ($settings as $property => $value) {
             IPS_SetProperty($this->InstanceID, $property, $value);
         }
@@ -394,6 +383,43 @@ class Energierechner2 extends IPSModuleStrict
         return json_encode($form);
     }
 
+    private function applyState(): void
+    {
+        $tariff = $this->fetchTariff();
+        $this->maintainVariables($tariff);
+        $this->syncArchiveLogging();
+        if ($tariff !== null) {
+            $this->WriteAttributeString('TariffSig', $this->tariffSignature($tariff));
+        }
+
+        // Referenz auf die Zählervariable, damit sie nicht unbemerkt gelöscht wird
+        foreach ($this->GetReferenceList() ?: [] as $referenceID) {
+            $this->UnregisterReference($referenceID);
+        }
+        $variableID = $this->ReadPropertyInteger('ConsumptionVariableID');
+        if ($variableID > 0 && IPS_VariableExists($variableID)) {
+            $this->RegisterReference($variableID);
+            $this->SetSummary(IPS_GetName($variableID));
+        } else {
+            $this->SetSummary('');
+        }
+
+        $status = $this->validate($tariff);
+        $this->SetStatus($status);
+
+        if ($status === IS_ACTIVE) {
+            // Ohne automatische Berechnung läuft weder der Timer noch eine Berechnung beim Übernehmen; dann rechnet nur ER2_UpdateCalculation
+            if ($this->ReadPropertyBoolean('AutomaticCalculation')) {
+                $this->SetTimerInterval('UpdateCalculation', max(1, $this->ReadPropertyInteger('UpdateInterval')) * 60 * 1000);
+                $this->RegisterOnceTimer('Calculate', 'ER2_UpdateCalculation($_IPS[\'TARGET\']);');
+            } else {
+                $this->SetTimerInterval('UpdateCalculation', 0);
+            }
+        } else {
+            $this->SetTimerInterval('UpdateCalculation', 0);
+        }
+    }
+
     // ------------------------------------------------------------------ Berechnung
 
     private function calculate(): bool
@@ -426,7 +452,7 @@ class Energierechner2 extends IPSModuleStrict
         }
         if ($this->tariffSignature($tariff) !== $this->ReadAttributeString('TariffSig')) {
             // Die Tarifzeiträume haben sich geändert: erst die Variablen abgleichen
-            $this->RegisterOnceTimer('ApplyChanges', 'IPS_ApplyChanges($_IPS[\'TARGET\']);');
+            $this->RegisterOnceTimer('Resync', 'ER2_Resync($_IPS[\'TARGET\']);');
             return false;
         }
 
