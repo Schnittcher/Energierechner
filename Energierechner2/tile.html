@@ -88,8 +88,8 @@ document.addEventListener('visibilitychange',function(){if(document.hidden&&leav
 /* Den Marker nimmt nur eine Kachel an, die deutlich groesser ist als die oeffnende (sonst wuerde die kleine Kachel, die beim Schliessen
    neu laedt, ihn finden). Wer ihn annimmt, loescht ihn. Die App aendert die Groesse beim Oeffnen mehrfach: kurz nach dem Annehmen
    gilt eine Verkleinerung deshalb nicht als Schliessen. */
-/* inMax: Diese Kachel ist die maximierte Ansicht. Sie oeffnet beim Tippen kein weiteres Fenster, sondern zeigt die Werte in sich selbst,
-   auch nachdem man den Zeitraum gewechselt hat. */
+/* inMax: Diese Kachel ist die maximierte Ansicht. Sie oeffnet beim Tippen kein weiteres Fenster, sondern zeigt die Werte in sich selbst.
+   Beim Wechsel des Zeitraums (Chips, Auswahl "Mehr", Pfeile, Wischen) bleibt die Ansicht stehen: Sind alle Werte offen, bleiben sie offen. */
 var acceptedAt=0,inMax=false;
 function area(){return window.innerWidth*window.innerHeight}
 function acceptMarker(){
@@ -228,9 +228,9 @@ function sizeMore(){
 function bind(p){
   var q=function(s){return document.querySelector(s)};
   sizeMore();
-  Array.prototype.forEach.call(document.querySelectorAll('button.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};detail=false;maxWanted=false;render()}});
+  Array.prototype.forEach.call(document.querySelectorAll('button.chip'),function(b){b.onclick=function(){sel={group:b.getAttribute('data-g'),role:'cur'};if(!inMax){detail=false;maxWanted=false}render()}});
   var m=q('#more');if(m){
-    m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}detail=false;maxWanted=false;render()};
+    m.onchange=function(){if(m.value){sel={key:m.value}}else{sel=null}if(!inMax){detail=false;maxWanted=false}render()};
     m.onblur=function(){if(pendingRender)render()};
   }
   var pv=q('#prev'),nx=q('#next');
