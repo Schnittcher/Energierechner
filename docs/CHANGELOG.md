@@ -1,5 +1,10 @@
 # Changelog
 
+## 10.11.2026 - Version 3.0.5
+
+### Fixes
+- In der maximierten Kachel zeigt ein Tippen auf den Wert auch nach einem Zeitraumwechsel wieder alle Werte, ohne dass sich ein weiteres Fenster öffnet.
+
 ## 07.11.2026 - Version 3.0.4
 
 ### Neu
