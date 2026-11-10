@@ -88,12 +88,14 @@ document.addEventListener('visibilitychange',function(){if(document.hidden&&leav
 /* Den Marker nimmt nur eine Kachel an, die deutlich groesser ist als die oeffnende (sonst wuerde die kleine Kachel, die beim Schliessen
    neu laedt, ihn finden). Wer ihn annimmt, loescht ihn. Die App aendert die Groesse beim Oeffnen mehrfach: kurz nach dem Annehmen
    gilt eine Verkleinerung deshalb nicht als Schliessen. */
-var acceptedAt=0;
+/* inMax: Diese Kachel ist die maximierte Ansicht. Sie oeffnet beim Tippen kein weiteres Fenster, sondern zeigt die Werte in sich selbst,
+   auch nachdem man den Zeitraum gewechselt hat. */
+var acceptedAt=0,inMax=false;
 function area(){return window.innerWidth*window.innerHeight}
 function acceptMarker(){
   try{var m=JSON.parse(localStorage.getItem(MAX_KEY));
     if(m&&typeof m==='object'&&m.t&&Date.now()-m.t<10000&&area()>=(m.area||0)*1.2){
-      localStorage.removeItem(MAX_KEY);maxWanted=true;detail=true;acceptedAt=Date.now();if(m.sel)sel=m.sel;return true}}catch(e){}
+      localStorage.removeItem(MAX_KEY);maxWanted=true;detail=true;inMax=true;acceptedAt=Date.now();if(m.sel)sel=m.sel;return true}}catch(e){}
   return false}
 acceptMarker();
 function openMaximized(){try{localStorage.setItem(MAX_KEY,JSON.stringify({t:Date.now(),area:area(),sel:sel}))}catch(e){}openObject(DATA.objectId)}
@@ -237,9 +239,9 @@ function bind(p){
   var hero=q('#hero');if(hero)hero.onclick=function(){
     if(compact){
       /* Feste Anzeige (Energierechner Kachel) hat keinen Zeitraumwechsel: das Tippen oeffnet alle Werte maximiert */
-      if(DATA.fixed&&canOpen()){openMaximized();return}
+      if(DATA.fixed&&canOpen()&&!inMax){openMaximized();return}
       var gs=DATA.fixed?[]:groups();if(gs.length>1){var i=gs.indexOf(sel.group);sel={group:gs[(i+1)%gs.length],role:'cur'}}render()}
-    else if(!detail&&canOpen()&&isSmall())openMaximized();
+    else if(!detail&&!inMax&&canOpen()&&isSmall())openMaximized();
     else{detail=true;render()}};
   var back=q('#back');if(back)back.onclick=function(){detail=false;maxWanted=false;render()};
   var rc=q('#recalc');if(rc)rc.onclick=function(){rc.textContent='…';if(typeof requestAction==='function'){requestAction('TileRecalculate',true)}};
@@ -319,7 +321,7 @@ window.addEventListener('resize',function(){
   var now=area(),shrunk=now<lastArea*0.8;lastArea=now;
   var left=!maxWanted&&acceptMarker();
   if(isSmall()&&Date.now()-acceptedAt>1500&&leaveMaximized())left=true;
-  if(shrunk&&(detail||maxWanted)&&Date.now()-acceptedAt>1500){detail=false;maxWanted=false;left=true}
+  if(shrunk&&(detail||maxWanted||inMax)&&Date.now()-acceptedAt>1500){detail=false;maxWanted=false;inMax=false;left=true}
   if(setCompact()||left)render();fit()});
 </script>
 </body>
