@@ -2,6 +2,9 @@
 
 ## 10.11.2026 - Version 3.0.5
 
+### Neu
+- In der maximierten Kachel zeigt der Wechsel des Zeitraums gleich alle Werte.
+
 ### Fixes
 - In der maximierten Kachel zeigt ein Tippen auf den Wert auch nach einem Zeitraumwechsel wieder alle Werte, ohne dass sich ein weiteres Fenster öffnet.
 
