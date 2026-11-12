@@ -542,6 +542,15 @@ check('Zeitraum-Auswahl: Standardname bleibt', ErTile::periodOptions($srcData, $
 check('Zeitraum-Auswahl: ohne Daten nur Standard', array_column(ErTile::periodOptions([], $stdPeriods, 'Month_Current', 'n/a'), 'value'), ['Day_Current', 'Month_Current']);
 check('Zeitraum-Auswahl: unbekannter Schlüssel bleibt stehen', ErTile::periodOptions($srcData, $stdPeriods, 'Custom_gone', 'n/a')[4], ['caption' => 'Custom_gone (n/a)', 'value' => 'Custom_gone']);
 check('Kachel: eigener Zeitraum wählbar', array_column(ErTile::fixed(['periods' => [['key' => 'Custom_ab12'], ['key' => 'Total']]], 'Custom_ab12', 'auto', '')['periods'], 'key'), ['Custom_ab12']);
+require_once __DIR__ . '/../libs/ErCurrency.php';
+check('Währung: Codes in der Reihenfolge der Auswahl', ErCurrency::codes(), ['EUR', 'CHF', 'GBP', 'USD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK']);
+check('Währung: unbekannt, leer und Kleinschreibung', [ErCurrency::normalize('xyz'), ErCurrency::normalize(''), ErCurrency::normalize(' chf ')], ['EUR', 'EUR', 'CHF']);
+check('Währung: Euro hinter dem Betrag', [ErCurrency::info('EUR')['prefix'], ErCurrency::info('EUR')['suffix']], ['', ' €']);
+check('Währung: Franken, Pfund und Dollar vor dem Betrag', [ErCurrency::info('CHF')['prefix'], ErCurrency::info('GBP')['prefix'], ErCurrency::info('USD')['prefix']], ['CHF ', '£', '$']);
+check('Währung: Kronen hinter dem Betrag', [ErCurrency::info('SEK')['suffix'], ErCurrency::info('NOK')['suffix'], ErCurrency::info('DKK')['suffix'], ErCurrency::info('CZK')['suffix']], [' kr', ' kr', ' kr', ' Kč']);
+check('Währung: Preiseinheit je Währung', array_map([ErCurrency::class, 'priceUnit'], ErCurrency::codes()), ['ct', 'Rp.', 'p', '¢', 'öre', 'øre', 'øre', 'zł', 'Kč']);
+check('Währung: Preis in der Untereinheit oder unverändert', [ErCurrency::displayPrice('EUR', 0.3073), ErCurrency::displayPrice('PLN', 0.748)], [30.73, 0.748]);
+check('Währung: Kachel enthält die Währung, Standard ist der Euro', [ErTile::build([], [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => [], 'currency' => ErCurrency::info('CHF')], 0)['currency']['code'], ErTile::build([], [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], 0)['currency']['code']], ['CHF', 'EUR']);
 check('Kachel: Objekt-ID für die maximierte Ansicht', [ErTile::build([], [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => [], 'objectId' => 4711], 0)['objectId'], ErTile::build([], [], ['title' => '', 'unit' => '', 'warnings' => [], 'flags' => [], 'labels' => []], 0)['objectId']], [4711, 0]);
 $ex = ErExtras::apply(['costs' => 30.0, 'days' => 10, 'consumption' => 90.0], ['lastYearConsumption' => 100.0, 'peakDay' => ts(2025, 3, 3), 'peakCosts' => 4.5]);
 check('Zusatzwerte: Durchschnitt je Tag', [$ex['avgPerDay'], $ex['avgConsumptionPerDay']], [3.0, 9.0]);

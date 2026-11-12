@@ -1,8 +1,51 @@
 {
     "elements": [
         {
+            "type": "Select",
+            "name": "Currency",
+            "caption": "Currency",
+            "options": [
+                {
+                    "caption": "Euro (EUR)",
+                    "value": "EUR"
+                },
+                {
+                    "caption": "Swiss franc (CHF)",
+                    "value": "CHF"
+                },
+                {
+                    "caption": "Pound sterling (GBP)",
+                    "value": "GBP"
+                },
+                {
+                    "caption": "US dollar (USD)",
+                    "value": "USD"
+                },
+                {
+                    "caption": "Swedish krona (SEK)",
+                    "value": "SEK"
+                },
+                {
+                    "caption": "Norwegian krone (NOK)",
+                    "value": "NOK"
+                },
+                {
+                    "caption": "Danish krone (DKK)",
+                    "value": "DKK"
+                },
+                {
+                    "caption": "Polish zloty (PLN)",
+                    "value": "PLN"
+                },
+                {
+                    "caption": "Czech koruna (CZK)",
+                    "value": "CZK"
+                }
+            ]
+        },
+        {
             "type": "Label",
-            "caption": "Prices refer to one unit of the meter (kWh, m³ or liter). The tariff applies from the given date until the next entry."
+            "caption": "Prices refer to one unit of the meter (kWh, m³ or liter) and are entered in the main currency (for example 0.30 for 30 ct). The tariff applies from the given date until the next entry."
         },
         {
             "type": "List",
