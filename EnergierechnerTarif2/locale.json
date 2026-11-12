@@ -1,7 +1,18 @@
 {
     "translations": {
         "de": {
-            "Prices refer to one unit of the meter (kWh, m³ or liter). The tariff applies from the given date until the next entry.": "Die Preise beziehen sich auf eine Einheit des Zählers (kWh, m³ oder Liter). Ein Tarif gilt ab dem Datum bis zum nächsten Eintrag.",
+            "Currency": "Währung",
+            "Euro (EUR)": "Euro (EUR)",
+            "Swiss franc (CHF)": "Schweizer Franken (CHF)",
+            "Pound sterling (GBP)": "Pfund Sterling (GBP)",
+            "US dollar (USD)": "US-Dollar (USD)",
+            "Swedish krona (SEK)": "Schwedische Krone (SEK)",
+            "Norwegian krone (NOK)": "Norwegische Krone (NOK)",
+            "Danish krone (DKK)": "Dänische Krone (DKK)",
+            "Polish zloty (PLN)": "Polnischer Złoty (PLN)",
+            "Czech koruna (CZK)": "Tschechische Krone (CZK)",
+            "Prices refer to one unit of the meter (kWh, m³ or liter) and are entered in the main currency (for example 0.30 for 30 ct). The tariff applies from the given date until the next entry.": "Die Preise beziehen sich auf eine Einheit des Zählers (kWh, m³ oder Liter) und werden in der Hauptwährung eingetragen (zum Beispiel 0,30 für 30 ct). Ein Tarif gilt ab dem Datum bis zum nächsten Eintrag.",
+            "(or per m³ or liter)": "(bzw. je m³ oder Liter)",
             "Tariff periods": "Tarifzeiträume",
             "Name": "Name",
             "Supplier": "Anbieter",

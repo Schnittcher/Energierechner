@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/ErTile.php';
 require_once __DIR__ . '/ErExtras.php';
+require_once __DIR__ . '/ErCurrency.php';
 
 /**
  * Kachel-Visualisierung für Energierechner 2 (experimentell).
@@ -72,6 +73,7 @@ trait ErTileTrait
             ],
             'labels'   => $this->tileLabels(),
             'objectId' => $this->InstanceID,
+            'currency' => ErCurrency::info($this->currencyCode()),
             'tariff'   => ErExtras::currentTariff($tariff, $now)
         ], $now);
         $json = json_encode($data);

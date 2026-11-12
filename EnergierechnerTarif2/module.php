@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../libs/ErTariff.php';
 require_once __DIR__ . '/../libs/ErPeriods.php';
 require_once __DIR__ . '/../libs/ErPriceLookup.php';
+require_once __DIR__ . '/../libs/ErCurrency.php';
 
 /**
  * Hält die Tarifabschnitte (Preise, Grundpreis, Nachttarif, Abschlag, Gasumrechnung).
@@ -22,6 +23,8 @@ class EnergierechnerTarif2 extends IPSModuleStrict
         //Never delete this line!
         parent::Create();
         $this->RegisterPropertyString('Periods', '[]');
+        // Währung der Preise (nur Beschriftung, das Modul rechnet nicht um); Standard ist der Euro
+        $this->RegisterPropertyString('Currency', ErCurrency::DEFAULT);
     }
 
     public function ApplyChanges(): void
@@ -63,6 +66,8 @@ class EnergierechnerTarif2 extends IPSModuleStrict
         switch ($data['Command'] ?? '') {
             case 'GetTariff':
                 return $this->GetTariff();
+            case 'GetCurrency':
+                return $this->currency();
             default:
                 $this->LogMessage('Invalid command: ' . ($data['Command'] ?? ''), KL_WARNING);
                 return '';
@@ -82,9 +87,9 @@ class EnergierechnerTarif2 extends IPSModuleStrict
     /**
      * Der Preis, der zum Zeitpunkt gilt (ohne Angabe: jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs.
      * Ersatz für ER_getPrice des alten Moduls. Rückgabe wie ER2_GetPrice: price, type, dynamic, fallback, tariff, supplier,
-     * validFrom und validUntil.
+     * validFrom und validUntil, dazu currency (Währungscode des Tarifs, der Preis steht in dieser Währung je Einheit des Zählers).
      *
-     * @return array{price:float,type:string,dynamic:bool,fallback:bool,tariff:string,supplier:string,validFrom:int,validUntil:?int}
+     * @return array{price:float,type:string,dynamic:bool,fallback:bool,tariff:string,supplier:string,validFrom:int,validUntil:?int,currency:string}
      */
     public function GetPrice(int $Timestamp = 0): array
     {
@@ -98,17 +103,26 @@ class EnergierechnerTarif2 extends IPSModuleStrict
             $tariff,
             $timestamp,
             static fn (ErTariffSegment $segment, int $ts): ?float => ErPriceLookup::dynamicValue($segment, $ts, $archiveID, $now)
-        );
+        ) + ['currency' => $this->currency()];
     }
 
     public function GetConfigurationForm(): string
     {
         $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
+        $currency = ErCurrency::info($this->currency());
         foreach ($form['elements'] as $e => $element) {
             if (($element['name'] ?? '') !== 'Periods') {
                 continue;
             }
             foreach ($element['columns'] as $c => $column) {
+                // Die Preiseinheit der Preisvariable nennt die Währung des Tarifs (die Werte EUR_KWH, CT_KWH und EUR_MWH bleiben)
+                if ($column['name'] === 'PriceUnit' && $currency['code'] !== ErCurrency::DEFAULT) {
+                    $form['elements'][$e]['columns'][$c]['edit']['options'] = [
+                        ['caption' => $currency['symbol'] . '/kWh ' . $this->Translate('(or per m³ or liter)'), 'value' => 'EUR_KWH'],
+                        ['caption' => $currency['minor'] . '/kWh', 'value' => 'CT_KWH'],
+                        ['caption' => $currency['symbol'] . '/MWh', 'value' => 'EUR_MWH']
+                    ];
+                }
                 // Neue Zeilen bekommen eine frische Id; doppelte Ids werden in ApplyChanges bereinigt.
                 if ($column['name'] === 'Id') {
                     $form['elements'][$e]['columns'][$c]['add'] = ErPeriods::newId();
@@ -119,6 +133,12 @@ class EnergierechnerTarif2 extends IPSModuleStrict
             }
         }
         return json_encode($form);
+    }
+
+    /** Währungscode der Preise dieses Tarifs (ein unbekannter oder leerer Wert gilt als Euro). */
+    private function currency(): string
+    {
+        return ErCurrency::normalize($this->ReadPropertyString('Currency'));
     }
 
     /**

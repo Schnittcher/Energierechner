@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/ErCurrency.php';
+
 /**
  * Baut die Daten für die Kachel-Visualisierung aus den Rechenergebnissen.
  * Reine Datenaufbereitung ohne IPS-Abhängigkeit.
@@ -38,7 +40,7 @@ final class ErTile
      * @param array<int, array{key:string,label:string,start:int,end:int,forecast?:bool,balance?:bool}> $defs aktivierte Zeiträume.
      *        Prognose und Saldo übernimmt die Kachel nur für Zeiträume, bei denen das Modul sie auch als Variable führt.
      * @param array<string, array<string, mixed>> $results Rechenergebnisse je Zeitraum-Schlüssel
-     * @param array{title:string,unit:string,priceUnit?:string,warnings:string[],flags:array<string,bool>,labels:array<string,string>,tariff?:array<string,mixed>|null} $options
+     * @param array{title:string,unit:string,priceUnit?:string,warnings:string[],flags:array<string,bool>,labels:array<string,string>,currency?:array<string,mixed>,tariff?:array<string,mixed>|null} $options
      * @return array<string, mixed>
      */
     public static function build(array $defs, array $results, array $options, int $now): array
@@ -86,6 +88,7 @@ final class ErTile
             'labels'    => $options['labels'],
             'periods'   => $periods,
             'objectId'  => (int) ($options['objectId'] ?? 0),
+            'currency'  => $options['currency'] ?? ErCurrency::info(ErCurrency::DEFAULT),
             'tariff'    => $options['tariff'] ?? null
         ];
     }

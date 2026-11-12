@@ -25,13 +25,14 @@ Hält die Tarifabschnitte für einen oder mehrere [Energierechner 2](../Energier
 
 | Feld | Beschreibung |
 |---|---|
+| Währung | EUR (Standard), CHF, GBP, USD, SEK, NOK, DKK, PLN oder CZK. Sie gilt für alle Zeilen des Tarifs und beschriftet die Variablen und die Kachel der verbundenen Energierechner. Es wird **nichts umgerechnet**: Die Preise trägst du in der Hauptwährung je Einheit ein (zum Beispiel 0,30 für 30 ct). Nach dem Übernehmen passt sich die Beschriftung der Preiseinheit der Preisvariable an. |
 | Name | Frei wählbar, erscheint im Namen der Variablen (leer = Datum). |
 | Anbieter | Frei wählbar, nur zur Anzeige. Wird aus dem Feld „Stromanbieter" des alten Tarifs übernommen. |
 | Gültig ab | Beginn des Tarifs. |
 | Preis (HT) | Arbeitspreis je Einheit des Zählers (kWh, m³ oder Liter) im Hochtarif. Gibt es keinen Niedertarif, ist das der einzige Preis. |
 | Preis (NT) | Arbeitspreis im Niedertarif. 0 verwendet den Preis (HT). |
 | Preisvariable (dynamisch) | Optional. Eine Variable mit dem aktuellen Preis, z. B. aus Tibber oder aWATTar. Sie muss im Archiv mit dem Aggregationstyp *Standard* geloggt werden. Siehe [Dynamische Preise](#13-dynamische-preise). |
-| Einheit der Preisvariable | €/kWh (bzw. €/m³, €/L), ct/kWh oder €/MWh. Rechnet den Wert der Variable in Euro je Einheit um. |
+| Einheit der Preisvariable | Hauptwährung je kWh (bzw. je m³ oder Liter), Untereinheit je kWh (zum Beispiel ct/kWh) oder Hauptwährung je MWh. Rechnet den Wert der Variable in die Hauptwährung je Einheit um. Die Beschriftung nennt die gewählte Währung. |
 | Aufschlag je Einheit | Fester Betrag, der auf den dynamischen Preis aufgeschlagen wird (z. B. Netzentgelte, Steuern, Marge des Anbieters). |
 | Preisauflösung | 1 Stunde oder 15 Minuten, je nachdem, in welchem Takt der Preis wechselt. |
 | NT 1 von / bis, NT 2 von / bis | Bis zu zwei Niedertarif-Zeitfenster pro Tag. Ein Fenster darf über Mitternacht gehen (22:00 bis 06:00). Ein nicht benutztes Fenster mit gleichen Zeiten bei „von" und „bis" lassen (z. B. beide 00:00). Alles außerhalb der Fenster ist Hochtarif. |
@@ -75,7 +76,7 @@ Der **Name** der Zeile geht in den Namen der Variablen im Energierechner ein, ab
 Liefert die Tarifabschnitte als JSON, aufsteigend nach Gültigkeitsbeginn. Ändert sich ein Tarif, rechnen die verbundenen Energierechner automatisch neu.
 
 `array ER2T_GetPrice(integer $InstanzID, integer $Timestamp);`
-Gibt den Preis zurück, der zum Zeitpunkt gilt (`0` = jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs, mit `price`, `type`, `dynamic`, `fallback`, `tariff`, `supplier`, `validFrom` und `validUntil`. Die Felder sind bei [ER2_GetPrice](../Energierechner2/README.md#3-funktionen) beschrieben. Ersatz für `ER_getPrice` des alten Moduls.
+Gibt den Preis zurück, der zum Zeitpunkt gilt (`0` = jetzt): Hochtarif, Niedertarif oder aktueller Preis eines dynamischen Tarifs, mit `price`, `type`, `dynamic`, `fallback`, `tariff`, `supplier`, `validFrom`, `validUntil` und `currency` (Währungscode des Tarifs). Die Felder sind bei [ER2_GetPrice](../Energierechner2/README.md#3-funktionen) beschrieben. Ersatz für `ER_getPrice` des alten Moduls.
 
 ## 3. Spenden
 Dieses Modul ist für die nicht kommerzielle Nutzung kostenlos, Schenkungen als Unterstützung für den Autor werden hier akzeptiert:

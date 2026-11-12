@@ -108,7 +108,7 @@ Die Warnung verschwindet nach der nächsten Berechnung, wenn die Ursache behoben
 Der Energierechner rechnet Verbrauch mal Preis. Das gilt genauso für Energie, die du einspeist (zum Beispiel mit einer PV-Anlage): Der Zähler ist dann der Einspeisezähler, der Preis die Einspeisevergütung, und das Ergebnis ist dein Ertrag.
 
 1. Lege für die Einspeisung einen **eigenen Energierechner 2** an, mit dem Einspeisezähler als Verbrauchsvariable (Zähler, im Archiv mit Aggregationstyp *Zähler* geloggt).
-2. Lege dafür einen **eigenen Tarif** an (Energierechner Tarif 2) und trage die Einspeisevergütung als Preis ein, in € je kWh. Bei mehreren Vergütungssätzen (zum Beispiel nach Inbetriebnahme oder Anlagengröße) je Satz eine Tarifzeile mit Gültig-ab-Datum. Für Bezug und Einspeisung brauchst du zwei Tarife, weil die Preise verschieden sind.
+2. Lege dafür einen **eigenen Tarif** an (Energierechner Tarif 2) und trage die Einspeisevergütung als Preis ein, in der Währung des Tarifs je kWh. Bei mehreren Vergütungssätzen (zum Beispiel nach Inbetriebnahme oder Anlagengröße) je Satz eine Tarifzeile mit Gültig-ab-Datum. Für Bezug und Einspeisung brauchst du zwei Tarife, weil die Preise verschieden sind.
 3. Lass den **Grundpreis auf 0**. Bei einer Einspeisung gibt es keinen.
 4. Schalte im Energierechner die Option **Ertrag statt Kosten** ein.
 
@@ -116,7 +116,16 @@ Die Option ändert nur die Bezeichnungen: Die Variablen heißen dann *Ertrag*, *
 
 Nicht für Einspeisung gedacht sind der **Saldo der Abschläge** (die Option bleibt aus), und im Tarif die Felder Grundpreis und Abschlag. Die Tarif-Instanz kennt die Option nicht und spricht weiter von Preisen.
 
-### 1.8 Namen der Variablen
+### 1.8 Währung
+
+Die Währung stellst du im [Energierechner Tarif 2](../EnergierechnerTarif2/README.md) ein, nicht im Rechner, denn dort stehen die Preise. Der Rechner übernimmt sie und beschriftet damit seine Variablen und die Kachel. Zur Wahl stehen EUR (Standard), CHF, GBP, USD, SEK, NOK, DKK, PLN und CZK.
+
+- Es wird **nichts umgerechnet**: Die Zahlen im Tarif sind Einheiten dieser Währung je kWh. Wer die Währung wechselt, trägt die Preise selbst neu ein.
+- Das Symbol steht vor oder nach dem Betrag (zum Beispiel `CHF 12.50`, `£12.50`, `12,50 €`, `12,50 kr`).
+- Die Preise der Variablen „Aktueller Tarif: Preis" stehen in der Untereinheit (ct, Rp., p, ¢, öre, øre). Bei PLN und CZK stehen sie in der Hauptwährung (zum Beispiel 0,7480 zł), weil dort Preise je kWh üblicherweise so angegeben werden.
+- Nach dem Wechsel gleicht der Rechner seine Variablen automatisch ab. Namen, die du selbst geändert hast, bleiben unberührt.
+
+### 1.9 Namen der Variablen
 
 - Die **Idents** der Variablen sind fest (siehe unten). Die **Namen** vergibt das Modul beim **Anlegen** der Variable und beim Umschalten von *Ertrag statt Kosten* (nur wenn der Name noch der vom Modul vergebene ist).
 - Benennst du später einen Tarifzeitraum oder einen eigenen Zeitraum um, **ändern sich die Namen der bereits vorhandenen Variablen nicht**. Neue Variablen bekommen den neuen Namen.
@@ -142,27 +151,27 @@ Die Variablen je Zeitraum (nur die aktivierten Optionen legen Variablen an):
 
 Variable | Ident | Typ | Beschreibung
 ------------ | ------------ | ------------ | ----------------
-Kosten | `<Zeitraum>_Costs` | Kommazahl (€) | Gesamtkosten des Zeitraums, mit Grundpreis, wenn „Grundpreis einrechnen" an ist.
+Kosten | `<Zeitraum>_Costs` | Kommazahl (Währung des Tarifs) | Gesamtkosten des Zeitraums, mit Grundpreis, wenn „Grundpreis einrechnen" an ist.
 Verbrauch | `<Zeitraum>_Consumption` | Kommazahl (Einheit des Zählers) | Verbrauch des Zeitraums.
-Kosten (Arbeitspreis), Kosten (Grundpreis) | `<Zeitraum>_CostsWork`, `<Zeitraum>_CostsBase` | Kommazahl (€) | Anteile der Kosten, mit der Option „Arbeitskosten und Grundpreis getrennt".
+Kosten (Arbeitspreis), Kosten (Grundpreis) | `<Zeitraum>_CostsWork`, `<Zeitraum>_CostsBase` | Kommazahl (Währung des Tarifs) | Anteile der Kosten, mit der Option „Arbeitskosten und Grundpreis getrennt".
 Verbrauch (HT), Kosten (HT), Verbrauch (NT), Kosten (NT) | `<Zeitraum>_ConsumptionHT`, `_CostsHT`, `_ConsumptionNT`, `_CostsNT` | Kommazahl | Hoch- und Niedertarif getrennt, Kosten ohne Grundpreis, mit der Option „Hoch- und Niedertarif getrennt".
 Energie (kWh) | `<Zeitraum>_Energy` | Kommazahl (kWh) | Umgerechnete kWh bei Gas mit Umrechnung.
 Prognose Kosten, Prognose Verbrauch | `<Zeitraum>_ForecastCosts`, `_ForecastConsumption` | Kommazahl | Hochrechnung, nur für laufende Woche, Monat und Jahr.
-Saldo | `<Zeitraum>_Balance` | Kommazahl (€) | Saldo der Abschläge für aktuelles Jahr, Vorjahr, Tarifzeiträume und Summe; positiv = Guthaben.
-Durchschnittskosten je Tag | `<Zeitraum>_AvgPerDay` | Kommazahl (€) | Mit der Option „Zusatzwerte", alle Zeiträume außer Heute und Gestern.
+Saldo | `<Zeitraum>_Balance` | Kommazahl (Währung des Tarifs) | Saldo der Abschläge für aktuelles Jahr, Vorjahr, Tarifzeiträume und Summe; positiv = Guthaben.
+Durchschnittskosten je Tag | `<Zeitraum>_AvgPerDay` | Kommazahl (Währung des Tarifs) | Mit der Option „Zusatzwerte", alle Zeiträume außer Heute und Gestern.
 Durchschnittsverbrauch je Tag | `<Zeitraum>_AvgConsumptionPerDay` | Kommazahl (Einheit des Zählers) | Mit der Option „Zusatzwerte", alle Zeiträume außer Heute und Gestern.
 Verbrauch im Vorjahr | `<Zeitraum>_LastYearConsumption` | Kommazahl (Einheit des Zählers) | Mit der Option „Zusatzwerte", Monat und Jahr (laufend und abgeschlossen).
 Verbrauch gegenüber dem Vorjahr (%) | `<Zeitraum>_ConsumptionVsLastYear` | Kommazahl (%) | Abweichung vom Vorjahr, negativ = weniger Verbrauch. Zeiträume wie oben.
 Teuerster Tag | `<Zeitraum>_PeakDayDate` | Datum | Mit der Option „Zusatzwerte", Woche, Monat und Jahr (laufend und abgeschlossen).
-Kosten des teuersten Tages | `<Zeitraum>_PeakDayCosts` | Kommazahl (€) | Kosten dieses Tages, Zeiträume wie oben.
+Kosten des teuersten Tages | `<Zeitraum>_PeakDayCosts` | Kommazahl (Währung des Tarifs) | Kosten dieses Tages, Zeiträume wie oben.
 
 Variablen ohne Zeitraum:
 
 Variable | Ident | Typ | Beschreibung
 ------------ | ------------ | ------------ | ----------------
 Letzte Berechnung | `LastCalculation` | Datum/Uhrzeit | Zeitpunkt der letzten Berechnung.
-Aktueller Tarif: Preis (HT, ct) | `CurrentTariff_PriceHT` | Kommazahl (ct) | Mit der Option „Zusatzwerte". Preis je Einheit des Zählers, bei Gas je kWh.
-Aktueller Tarif: Preis (NT, ct) | `CurrentTariff_PriceNT` | Kommazahl (ct) | Mit der Option „Zusatzwerte", nur wenn der Tarif einen Niedertarif hat.
+Aktueller Tarif: Preis (HT, ct) | `CurrentTariff_PriceHT` | Kommazahl (Untereinheit, zum Beispiel ct) | Mit der Option „Zusatzwerte". Preis je Einheit des Zählers, bei Gas je kWh.
+Aktueller Tarif: Preis (NT, ct) | `CurrentTariff_PriceNT` | Kommazahl (Untereinheit, zum Beispiel ct) | Mit der Option „Zusatzwerte", nur wenn der Tarif einen Niedertarif hat.
 Aktueller Tarif: gültig bis | `CurrentTariff_ValidUntil` | Datum | Mit der Option „Zusatzwerte". Letzter Gültigkeitstag, 0 = unbefristet.
 Aktueller Tarif: Tage bis zum Ende | `CurrentTariff_DaysLeft` | Ganzzahl (Tage) | Mit der Option „Zusatzwerte". 0 = letzter Tag ist heute, -1 = unbefristet.
 
@@ -198,12 +207,13 @@ Gibt den Preis zurück, der zum Zeitpunkt gilt. **`$Timestamp` ist Pflicht, `0` 
 
 Feld | Inhalt
 ------------ | ----------------
-`price` | Preis in Euro je Einheit; bei einem dynamischen Tarif der aktuelle Preis (Wert der Preisvariable × Faktor + Aufschlag).
+`price` | Preis in der Währung des Tarifs je Einheit; bei einem dynamischen Tarif der aktuelle Preis (Wert der Preisvariable × Faktor + Aufschlag).
 `type` | `HT`, `NT`, `dynamic` oder leer, wenn zu dem Zeitpunkt kein Tarif gilt.
 `dynamic` | `true` bei einem dynamischen Preis.
 `fallback` | `true`, wenn der Tarif dynamisch ist, aber zu dem Zeitpunkt kein Preis vorliegt (zum Beispiel in der Zukunft): Dann gilt der feste Preis (HT oder NT).
 `tariff`, `supplier` | Name und Anbieter des Tarifzeitraums.
 `validFrom`, `validUntil` | Beginn und letzter Gültigkeitstag des Tarifzeitraums (`validUntil` ist `null`, wenn er unbefristet ist).
+`currency` | Währungscode des Tarifs (zum Beispiel `EUR` oder `CHF`). Der Preis steht in dieser Währung je Einheit.
 
 Bei einem dynamischen Tarif kommt der Preis für „jetzt" (bis eine Stunde zurück) aus der Preisvariable, für frühere Zeitpunkte aus dem Archiv (Stunde oder Viertelstunde). Beispiel:
 

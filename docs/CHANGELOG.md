@@ -1,5 +1,11 @@
 # Changelog
 
+## 12.11.2026 - Version 3.0.6
+
+### Neu
+- Der Tarif hat eine Währung (EUR, CHF, GBP, USD, SEK, NOK, DKK, PLN, CZK): Variablen und Kachel zeigen Beträge und Preise in dieser Währung, bestehende Tarife bleiben im Euro.
+- `ER2_GetPrice` und `ER2T_GetPrice` liefern zusätzlich das Feld `currency`.
+
 ## 10.11.2026 - Version 3.0.5
 
 ### Neu

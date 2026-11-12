@@ -11,6 +11,7 @@ require_once __DIR__ . '/../libs/ErForecast.php';
 require_once __DIR__ . '/../libs/ErExtras.php';
 require_once __DIR__ . '/../libs/ErPriceLookup.php';
 require_once __DIR__ . '/../libs/ErLegacy.php';
+require_once __DIR__ . '/../libs/ErCurrency.php';
 require_once __DIR__ . '/../libs/ErTileTrait.php'; // KACHEL
 
 /**
@@ -106,11 +107,14 @@ class Energierechner2 extends IPSModuleStrict
 
     /** Variablen zum aktuellen Tarif (nicht an einen Zeitraum gebunden): Ident => Bezeichnung */
     private const TARIFF_VARIABLES = [
-        'CurrentTariff_PriceHT'    => 'Current tariff: price (HT, ct)',
-        'CurrentTariff_PriceNT'    => 'Current tariff: price (NT, ct)',
+        'CurrentTariff_PriceHT'    => 'Current tariff: price (HT, %s)',
+        'CurrentTariff_PriceNT'    => 'Current tariff: price (NT, %s)',
         'CurrentTariff_ValidUntil' => 'Current tariff: valid until',
         'CurrentTariff_DaysLeft'   => 'Current tariff: days left'
     ];
+
+    /** Währung vor dem letzten Abgleich, nur gesetzt, wenn sie sich dabei geändert hat (für das Umbenennen der Preisvariablen) */
+    private string $previousCurrency = '';
 
     public function Create(): void
     {
@@ -151,6 +155,8 @@ class Energierechner2 extends IPSModuleStrict
         $this->RegisterAttributeString('Extras', '{}');
         $this->RegisterAttributeString('Idents', '[]');
         $this->RegisterAttributeString('TariffSig', '');
+        // Währung des Tarifs, zuletzt vom Tarif gemeldet (nur zur Beschriftung)
+        $this->RegisterAttributeString('Currency', ErCurrency::DEFAULT);
 
         $this->RegisterTimer('UpdateCalculation', 0, 'ER2_UpdateCalculation($_IPS[\'TARGET\']);');
     }
@@ -259,9 +265,10 @@ class Energierechner2 extends IPSModuleStrict
      * Der Preis gilt je Einheit des Zählers, bei Gas mit Umrechnung je kWh. Ersatz für ER_getPrice des alten Moduls.
      *
      * Rückgabe: price (Preis), type ("HT", "NT", "dynamic" oder "" ohne gültigen Tarif), dynamic, fallback (dynamischer Tarif ohne Preis:
-     * fester Preis), tariff (Name), supplier, validFrom und validUntil (letzter Gültigkeitstag, null = unbefristet).
+     * fester Preis), tariff (Name), supplier, validFrom und validUntil (letzter Gültigkeitstag, null = unbefristet) und
+     * currency (Währungscode des Tarifs, der Preis steht in dieser Währung je Einheit).
      *
-     * @return array{price:float,type:string,dynamic:bool,fallback:bool,tariff:string,supplier:string,validFrom:int,validUntil:?int}
+     * @return array{price:float,type:string,dynamic:bool,fallback:bool,tariff:string,supplier:string,validFrom:int,validUntil:?int,currency:string}
      */
     public function GetPrice(int $Timestamp = 0): array
     {
@@ -273,7 +280,7 @@ class Energierechner2 extends IPSModuleStrict
             $tariff,
             $timestamp,
             static fn (ErTariffSegment $segment, int $ts): ?float => ErPriceLookup::dynamicValue($segment, $ts, $archiveID, $now)
-        );
+        ) + ['currency' => $this->currencyCode()];
     }
 
     /**
@@ -386,6 +393,7 @@ class Energierechner2 extends IPSModuleStrict
     private function applyState(): void
     {
         $tariff = $this->fetchTariff();
+        $this->refreshCurrency();
         $this->maintainVariables($tariff);
         $this->syncArchiveLogging();
         if ($tariff !== null) {
@@ -795,9 +803,11 @@ class Energierechner2 extends IPSModuleStrict
         if ($current === null) {
             return;
         }
+        // "ht" und "nt" stehen in der Untereinheit (ct); bei Währungen, deren Preise in der Hauptwährung stehen (PLN, CZK), durch 100
+        $divisor = ErCurrency::info($this->currencyCode())['priceInMinor'] ? 1.0 : (float) ErCurrency::MINOR_FACTOR;
         $values = [
-            'CurrentTariff_PriceHT'    => (float) $current['ht'],
-            'CurrentTariff_PriceNT'    => (float) ($current['nt'] ?? $current['ht']),
+            'CurrentTariff_PriceHT'    => (float) $current['ht'] / $divisor,
+            'CurrentTariff_PriceNT'    => (float) ($current['nt'] ?? $current['ht']) / $divisor,
             'CurrentTariff_ValidUntil' => (int) ($current['until'] ?? 0),
             'CurrentTariff_DaysLeft'   => (int) ($current['daysLeft'] ?? -1)
         ];
@@ -971,7 +981,8 @@ class Energierechner2 extends IPSModuleStrict
     {
         $unit = $this->unitInfo();
         $consumption = $this->presentation($unit['suffix'] ?? '', 2);
-        $euro = $this->presentation(' €', 2);
+        $currency = ErCurrency::info($this->currencyCode());
+        $money = $this->presentation($currency['suffix'], 2, $currency['prefix']);
         $kwh = $this->presentation(' kWh', 2);
 
         // Positionen: Letzte Berechnung = 1, Tarif-Variablen ab 2, jeder Zeitraum bekommt einen eigenen Block von 20 ab 10.
@@ -1010,7 +1021,7 @@ class Energierechner2 extends IPSModuleStrict
             $revenue = $this->ReadPropertyBoolean('RevenueMode');
             foreach ($kinds as $kind) {
                 $isCosts = strpos($kind, 'Costs') !== false || in_array($kind, ['Balance', 'AvgPerDay'], true);
-                $presentation = $isCosts ? $euro : ($kind === 'Energy' ? $kwh : $consumption);
+                $presentation = $isCosts ? $money : ($kind === 'Energy' ? $kwh : $consumption);
                 $type = VARIABLETYPE_FLOAT;
                 if ($kind === 'ConsumptionVsLastYear') {
                     $presentation = $this->presentation(' %', 1);
@@ -1039,13 +1050,20 @@ class Energierechner2 extends IPSModuleStrict
             foreach ($tariffKinds as $ident) {
                 $type = VARIABLETYPE_INTEGER;
                 $presentation = $this->dateTimePresentation(false);
+                $name = $this->Translate(self::TARIFF_VARIABLES[$ident]);
+                $otherName = '';
                 if (strpos($ident, 'Price') !== false) {
+                    // Preis in der Untereinheit (ct) oder, bei PLN und CZK, in der Hauptwährung; der Name nennt die Einheit
                     $type = VARIABLETYPE_FLOAT;
-                    $presentation = $this->presentation(' ct', 4);
+                    $presentation = $this->presentation(' ' . ErCurrency::priceUnit($this->currencyCode()), 4);
+                    $name = sprintf($name, ErCurrency::priceUnit($this->currencyCode()));
+                    if ($this->previousCurrency !== '') {
+                        $otherName = sprintf($this->Translate(self::TARIFF_VARIABLES[$ident]), ErCurrency::priceUnit($this->previousCurrency));
+                    }
                 } elseif ($ident === 'CurrentTariff_DaysLeft') {
                     $presentation = $this->presentation(' d', 0);
                 }
-                $this->maintain($ident, $this->Translate(self::TARIFF_VARIABLES[$ident]), $type, $presentation, $tariffPosition++);
+                $this->maintain($ident, $name, $type, $presentation, $tariffPosition++, $otherName);
                 $wanted[] = $ident;
             }
         }
@@ -1154,9 +1172,14 @@ class Energierechner2 extends IPSModuleStrict
     }
 
     /** @return array<string, mixed> */
-    private function presentation(string $suffix, int $digits): array
+    private function presentation(string $suffix, int $digits, ?string $prefix = null): array
     {
-        return ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'SUFFIX' => $suffix, 'DIGITS' => $digits];
+        $presentation = ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'SUFFIX' => $suffix, 'DIGITS' => $digits];
+        // Beträge setzen das Präfix immer (auch leer), damit ein früheres Währungssymbol vor dem Betrag wieder verschwindet
+        if ($prefix !== null) {
+            $presentation['PREFIX'] = $prefix;
+        }
+        return $presentation;
     }
 
     // ------------------------------------------------------------------ Konfiguration prüfen
@@ -1226,6 +1249,35 @@ class Energierechner2 extends IPSModuleStrict
         }
         $rows = json_decode($json, true);
         return is_array($rows) ? ErTariff::fromArray($rows) : null;
+    }
+
+    /** Währungscode des Tarifs, wie er beim letzten Abgleich gemeldet wurde (Euro, solange nichts bekannt ist). */
+    private function currencyCode(): string
+    {
+        return ErCurrency::normalize($this->ReadAttributeString('Currency'));
+    }
+
+    /**
+     * Fragt die Währung beim Tarif ab und merkt sie sich. Ist der Tarif nicht erreichbar, bleibt der letzte Wert stehen, damit
+     * ein verspäteter Start des Tarif-Moduls die Darstellung der Variablen nicht auf den Euro zurücksetzt.
+     * Bei einer Änderung bleibt die vorherige Währung für das Umbenennen der Preisvariablen in $previousCurrency.
+     */
+    private function refreshCurrency(): void
+    {
+        $this->previousCurrency = '';
+        if (!$this->HasActiveParent()) {
+            return;
+        }
+        $answer = $this->SendDataToParent(json_encode(['DataID' => self::DATAFLOW_TO_PARENT, 'Command' => 'GetCurrency']));
+        if (!is_string($answer) || $answer === '') {
+            return;
+        }
+        $new = ErCurrency::normalize($answer);
+        $old = $this->currencyCode();
+        if ($new !== $old) {
+            $this->previousCurrency = $old;
+            $this->WriteAttributeString('Currency', $new);
+        }
     }
 
     /** Ändert sich, wenn Tarifzeiträume hinzukommen, wegfallen oder umbenannt werden. */

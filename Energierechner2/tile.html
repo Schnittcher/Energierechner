@@ -103,7 +103,13 @@ function openMaximized(){try{localStorage.setItem(MAX_KEY,JSON.stringify({t:Date
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function L(k){return (DATA.labels && DATA.labels[k]) || k}
 function num(v,d){return Number(v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d})}
-function eur(v){return num(v,Math.abs(v)>=1000?0:2)+' €'}
+/* Waehrung des Tarifs (Daten "currency"): Symbol vor oder nach dem Betrag, Untereinheit fuer Preise. Ohne Angabe gilt der Euro. */
+function cur(){return DATA.currency||{symbol:'€',prefix:'',suffix:' €',minor:'ct',priceInMinor:true}}
+function eur(v){var C=cur();return esc(C.prefix||'')+num(v,Math.abs(v)>=1000?0:2)+esc(C.suffix||'')}
+/* Einheit der Preise je kWh: Untereinheit (ct) oder bei PLN und CZK das Symbol der Hauptwaehrung */
+function pu(){var C=cur();return esc(C.priceInMinor?C.minor:C.symbol)}
+/* Preis aus den Tarifdaten (steht in der Untereinheit) in die angezeigte Einheit */
+function pv(x){return cur().priceInMinor?x:x/100}
 function kwh(v){return num(v,Math.abs(v)<100?1:0)+' '+esc(DATA.unit||'')}
 function byGroup(g){var o={};(DATA.periods||[]).forEach(function(p){if(p.group===g)o[p.role]=p});return o}
 function groups(){return ['day','week','month','year'].filter(function(g){return (DATA.periods||[]).some(function(p){return p.group===g})})}
@@ -133,7 +139,7 @@ function tariffText(){
   var t=DATA.tariff;if(!t)return '';
   var u=esc(DATA.priceUnit||DATA.unit||''),s=[];
   if(t.supplier)s.push(esc(t.supplier));
-  s.push(t.dynamic?esc(L('dynamicPrice')):(t.nt!=null&&t.nt!==t.ht?ct(t.ht)+' / '+ct(t.nt)+' ct/'+u:ct(t.ht)+' ct/'+u));
+  s.push(t.dynamic?esc(L('dynamicPrice')):(t.nt!=null&&t.nt!==t.ht?ct(pv(t.ht))+' / '+ct(pv(t.nt))+' '+pu()+'/'+u:ct(pv(t.ht))+' '+pu()+'/'+u));
   if(t.until)s.push(esc(L('validUntil'))+' '+new Date(t.until*1000).toLocaleDateString([], {day:'2-digit',month:'2-digit',year:'numeric'}));
   return s.join(' · ')}
 /* Kompakt, wenn die Kachel schmal oder niedrig ist */
@@ -181,7 +187,7 @@ function render(){
     if(v.peakDay)h+=row(L('peakDay'),new Date(v.peakDay*1000).toLocaleDateString([], {day:'2-digit',month:'2-digit'})+' · '+eur(v.peakCosts||0));
     // Effektivpreis je Einheit: bei Gas mit Umrechnung je kWh (aus den kWh), sonst je Einheit des Zaehlers (kWh, m3, L)
     var perAmount=v.energy>0?v.energy:v.consumption,perUnit=v.energy>0?'kWh':(DATA.unit||'kWh');
-    if(perAmount>0)h+=row(L('effective')+' '+esc(perUnit),num((v.costs||0)/perAmount*100,2)+' ct');
+    if(perAmount>0)h+=row(L('effective')+' '+esc(perUnit),(cur().priceInMinor?num((v.costs||0)/perAmount*100,2):num((v.costs||0)/perAmount,4))+' '+pu());
     h+='<div class="g">'+esc(L('consumption'))+'</div>'+row(L('consumption'),kwh(v.consumption||0))+(v.lastYearConsumption>0?row(L('consumption')+' '+L('vsLastYear'),kwh(v.lastYearConsumption)):'');
     if(showHtNt()&&v.consumptionHt!=null)h+=row(L('ht'),kwh(v.consumptionHt)+' / '+eur(v.costsHt||0))+row(L('nt'),kwh(v.consumptionNt||0)+' / '+eur(v.costsNt||0));
     if(v.energy>0)h+=row(L('energy'),num(v.energy,v.energy<100?1:0)+' kWh');
